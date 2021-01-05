@@ -110,7 +110,7 @@ public class EncryptionPipeline {
           .apply("Read" + options.getFileType(),
               TransformingFileReader
                   .forFileType(options.getFileType())
-                  .withInputFilePattern(options.getInputFilePattern())
+                  .from(options.getInputFilePattern())
                   .withRecordsTag(flatRecordsTag))
           .get(flatRecordsTag)
           .apply("EncryptRecords",

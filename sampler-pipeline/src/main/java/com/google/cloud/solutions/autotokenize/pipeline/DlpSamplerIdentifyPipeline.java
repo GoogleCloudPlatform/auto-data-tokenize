@@ -69,7 +69,7 @@ public final class DlpSamplerIdentifyPipeline {
             .apply("Read" + options.getFileType().name(),
                 TransformingFileReader
                     .forFileType(options.getFileType().name())
-                    .withInputFilePattern(options.getInputFilePattern())
+                    .from(options.getInputFilePattern())
                     .withRecordsTag(recordsTag)
                     .withAvroSchemaTag(avroSchemaTag));
 

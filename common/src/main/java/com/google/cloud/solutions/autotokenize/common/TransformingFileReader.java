@@ -16,7 +16,9 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
@@ -29,11 +31,9 @@ import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
-import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.transforms.Distinct;
 import org.apache.beam.sdk.transforms.Keys;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
@@ -73,11 +73,39 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
 
   abstract @Nullable String inputFilePattern();
 
+  abstract @Nullable String bigqueryTable();
+
+  abstract @Nullable String bigqueryQuery();
+
   abstract String fileType();
 
   abstract @Nullable TupleTag<FlatRecord> recordsTag();
 
   abstract @Nullable TupleTag<String> avroSchemaTag();
+
+  abstract Builder toBuilder();
+
+  static Builder builder() {
+    return new AutoValue_TransformingFileReader.Builder();
+  }
+
+  @AutoValue.Builder
+  abstract static class Builder {
+
+    abstract Builder inputFilePattern(String inputPattern);
+
+    abstract Builder bigqueryTable(String bigqueryTable);
+
+    abstract Builder bigqueryQuery(String bigqueryQuery);
+
+    abstract Builder fileType(String fileType);
+
+    abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
+
+    abstract Builder avroSchemaTag(TupleTag<String> avroSchemaTag);
+
+    abstract TransformingFileReader build();
+  }
 
   /**
    * Specify the file type of the input file collection.
@@ -89,7 +117,7 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
   /**
    * Specify the input file pattern to read for sampling.
    */
-  public TransformingFileReader withInputFilePattern(String inputFilePattern) {
+  public TransformingFileReader from(String inputFilePattern) {
     return toBuilder().inputFilePattern(inputFilePattern).build();
   }
 
@@ -110,24 +138,23 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
   @Override
   public PCollectionTuple expand(PBegin pBegin) {
     checkNotNull(recordsTag(), "Provide a TupleTag for retrieving FlatRecord");
-    checkNotNull(inputFilePattern(), "Empty or null inputFilePattern");
 
     PCollection<KV<FlatRecord, String>> recordsWithSchema =
-        pBegin
-          .apply("Read" + fileType(), readAndConvertTransform())
-            .setCoder(KvCoder.of(ProtoCoder.of(FlatRecord.class), StringUtf8Coder.of()));
+      pBegin
+        .apply("Read" + fileType(), readAndConvertTransform())
+        .setCoder(KvCoder.of(ProtoCoder.of(FlatRecord.class), StringUtf8Coder.of()));
 
     PCollection<FlatRecord> flatRecords =
-        recordsWithSchema.apply("ExtractRecords", Keys.create())
-            .setCoder(ProtoCoder.of(FlatRecord.class));
+      recordsWithSchema.apply("ExtractRecords", Keys.create())
+        .setCoder(ProtoCoder.of(FlatRecord.class));
 
     PCollectionTuple recordTuple = PCollectionTuple.of(recordsTag(), flatRecords);
 
     if (avroSchemaTag() != null) {
       PCollection<String> schema =
-          recordsWithSchema.apply("ExtractSchema", Values.create())
-              .setCoder(StringUtf8Coder.of())
-              .apply(Distinct.create());
+        recordsWithSchema.apply("ExtractSchema", Values.create())
+          .setCoder(StringUtf8Coder.of())
+          .apply(Distinct.create());
 
       return recordTuple.and(avroSchemaTag(), schema);
     }
@@ -140,36 +167,27 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
    * {@link FlatRecord}.
    */
   private PTransform<PBegin, PCollection<KV<FlatRecord, String>>> readAndConvertTransform() {
+    checkArgument(
+      ((fileType().equals("AVRO") || fileType().equals("PARQUERT")) && inputFilePattern() != null)
+        || (fileType().equals("BIGQUERY") && (isNotEmpty(bigqueryQuery()) || isNotEmpty(bigqueryTable()))));
 
     switch (fileType()) {
       case "AVRO":
         return AvroIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputFilePattern());
       case "PARQUET":
         return TransformingParquetIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputFilePattern());
+
+      case "BIGQUERY":
+        BigQueryIO.TypedRead<KV<FlatRecord, String>> bqRead = BigQueryIO.read(FlatRecordConvertFn.forBigQueryTableRow()).useAvroLogicalTypes();
+
+        if (bigqueryQuery() != null) {
+          return bqRead.fromQuery(bigqueryQuery());
+        }
+        return bqRead.from(bigqueryTable());
       default:
         throw new IllegalArgumentException(
-            String.format("Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\"",
-                fileType()));
+          String.format("Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\"",
+            fileType()));
     }
-  }
-
-  abstract Builder toBuilder();
-
-  static Builder builder() {
-    return new AutoValue_TransformingFileReader.Builder();
-  }
-
-  @AutoValue.Builder
-  abstract static class Builder {
-
-    public abstract Builder inputFilePattern(String inputPattern);
-
-    public abstract Builder fileType(String fileType);
-
-    public abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
-
-    public abstract Builder avroSchemaTag(TupleTag<String> avroSchemaTag);
-
-    public abstract TransformingFileReader build();
   }
 }

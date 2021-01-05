@@ -18,6 +18,7 @@ package com.google.cloud.solutions.autotokenize.common;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.KV;
 
@@ -39,9 +40,21 @@ public interface FlatRecordConvertFn<T> extends SerializableFunction<T, KV<FlatR
     private GenericRecordFlatteningFn() {}
   }
 
+  final class TableRowFlatteningFn implements FlatRecordConvertFn<SchemaAndRecord> {
+
+    private static TableRowFlatteningFn tableRowFlatteningFn = new TableRowFlatteningFn();
+
+    @Override
+    public KV<FlatRecord, String> apply(SchemaAndRecord input) {
+      return KV.of(RecordFlattener.forGenericRecord().flatten(input.getRecord()), input.getRecord().getSchema().toString());
+    }
+
+    private TableRowFlatteningFn() {}
+  }
+
   static GenericRecordFlatteningFn forGenericRecord() {
     return GenericRecordFlatteningFn.genericRecordFlatteningFn;
   }
 
-
+  static TableRowFlatteningFn forBigQueryTableRow() { return TableRowFlatteningFn.tableRowFlatteningFn;}
 }
