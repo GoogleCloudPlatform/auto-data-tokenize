@@ -16,8 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-import static com.google.cloud.solutions.autotokenize.common.GenericRecordFlattener.flattenGenericRecord;
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.transforms.SerializableFunction;
@@ -35,7 +33,7 @@ public interface FlatRecordConvertFn<T> extends SerializableFunction<T, KV<FlatR
 
     @Override
     public KV<FlatRecord, String> apply(GenericRecord record) {
-      return KV.of(flattenGenericRecord(record), record.getSchema().toString());
+      return KV.of(RecordFlattener.forGenericRecord().flatten(record), record.getSchema().toString());
     }
 
     private GenericRecordFlatteningFn() {}

@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-import static com.google.cloud.solutions.autotokenize.common.GenericRecordFlattener.flattenGenericRecord;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
@@ -94,7 +93,7 @@ public final class GenericRecordFlattenerTest {
           .withSchemaFile(avroSchemaJsonFile)
           .loadRecord(avroRecordJsonFile);
 
-      FlatRecord flatRecord = flattenGenericRecord(testRecord);
+      FlatRecord flatRecord = new GenericRecordFlattener().flatten(testRecord);
 
       assertThat(flatRecord)
           .isEqualTo(
@@ -159,7 +158,7 @@ public final class GenericRecordFlattenerTest {
           assertThrows(
               exceptionClass,
               () ->
-                  flattenGenericRecord(
+                new GenericRecordFlattener().flatten(
                       TestResourceLoader.classPath()
                           .forAvro()
                           .withSchemaFile(avroSchemaJsonFile)

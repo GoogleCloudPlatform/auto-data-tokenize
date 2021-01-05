@@ -46,7 +46,7 @@ import org.apache.avro.generic.GenericRecord;
  * {string_value: "work"}, $.contacts[1].contact.number -> {string_value: "987-654-321"} }
  * </code>
  */
-public final class GenericRecordFlattener {
+public final class GenericRecordFlattener implements RecordFlattener<GenericRecord>{
 
   public static final String RECORD_ROOT_SYMBOL = "$";
 
@@ -55,7 +55,8 @@ public final class GenericRecordFlattener {
    *
    * @param record the AVRO record to flatten.
    */
-  public static FlatRecord flattenGenericRecord(GenericRecord record) {
+  @Override
+  public FlatRecord flatten(GenericRecord record) {
     return new TypeFlattener(record).convert();
   }
 
