@@ -1,0 +1,23 @@
+{
+  "name": "John Doe",
+  "contacts": [
+    {
+      "contact": {
+        "type": "WORK",
+        "encrypted_number": "AWWfEcxW033K24siKNBbudTNj14NuacI4txs"
+      }
+    },
+    {
+      "contact": {
+        "type": "HOME",
+        "encrypted_number": "AWWfEcxw7lHMkD8nlpENc/kfYwBbgN2qeP6Q"
+      }
+    },
+    {
+      "contact": {
+        "type": "MOBILE",
+        "encrypted_number": "AWWfEcyquaBJ6vpnDCB0SbVCNTqarClKRl2S"
+      }
+    }
+  ]
+}

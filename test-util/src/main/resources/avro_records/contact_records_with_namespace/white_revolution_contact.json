@@ -1,0 +1,27 @@
+{
+  "contact": {
+    "root.Contact": {
+      "name": {
+        "string": "white revolution"
+      },
+      "nums": [
+        {
+          "type": {
+            "string": "WORK"
+          },
+          "number": {
+            "string": "(544)071-6280"
+          }
+        },
+        {
+          "type": {
+            "string": "HOME"
+          },
+          "number": {
+            "string": "(615)228-7764"
+          }
+        }
+      ]
+    }
+  }
+}

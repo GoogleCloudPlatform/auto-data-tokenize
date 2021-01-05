@@ -1,0 +1,50 @@
+{
+  "headers": [
+    {
+      "name": "__AUTODLP__RECORD_ID__"
+    },
+    {
+      "name": "$.contacts.0.contact.number"
+    },
+    {
+      "name": "$.contacts.1.contact.number"
+    },
+    {
+      "name": "$.contacts.2.contact.number"
+    }
+  ],
+  "rows": [
+    {
+      "values": [
+        {
+          "stringValue": "aa9cd6f3-f39c-4a1d-9baa-5315f6367851"
+        },
+        {
+          "stringValue": "212-456-7890"
+        },
+        {
+          "stringValue": "530-454-3219"
+        },
+        {
+          "stringValue": ""
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "stringValue": "4afa8389-27f9-466c-8bd6-59451c44b48e"
+        },
+        {
+          "stringValue": "212-456-7890"
+        },
+        {
+          "stringValue": "530-454-3219"
+        },
+        {
+          "stringValue": "987-456-7890"
+        }
+      ]
+    }
+  ]
+}

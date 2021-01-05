@@ -1,0 +1,30 @@
+flat_key_schema {
+  key: "$.name"
+  value: "$.kylosample.name"
+}
+flat_key_schema {
+  key: "$.nums[0].long"
+  value: "$.kylosample.nums"
+}
+flat_key_schema {
+  key: "$.nums[1].long"
+  value: "$.kylosample.nums"
+}
+values {
+  key: "$.name"
+  value {
+    string_value: "John Doe"
+  }
+}
+values {
+  key: "$.nums[0].long"
+  value {
+    integer_value: 1234567890
+  }
+}
+values {
+  key: "$.nums[1].long"
+  value {
+    integer_value: 9876543210
+  }
+}

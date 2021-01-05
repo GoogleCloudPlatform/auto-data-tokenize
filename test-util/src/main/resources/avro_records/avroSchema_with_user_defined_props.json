@@ -1,0 +1,47 @@
+{
+  "type": "record",
+  "name": "kylosample",
+  "doc": "user_defined_props",
+  "fields": [
+    {
+      "name": "name",
+      "type": [
+        "null",
+        "string"
+      ],
+      "aliases": [
+        "user_names"
+      ],
+      "user_defined_prop1": "property1",
+      "user_defined_prop2_long": 123456789
+    },
+    {
+      "name": "contacts",
+      "user_defined_array_prop1": "array_property1",
+      "type": {
+        "type": "array",
+        "items": [
+          "null",
+          {
+            "type": "record",
+            "name": "contact",
+            "aliases": [
+              "user_contact"
+            ],
+            "user_defined_nested_repeated_prop1": "nested_repeated_property1",
+            "fields": [
+              {
+                "name": "type",
+                "type": "string"
+              },
+              {
+                "name": "number",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "sampleSize": "100",
+  "file_information": {},
+  "columnsInformation": [
+    {
+      "columnName": "$.kylosample.birthdate",
+      "infoTypes": [
+        {
+          "infoType": "DATE",
+          "count": "77"
+        },
+        {
+          "infoType": "DATE_OF_BIRTH",
+          "count": "77"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.cc",
+      "infoTypes": [
+        {
+          "infoType": "CREDIT_CARD_NUMBER",
+          "count": "63"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.email",
+      "infoTypes": [
+        {
+          "infoType": "EMAIL_ADDRESS",
+          "count": "100"
+        },
+        {
+          "infoType": "PERSON_NAME",
+          "count": "1"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.first_name",
+      "infoTypes": [
+        {
+          "infoType": "PERSON_NAME",
+          "count": "98"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.ip_address",
+      "infoTypes": [
+        {
+          "infoType": "IP_ADDRESS",
+          "count": "92"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.last_name",
+      "infoTypes": [
+        {
+          "infoType": "PERSON_NAME",
+          "count": "95"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.registration_dttm",
+      "infoTypes": [
+        {
+          "infoType": "DATE",
+          "count": "100"
+        },
+        {
+          "infoType": "TIME",
+          "count": "100"
+        }
+      ]
+    }
+  ]
+}

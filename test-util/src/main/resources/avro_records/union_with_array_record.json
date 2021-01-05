@@ -1,0 +1,15 @@
+{
+  "id": 6,
+  "first_name": "Kathryn",
+  "last_name": "White",
+  "cc": {
+    "array": [
+      {
+        "string": "string element of array inside union field"
+      },
+      {
+        "string": "element 2"
+      }
+    ]
+  }
+}

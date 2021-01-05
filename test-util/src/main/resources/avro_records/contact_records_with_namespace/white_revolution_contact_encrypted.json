@@ -1,0 +1,27 @@
+{
+  "contact": {
+    "root.Contact": {
+      "name": {
+        "string": "white revolution"
+      },
+      "nums": [
+        {
+          "type": {
+            "string": "WORK"
+          },
+          "encrypted_number": {
+            "string": "AWWfEczQDsO7q/WJ2Z9VC+lESZtgN6ckskfYvleV3H3IrddH"
+          }
+        },
+        {
+          "type": {
+            "string": "HOME"
+          },
+          "encrypted_number": {
+            "string": "AWWfEcwYkEJWBQkYt6EXh/HmDqHFqqeDbDj1IM1ydZJ6clQ/"
+          }
+        }
+      ]
+    }
+  }
+}

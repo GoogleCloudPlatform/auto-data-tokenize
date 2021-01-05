@@ -1,0 +1,26 @@
+{
+  "registration_dttm": "2016-02-03T07:22:34Z",
+  "int96_date": "\u0000\u00a8\u00cd\u0063\u0000\u001c\u0000\u0000\u004e\u007f\u0025\u0000",
+  "id": 6,
+  "first_name": "Kathryn",
+  "last_name": "White",
+  "email": "white.kathy@org.org",
+  "gender": "Female",
+  "ip_address": "195.131.81.179",
+  "cc": {
+    "long": 3583136326049310
+  },
+  "country": "Indonesia",
+  "birthdate": "2/25/1983",
+  "salary": {
+    "double": 69227.11
+  },
+  "singlePrecisionNumber": 3.14,
+  "title": "Account Executive",
+  "comments": "",
+  "active_employee": true,
+  "signature": "\u0025\u00df\u0097\u00b0\u00e0\u0041\u0001\u00e5\u007c\u00f1\u0049\u00f9\u00ce\u001f\u0031\u00a3",
+  "identifier": "\u0025\u00df\u0097\u00b0\u00e0\u0041\u0001\u00e5",
+  "countriesVisited": 5,
+  "employeeType": "INTERN"
+}

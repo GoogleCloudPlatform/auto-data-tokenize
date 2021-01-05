@@ -1,0 +1,11 @@
+{
+  "name": "John Doe",
+  "nums": [
+    {
+      "long": 1234567890
+    },
+    {
+      "string": "union string"
+    }
+  ]
+}

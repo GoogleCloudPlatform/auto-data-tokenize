@@ -1,0 +1,19 @@
+{
+  "registration_dttm": "2016-02-03T01:09:31Z",
+  "id": 3,
+  "first_name": "Evelyn",
+  "last_name": "Morgan",
+  "encrypted_email": "AWWfEcwk6dcFXnNzwgbjp3cGQ0SsAdTengkA5Cy8b8HYAD7ZMsmCwEGz20uiDQ==",
+  "gender": "Female",
+  "encrypted_ip_address": "AWWfEcxsTl8xBwHHSN+pMdN8e54tGttAy9ehtdQiD3kR7CQ=",
+  "encrypted_cc": {
+    "string": "AWWfEcx4Q/EH28uqjn2TB2wwmhG5uvo+h69paWXD"
+  },
+  "country": "Russia",
+  "birthdate": "2/1/1960",
+  "salary": {
+    "double": 144972.51
+  },
+  "title": "Structural Engineer",
+  "comments": ""
+}

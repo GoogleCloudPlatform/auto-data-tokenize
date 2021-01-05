@@ -1,0 +1,19 @@
+{
+  "registration_dttm": "2016-02-03T07:55:29Z",
+  "id": 1,
+  "first_name": "Amanda",
+  "last_name": "Jordan",
+  "encrypted_email": "AWWfEcz00I+wxOM8V6bdnRdWfqlI0v/QYZ35rB8F8qtqt6/V1e2q",
+  "gender": "Female",
+  "encrypted_ip_address": "AWWfEczV4n5QggAlMngtzljPSme+H7EY6BXx8POWyj/SAg==",
+  "encrypted_cc": {
+    "string": "AWWfEcwB0qLjiB+e/FU5yC9mi1ov7CKRyi+E1g7o"
+  },
+  "country": "Indonesia",
+  "birthdate": "3/8/1971",
+  "salary": {
+    "double": 49756.53
+  },
+  "title": "Internal Auditor",
+  "comments": "1E+02"
+}

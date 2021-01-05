@@ -1,0 +1,53 @@
+{
+  "type": "record",
+  "name": "Root",
+  "fields": [
+    {
+      "name": "contact",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "Contact",
+          "namespace": "root",
+          "fields": [
+            {
+              "name": "name",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "nums",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "Nums",
+                  "namespace": "root.contact",
+                  "fields": [
+                    {
+                      "name": "type",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    {
+                      "name": "number",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

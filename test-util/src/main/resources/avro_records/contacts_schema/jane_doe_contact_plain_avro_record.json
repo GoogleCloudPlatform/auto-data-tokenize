@@ -1,0 +1,17 @@
+{
+  "name": "Jane Doe",
+  "contacts": [
+    {
+      "contact": {
+        "type": "WORK",
+        "number": 2124567890
+      }
+    },
+    {
+      "contact": {
+        "type": "HOME",
+        "number": 5304321234
+      }
+    }
+  ]
+}

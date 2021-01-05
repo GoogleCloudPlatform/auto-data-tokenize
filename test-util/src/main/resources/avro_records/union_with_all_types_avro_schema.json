@@ -1,0 +1,216 @@
+{
+  "type": "record",
+  "name": "union_all_test",
+  "doc": "Union fields with different data types.\nUpdated for encryption at 2020-10-21T01:00:15Z",
+  "fields": [
+    {
+      "name": "union_with_enum",
+      "alias": [
+        "my_union_with_enum_alias"
+      ],
+      "type": [
+        "null",
+        {
+          "type": "enum",
+          "name": "connection_status",
+          "symbols": [
+            "CONNECTED",
+            "DISCONNECTED",
+            "NOT_INIT"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "union_with_enum2",
+      "type": [
+        "null",
+        {
+          "type": "enum",
+          "name": "connection_status2",
+          "symbols": [
+            "CONNECTED2",
+            "DISCONNECTED2",
+            "NOT_INIT2"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "union_with_boolean",
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    {
+      "name": "union_with_boolean2",
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    {
+      "name": "union_with_long",
+      "type": [
+        "null",
+        "long"
+      ]
+    },
+    {
+      "name": "union_with_long2",
+      "type": [
+        "null",
+        "long"
+      ]
+    },
+    {
+      "name": "union_with_int",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "name": "union_with_int2",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "name": "union_with_string",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "union_with_string2",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "union_with_float",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "name": "union_with_float2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "name": "union_with_double",
+      "type": [
+        "null",
+        "double"
+      ]
+    },
+    {
+      "name": "union_with_double2",
+      "type": [
+        "null",
+        "double"
+      ]
+    },
+    {
+      "name": "union_with_fixed",
+      "type": [
+        "null",
+        {
+          "type": "fixed",
+          "name": "random_fixed_bytes",
+          "size": 10
+        }
+      ]
+    },
+    {
+      "name": "union_with_fixed2",
+      "type": [
+        "null",
+        {
+          "type": "fixed",
+          "name": "random_fixed_bytes2",
+          "size": 12
+        }
+      ]
+    },
+    {
+      "name": "union_with_bytes",
+      "type": [
+        "null",
+        "bytes"
+      ]
+    },
+    {
+      "name": "union_with_bytes2",
+      "type": [
+        "null",
+        "bytes"
+      ]
+    },
+    {
+      "name": "union_with_simple_record",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "simple_record",
+          "fields": [
+            {
+              "name": "simple_record_int",
+              "type": "int",
+              "default": 500
+            },
+            {
+              "name": "simple_record_string",
+              "type": "string",
+              "default": "my_default_string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "union_with_record",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "custom_record",
+          "fields": [
+            {
+              "name": "custom_field",
+              "type": {
+                "type": "record",
+                "name": "custom_field_record",
+                "fields": [
+                  {
+                    "name": "second_level_field_long",
+                    "type": "long"
+                  },
+                  {
+                    "name": "encrypted_second_level_field_string",
+                    "type": "string",
+                    "ORIGINAL_TYPE": "\"string\""
+                  }
+                ]
+              }
+            },
+            {
+              "name": "first_level_boolean",
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

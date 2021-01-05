@@ -1,0 +1,24 @@
+{
+  "sampleSize": "100",
+  "fileInformation": {},
+  "columnsInformation": [
+    {
+      "columnName": "$.kylosample.contacts.contact.number",
+      "infoTypes": [
+        {
+          "infoType": "PHONE_NUMBER",
+          "count": "200"
+        }
+      ]
+    },
+    {
+      "columnName": "$.kylosample.name",
+      "infoTypes": [
+        {
+          "infoType": "PERSON_NAME",
+          "count": "100"
+        }
+      ]
+    }
+  ]
+}

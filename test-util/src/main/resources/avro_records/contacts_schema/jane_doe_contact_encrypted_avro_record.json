@@ -1,0 +1,17 @@
+{
+  "name": "Jane Doe",
+  "contacts": [
+    {
+      "contact": {
+        "type": "WORK",
+        "encrypted_number": "AWWfEcwYk29zXRAKyfCUEG4giEh5S9dqHEjc"
+      }
+    },
+    {
+      "contact": {
+        "type": "HOME",
+        "encrypted_number": "AWWfEcyPgrPKis++I5sLLOXAx+q97v3GaY1o"
+      }
+    }
+  ]
+}

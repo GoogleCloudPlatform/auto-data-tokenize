@@ -1,0 +1,23 @@
+{
+  "name": "Jane Doe",
+  "contacts": [
+    {
+      "contact": {
+        "type": "home",
+        "number": "213-456-7890"
+      }
+    },
+    {
+      "contact": {
+        "type": "work",
+        "number": "531-454-3219"
+      }
+    },
+    {
+      "contact": {
+        "type": "mobile",
+        "number": "987-456-7890"
+      }
+    }
+  ]
+}

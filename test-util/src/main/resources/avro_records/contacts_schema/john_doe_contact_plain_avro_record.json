@@ -1,0 +1,23 @@
+{
+  "name": "John Doe",
+  "contacts": [
+    {
+      "contact": {
+        "type": "WORK",
+        "number": 5641237890
+      }
+    },
+    {
+      "contact": {
+        "type": "HOME",
+        "number": 1234567890
+      }
+    },
+    {
+      "contact": {
+        "type": "MOBILE",
+        "number": 9876543210
+      }
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package com.google.cloud.solutions.autotokenize;
+
+import "google/privacy/dlp/v2/dlp.proto";
+
+// Represents sampled DLP column-type information.
+message DlpReport {
+  // The number of sample records sent to DLP for type identification.
+  int64 sample_size = 1;
+
+  // AVRO schema of the file. For Parquet file this contains the Parquet schema
+  // converted to AVRO schema.
+  string file_avro_schema = 5;
+
+  // Columns containing flagged InfoType.
+  repeated ColumnInformation columns_information = 10;
+}
+
+// The supported file types.
+enum FileType {
+  UNKNOWN_FILE_TYPE = 0;
+  AVRO = 1;
+  PARQUET = 2;
+}
+
+// The information types associated with each column of the input structured file.
+// The column_name is in the JSONPath format.
+message ColumnInformation {
+
+  // The JSONPath of the record's column (when represented as JSON)
+  string column_name = 1;
+
+  // The list of flagged DLP InfoTypes and their occurrences in this column.
+  repeated InfoTypeInformation info_types = 2;
+}
+
+// The detected DLP InfoType name and number of occurrences in the sample.
+message InfoTypeInformation {
+
+  // The DLP InfoType name
+  string info_type = 1;
+
+  // The number of times this info type occurred in the column of the sample.
+  int64 count = 2;
+}
+
+// Flattened representation of an AVRO GenericRecord's JSON.
+// The flattening allows a record with nested/repeated fields to be represented
+// as a single row with varying number of columns. Each of the repeated field's
+// columns is mapped to the field's schema name using the `flat_key_schema` map.
+// This simplifies operations on a given schema column even when it is repeated.
+// e.g.
+// AVRO Record
+// {
+//   "name": "Jane Doe",
+//   "contacts": [
+//     {
+//       "contact": {
+//         "type": "WORK",
+//         "number": 2124567890
+//       }
+//     },
+//     {
+//       "contact": {
+//         "type": "HOME",
+//         "number": 5304321234
+//       }
+//     }
+//   ]
+// }
+//
+// Flattened Record:
+// "flatKeySchema" : {
+//    "$.name" : "$.RootRecord.name",
+//    "$.contacts[0].contact.type": "$.RootRecord.contacts.contact.type",
+//    "$.contacts[0].contact.number": "$.RootRecord.contacts.contact.number",
+//    "$.contacts[1].contact.type": "$.RootRecord.contacts.contact.type",
+//    "$.contacts[1].contact.number": "$.RootRecord.contacts.contact.number"
+//  },
+// "values" :
+//  {
+//    "$.name": "Jane Doe",
+//    "$.contacts[0].contact.type": "WORK",
+//    "$.contacts[0].contact.number": 2124567890,
+//    "$.contacts[1].contact.type": "HOME",
+//    "$.contacts[1].contact.number": 5304321234
+//  }
+message FlatRecord {
+  // Optional unique record id field.
+  string record_id = 1;
+
+  // A map between the record key's to the equivalent schema field's key
+  map<string, string> flat_key_schema = 5;
+
+  // Flattened record, with value represented as DLP Value objects.
+  // The Value object allows simplified access to convert values to bytes.
+  map<string, .google.privacy.dlp.v2.Value> values = 10;
+}

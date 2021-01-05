@@ -1,0 +1,17 @@
+{
+  "registration_dttm": "2016-02-03T17:04:03Z",
+  "id": 2,
+  "first_name": "Albert",
+  "last_name": "Freeman",
+  "email": "afreeman1@is.gd",
+  "gender": "Male",
+  "ip_address": "218.111.175.34",
+  "encrypted_cc": null,
+  "country": "Canada",
+  "birthdate": "1/16/1968",
+  "salary": {
+    "double": 150280.17
+  },
+  "title": "Accountant IV",
+  "comments": ""
+}

@@ -1,0 +1,20 @@
+{
+  "name": "John Doe",
+  "contacts": [
+    {
+      "contact": {
+        "type": "home",
+        "number": "212-456-7890"
+      }
+    },
+    {
+      "contact": {
+        "type": "work",
+        "number": "530-454-3219"
+      }
+    },
+    {
+      "null": null
+    }
+  ]
+}

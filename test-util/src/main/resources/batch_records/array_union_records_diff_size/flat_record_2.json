@@ -1,0 +1,35 @@
+{
+  "recordId": "4afa8389-27f9-466c-8bd6-59451c44b48e",
+  "flatKeySchema": {
+    "$.contacts.2.contact.number": "$.kylosample.contacts.contact.number",
+    "$.contacts.2.contact.type": "$.kylosample.contacts.contact.type",
+    "$.contacts.0.contact.number": "$.kylosample.contacts.contact.number",
+    "$.contacts.1.contact.number": "$.kylosample.contacts.contact.number",
+    "$.contacts.0.contact.type": "$.kylosample.contacts.contact.type",
+    "$.name": "$.kylosample.name",
+    "$.contacts.1.contact.type": "$.kylosample.contacts.contact.type"
+  },
+  "values": {
+    "$.contacts.2.contact.number": {
+      "stringValue": "987-456-7890"
+    },
+    "$.contacts.2.contact.type": {
+      "stringValue": "mobile"
+    },
+    "$.contacts.0.contact.number": {
+      "stringValue": "212-456-7890"
+    },
+    "$.contacts.1.contact.number": {
+      "stringValue": "530-454-3219"
+    },
+    "$.contacts.0.contact.type": {
+      "stringValue": "home"
+    },
+    "$.name": {
+      "stringValue": "Jane Doe"
+    },
+    "$.contacts.1.contact.type": {
+      "stringValue": "work"
+    }
+  }
+}

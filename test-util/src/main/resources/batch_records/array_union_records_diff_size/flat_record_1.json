@@ -1,0 +1,27 @@
+{
+  "recordId": "aa9cd6f3-f39c-4a1d-9baa-5315f6367851",
+  "flatKeySchema": {
+    "$.contacts.0.contact.number": "$.kylosample.contacts.contact.number",
+    "$.contacts.1.contact.number": "$.kylosample.contacts.contact.number",
+    "$.contacts.0.contact.type": "$.kylosample.contacts.contact.type",
+    "$.name": "$.kylosample.name",
+    "$.contacts.1.contact.type": "$.kylosample.contacts.contact.type"
+  },
+  "values": {
+    "$.contacts.0.contact.number": {
+      "stringValue": "212-456-7890"
+    },
+    "$.contacts.1.contact.number": {
+      "stringValue": "530-454-3219"
+    },
+    "$.contacts.0.contact.type": {
+      "stringValue": "home"
+    },
+    "$.name": {
+      "stringValue": "John Doe"
+    },
+    "$.contacts.1.contact.type": {
+      "stringValue": "work"
+    }
+  }
+}

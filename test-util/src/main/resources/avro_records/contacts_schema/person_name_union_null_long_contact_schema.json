@@ -1,0 +1,43 @@
+{
+  "type": "record",
+  "name": "contact_records",
+  "doc": "Sample Contacts for testing",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "contacts",
+      "type": {
+        "type": "array",
+        "items": [
+          "null",
+          {
+            "type": "record",
+            "name": "contact",
+            "fields": [
+              {
+                "name": "type",
+                "type": {
+                  "type": "enum",
+                  "name": "contact_types",
+                  "symbols": [
+                    "WORK",
+                    "HOME",
+                    "MOBILE"
+                  ]
+                },
+                "default": "HOME"
+              },
+              {
+                "name": "number",
+                "type": "long"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

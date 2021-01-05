@@ -1,0 +1,19 @@
+{
+  "registration_dttm": "2016-02-03T01:09:31Z",
+  "id": 3,
+  "first_name": "Evelyn",
+  "last_name": "Morgan",
+  "email": "emorgan2@altervista.org",
+  "gender": "Female",
+  "ip_address": "7.161.136.94",
+  "cc": {
+    "long": 6767119071901597
+  },
+  "country": "Russia",
+  "birthdate": "2/1/1960",
+  "salary": {
+    "double": 144972.51
+  },
+  "title": "Structural Engineer",
+  "comments": ""
+}
