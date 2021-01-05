@@ -46,7 +46,7 @@ import org.apache.avro.generic.GenericRecord;
  * {string_value: "work"}, $.contacts[1].contact.number -> {string_value: "987-654-321"} }
  * </code>
  */
-public final class RecordFlattener {
+public final class GenericRecordFlattener {
 
   public static final String RECORD_ROOT_SYMBOL = "$";
 

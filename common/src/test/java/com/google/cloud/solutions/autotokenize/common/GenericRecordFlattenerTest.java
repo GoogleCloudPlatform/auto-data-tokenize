@@ -16,7 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-import static com.google.cloud.solutions.autotokenize.common.RecordFlattener.flattenGenericRecord;
+import static com.google.cloud.solutions.autotokenize.common.GenericRecordFlattener.flattenGenericRecord;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Enclosed.class)
-public final class RecordFlattenerTest {
+public final class GenericRecordFlattenerTest {
 
   @RunWith(Parameterized.class)
   public static final class ValidInputOutputTests {

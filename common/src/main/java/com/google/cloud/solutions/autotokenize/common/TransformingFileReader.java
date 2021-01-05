@@ -28,10 +28,12 @@ import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.io.AvroIO;
-import org.apache.beam.sdk.io.FileIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.transforms.Distinct;
 import org.apache.beam.sdk.transforms.Keys;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
@@ -112,9 +114,7 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
 
     PCollection<KV<FlatRecord, String>> recordsWithSchema =
         pBegin
-            .apply("IdentifyInputFiles", FileIO.match().filepattern(inputFilePattern()))
-            .apply("ReadFileMetadata", FileIO.readMatches())
-            .apply("Read" + fileType(), readAndConvertTransform())
+          .apply("Read" + fileType(), readAndConvertTransform())
             .setCoder(KvCoder.of(ProtoCoder.of(FlatRecord.class), StringUtf8Coder.of()));
 
     PCollection<FlatRecord> flatRecords =
@@ -139,15 +139,13 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
    * Applies {@link #fileType()} appropriate reader and converts the {@link GenericRecord} into
    * {@link FlatRecord}.
    */
-  private PTransform<PCollection<FileIO.ReadableFile>, PCollection<KV<FlatRecord, String>>> readAndConvertTransform() {
+  private PTransform<PBegin, PCollection<KV<FlatRecord, String>>> readAndConvertTransform() {
 
     switch (fileType()) {
       case "AVRO":
-        return AvroIO.parseFilesGenericRecords(FlatRecordConvertFn.create());
+        return AvroIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputFilePattern());
       case "PARQUET":
-        return TransformingParquetIO
-            .parseFilesGenericRecords(FlatRecordConvertFn.create())
-            .withSplit();
+        return TransformingParquetIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputFilePattern());
       default:
         throw new IllegalArgumentException(
             String.format("Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\"",
