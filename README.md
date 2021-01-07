@@ -438,3 +438,7 @@ To avoid incurring charges to your Google Cloud account for the resources used i
 * Learn more about [Cloud KMS](https://cloud.google.com/kms)
 * Learn about [Inspecting storage and databases for sensitive data](https://cloud.google.com/dlp/docs/inspecting-storage)
 * Handling [De-identification and re-identification of PII in large-scale datasets using DLP](https://cloud.google.com/solutions/de-identification-re-identification-pii-using-cloud-dlp)
+
+## Discalimer
+**License**: Apache 2.0
+This is not an official Google product.
