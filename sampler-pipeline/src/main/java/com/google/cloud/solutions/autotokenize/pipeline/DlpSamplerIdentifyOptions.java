@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,14 @@ public interface DlpSamplerIdentifyOptions extends GcpOptions {
   void setSampleSize(int sampleSize);
 
   @Validation.Required
-  AutoTokenizeMessages.FileType getFileType();
+  AutoTokenizeMessages.SourceType getSourceType();
 
-  void setFileType(AutoTokenizeMessages.FileType fileType);
+  void setSourceType(AutoTokenizeMessages.SourceType fileType);
 
   @Validation.Required
-  String getInputFilePattern();
+  String getInputPattern();
 
-  void setInputFilePattern(String inputFilePattern);
+  void setInputPattern(String inputFilePattern);
 
   @Validation.Required
   String getReportLocation();

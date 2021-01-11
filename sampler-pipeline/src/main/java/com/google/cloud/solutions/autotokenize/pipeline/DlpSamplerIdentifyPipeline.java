@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.apache.beam.sdk.io.FileIO.Write.defaultNaming;
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import com.google.cloud.solutions.autotokenize.common.SourceNames;
 import com.google.cloud.solutions.autotokenize.common.TransformingFileReader;
 import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.BatchColumnsForDlp;
@@ -65,40 +66,40 @@ public final class DlpSamplerIdentifyPipeline {
     TupleTag<String> avroSchemaTag = new TupleTag<>();
 
     PCollectionTuple recordSchemaTuple =
-        pipeline
-            .apply("Read" + options.getFileType().name(),
-                TransformingFileReader
-                    .forFileType(options.getFileType().name())
-                    .from(options.getInputFilePattern())
-                    .withRecordsTag(recordsTag)
-                    .withAvroSchemaTag(avroSchemaTag));
+      pipeline
+        .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
+          TransformingFileReader
+            .forSourceType(options.getSourceType())
+            .from(options.getInputPattern())
+            .withRecordsTag(recordsTag)
+            .withAvroSchemaTag(avroSchemaTag));
 
     // Write the schema to a file.
     recordSchemaTuple.get(avroSchemaTag)
-        .apply("WriteSchema",
-            TextIO.write().to(options.getReportLocation()).withoutSharding()
-                .withSuffix("schema.json"));
+      .apply("WriteSchema",
+        TextIO.write().to(options.getReportLocation()).withoutSharding()
+          .withSuffix("schema.json"));
 
     // Sample and Identify columns
     recordSchemaTuple.get(recordsTag)
-        .apply("RandomColumnarSample", RandomColumnarSampler.any(options.getSampleSize()))
-        .apply("BatchForDlp", new BatchColumnsForDlp())
-        .apply("DlpIdentify", DlpIdentify.withIdentifierFactory(makeDlpBatchIdentifierFactory()))
-        .apply("WriteColumnReport",
-            FileIO.<String, ColumnInformation>writeDynamic()
-                .via(Contextful.fn(JsonConvertor::asJsonString),
-                    Contextful.fn(colName -> TextIO.sink()))
-                .by(ColumnInformation::getColumnName)
-                .withDestinationCoder(StringUtf8Coder.of())
-                .withNoSpilling()
-                .withNaming(
-                    Contextful.fn(
-                        colName ->
-                            defaultNaming( /*prefix=*/
-                                String.format("col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
-                                    .replaceAll("[-]+", "-"), /*suffix=*/ ".json")))
+      .apply("RandomColumnarSample", RandomColumnarSampler.any(options.getSampleSize()))
+      .apply("BatchForDlp", new BatchColumnsForDlp())
+      .apply("DlpIdentify", DlpIdentify.withIdentifierFactory(makeDlpBatchIdentifierFactory()))
+      .apply("WriteColumnReport",
+        FileIO.<String, ColumnInformation>writeDynamic()
+          .via(Contextful.fn(JsonConvertor::asJsonString),
+            Contextful.fn(colName -> TextIO.sink()))
+          .by(ColumnInformation::getColumnName)
+          .withDestinationCoder(StringUtf8Coder.of())
+          .withNoSpilling()
+          .withNaming(
+            Contextful.fn(
+              colName ->
+                defaultNaming( /*prefix=*/
+                  String.format("col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
+                    .replaceAll("[-]+", "-"), /*suffix=*/ ".json")))
 
-                .to(options.getReportLocation()));
+          .to(options.getReportLocation()));
 
     return pipeline;
   }
@@ -109,16 +110,16 @@ public final class DlpSamplerIdentifyPipeline {
    */
   private DlpSenderFactory makeDlpBatchIdentifierFactory() {
     DlpSenderFactory.Builder dlpIdentifierBuilder =
-        DlpSenderFactory.builder()
-            .projectId(options.getProject())
-            .dlpFactory(new DlpClientFactory());
+      DlpSenderFactory.builder()
+        .projectId(options.getProject())
+        .dlpFactory(new DlpClientFactory());
 
     if (options.getObservableInfoTypes() != null && !options.getObservableInfoTypes().isEmpty()) {
       ImmutableSet<InfoType> userProvidedInfoTypes =
-          options.getObservableInfoTypes().stream()
-              .map(InfoType.newBuilder()::setName)
-              .map(InfoType.Builder::build)
-              .collect(toImmutableSet());
+        options.getObservableInfoTypes().stream()
+          .map(InfoType.newBuilder()::setName)
+          .map(InfoType.Builder::build)
+          .collect(toImmutableSet());
 
       dlpIdentifierBuilder.observableType(userProvidedInfoTypes);
     }
@@ -129,16 +130,16 @@ public final class DlpSamplerIdentifyPipeline {
   public static void main(String[] args) {
     PipelineOptionsFactory.register(DlpSamplerIdentifyOptions.class);
     DlpSamplerIdentifyOptions options = PipelineOptionsFactory.fromArgs(args)
-        .as(DlpSamplerIdentifyOptions.class);
+      .as(DlpSamplerIdentifyOptions.class);
 
     logger.atInfo().log("Staging the Dataflow job");
 
     DataflowPipelineJob samplingJob =
-        (DataflowPipelineJob) new DlpSamplerIdentifyPipeline(options).makePipeline().run();
+      (DataflowPipelineJob) new DlpSamplerIdentifyPipeline(options).makePipeline().run();
 
     logger.atInfo().log(
-        "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s%n",
-        samplingJob.getJobId(),
-        samplingJob.getProjectId());
+      "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s%n",
+      samplingJob.getJobId(),
+      samplingJob.getProjectId());
   }
 }

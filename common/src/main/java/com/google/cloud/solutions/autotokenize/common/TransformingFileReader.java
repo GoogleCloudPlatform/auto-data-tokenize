@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.io.TransformingParquetIO;
 import com.google.common.flogger.GoogleLogger;
 import org.apache.avro.Schema;
@@ -57,8 +58,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *     readableFile
  *       .apply("ReadFlatRecord",
  *         TransformingFileReader
- *           .forFileType("AVRO")
- *           .withInputFilePattern("gs://...")
+ *           .forSourceType("AVRO")
+ *           .withInputPattern("gs://...")
  *           .withRecordsTag(recordsTag)
  *           .withAvroSchemaTag(avroSchemaTag));
  *
@@ -71,13 +72,9 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  abstract @Nullable String inputFilePattern();
+  abstract @Nullable String inputPattern();
 
-  abstract @Nullable String bigqueryTable();
-
-  abstract @Nullable String bigqueryQuery();
-
-  abstract String fileType();
+  abstract SourceType sourceType();
 
   abstract @Nullable TupleTag<FlatRecord> recordsTag();
 
@@ -92,13 +89,9 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
   @AutoValue.Builder
   abstract static class Builder {
 
-    abstract Builder inputFilePattern(String inputPattern);
+    abstract Builder inputPattern(String inputPattern);
 
-    abstract Builder bigqueryTable(String bigqueryTable);
-
-    abstract Builder bigqueryQuery(String bigqueryQuery);
-
-    abstract Builder fileType(String fileType);
+    abstract Builder sourceType(SourceType fileType);
 
     abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
 
@@ -110,15 +103,15 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
   /**
    * Specify the file type of the input file collection.
    */
-  public static TransformingFileReader forFileType(String fileType) {
-    return builder().fileType(fileType).build();
+  public static TransformingFileReader forSourceType(SourceType sourceType) {
+    return builder().sourceType(sourceType).build();
   }
 
   /**
    * Specify the input file pattern to read for sampling.
    */
   public TransformingFileReader from(String inputFilePattern) {
-    return toBuilder().inputFilePattern(inputFilePattern).build();
+    return toBuilder().inputPattern(inputFilePattern).build();
   }
 
   /**
@@ -141,7 +134,7 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
 
     PCollection<KV<FlatRecord, String>> recordsWithSchema =
       pBegin
-        .apply("Read" + fileType(), readAndConvertTransform())
+        .apply("Read" + SourceNames.forType(sourceType()).asCamelCase(), readAndConvertTransform())
         .setCoder(KvCoder.of(ProtoCoder.of(FlatRecord.class), StringUtf8Coder.of()));
 
     PCollection<FlatRecord> flatRecords =
@@ -163,31 +156,32 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
   }
 
   /**
-   * Applies {@link #fileType()} appropriate reader and converts the {@link GenericRecord} into
+   * Applies {@link #sourceType()} appropriate reader and converts the {@link GenericRecord} into
    * {@link FlatRecord}.
    */
   private PTransform<PBegin, PCollection<KV<FlatRecord, String>>> readAndConvertTransform() {
-    checkArgument(
-      ((fileType().equals("AVRO") || fileType().equals("PARQUERT")) && inputFilePattern() != null)
-        || (fileType().equals("BIGQUERY") && (isNotEmpty(bigqueryQuery()) || isNotEmpty(bigqueryTable()))));
+    checkArgument(isNotEmpty(inputPattern()), "Input pattern must not be empty");
 
-    switch (fileType()) {
-      case "AVRO":
-        return AvroIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputFilePattern());
-      case "PARQUET":
-        return TransformingParquetIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputFilePattern());
+    switch (sourceType()) {
+      case AVRO:
+        return AvroIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputPattern());
 
-      case "BIGQUERY":
-        BigQueryIO.TypedRead<KV<FlatRecord, String>> bqRead = BigQueryIO.read(FlatRecordConvertFn.forBigQueryTableRow()).useAvroLogicalTypes();
+      case PARQUET:
+        return TransformingParquetIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord()).from(inputPattern());
 
-        if (bigqueryQuery() != null) {
-          return bqRead.fromQuery(bigqueryQuery());
-        }
-        return bqRead.from(bigqueryTable());
+      case BIGQUERY_TABLE:
+        return bigQueryReader().from(inputPattern()).withMethod(BigQueryIO.TypedRead.Method.DIRECT_READ);
+
+      case BIGQUERY_QUERY:
+        return bigQueryReader().fromQuery(inputPattern()).usingStandardSql();
+
       default:
         throw new IllegalArgumentException(
-          String.format("Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\"",
-            fileType()));
+          String.format("Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\" or \"BIGQUERY\"", sourceType()));
     }
+  }
+
+  private static BigQueryIO.TypedRead<KV<FlatRecord, String>> bigQueryReader() {
+    return BigQueryIO.read(FlatRecordConvertFn.forBigQueryTableRow()).useAvroLogicalTypes();
   }
 }

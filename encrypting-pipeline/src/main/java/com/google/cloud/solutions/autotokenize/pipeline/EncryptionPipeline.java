@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
+import com.google.cloud.solutions.autotokenize.common.SourceNames;
 import com.google.cloud.solutions.autotokenize.common.TransformingFileReader;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.DaeadEncryptingValueTokenizerFactory;
 import com.google.common.collect.ImmutableSet;
@@ -51,25 +52,25 @@ public class EncryptionPipeline {
   public static void main(String[] args) throws GeneralSecurityException, IOException {
 
     EncryptingPipelineOptions options =
-        PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
+      PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
 
     if (options.getTokenizeColumns() == null || options.getTokenizeColumns().isEmpty()) {
       logger.atInfo().log(
+        "====================%n" +
+          "Abandoning Pipeline.%n" +
           "====================%n" +
-              "Abandoning Pipeline.%n" +
-              "====================%n" +
-              "No columns to tokenize%n" +
-              "====================");
+          "No columns to tokenize%n" +
+          "====================");
       return;
     }
 
     DataflowPipelineJob encryptingJob = (DataflowPipelineJob) EncryptingPipelineFactory
-        .using(options).buildPipeline().run();
+      .using(options).buildPipeline().run();
 
     logger.atInfo().log(
-        "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s",
-        encryptingJob.getJobId(),
-        encryptingJob.getProjectId());
+      "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s",
+      encryptingJob.getJobId(),
+      encryptingJob.getProjectId());
   }
 
   /**
@@ -87,12 +88,12 @@ public class EncryptionPipeline {
     private EncryptingPipelineFactory(EncryptingPipelineOptions options) {
       this.options = options;
       this.inputSchema =
-          new Schema.Parser().parse(options.getSchema());
+        new Schema.Parser().parse(options.getSchema());
       this.encryptedSchema =
-          DeIdentifiedRecordSchemaConverter
-              .withOriginalSchema(inputSchema)
-              .withEncryptColumnKeys(options.getTokenizeColumns())
-              .updatedSchema();
+        DeIdentifiedRecordSchemaConverter
+          .withOriginalSchema(inputSchema)
+          .withEncryptColumnKeys(options.getTokenizeColumns())
+          .updatedSchema();
       this.tinkKeySetJson = options.getTinkEncryptionKeySetJson();
       this.mainKeyKmsUri = options.getMainKmsKeyUri();
       this.pipeline = Pipeline.create(options);
@@ -107,25 +108,25 @@ public class EncryptionPipeline {
       TupleTag<FlatRecord> flatRecordsTag = new TupleTag<>();
 
       pipeline
-          .apply("Read" + options.getFileType(),
-              TransformingFileReader
-                  .forFileType(options.getFileType())
-                  .from(options.getInputFilePattern())
-                  .withRecordsTag(flatRecordsTag))
-          .get(flatRecordsTag)
-          .apply("EncryptRecords",
-              ValueEncryptionTransform.builder()
-                  .encryptColumnNames(ImmutableSet.copyOf(options.getTokenizeColumns()))
-                  .encryptedSchema(encryptedSchema)
-                  .valueTokenizerFactory(
-                      new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
-                  .build())
-          .apply("WriteAVRO",
-              AvroIO
-                  .writeGenericRecords(encryptedSchema)
-                  .withSuffix(".avro")
-                  .to(cleanDirectoryString(options.getOutputDirectory()) + "/data")
-                  .withCodec(CodecFactory.snappyCodec()));
+        .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
+          TransformingFileReader
+            .forSourceType(options.getSourceType())
+            .from(options.getInputPattern())
+            .withRecordsTag(flatRecordsTag))
+        .get(flatRecordsTag)
+        .apply("EncryptRecords",
+          ValueEncryptionTransform.builder()
+            .encryptColumnNames(ImmutableSet.copyOf(options.getTokenizeColumns()))
+            .encryptedSchema(encryptedSchema)
+            .valueTokenizerFactory(
+              new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
+            .build())
+        .apply("WriteAVRO",
+          AvroIO
+            .writeGenericRecords(encryptedSchema)
+            .withSuffix(".avro")
+            .to(cleanDirectoryString(options.getOutputDirectory()) + "/data")
+            .withCodec(CodecFactory.snappyCodec()));
 
       return pipeline;
     }
@@ -135,13 +136,13 @@ public class EncryptionPipeline {
      *
      * @return the plaintext encryption key-set
      * @throws GeneralSecurityException when provided wrapped Key-set is invalid.
-     * @throws IOException when there is error reading from the GCP-KMS.
+     * @throws IOException              when there is error reading from the GCP-KMS.
      */
     private String buildClearEncryptionKeyset() throws GeneralSecurityException, IOException {
       KeysetHandle tinkKeySet =
-          KeysetHandle.read(
-              JsonKeysetReader.withString(tinkKeySetJson),
-              new GcpKmsClient().withDefaultCredentials().getAead(mainKeyKmsUri));
+        KeysetHandle.read(
+          JsonKeysetReader.withString(tinkKeySetJson),
+          new GcpKmsClient().withDefaultCredentials().getAead(mainKeyKmsUri));
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       CleartextKeysetHandle.write(tinkKeySet, JsonKeysetWriter.withOutputStream(baos));
