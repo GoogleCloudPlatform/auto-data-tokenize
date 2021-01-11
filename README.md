@@ -197,7 +197,7 @@ in the Cloud Console.
    ```
 1. Create a custom role with required permissions for accessing DLP, Dataflow and KMS:
    ```shell script
-   export TOKENIZING_ROLE_NAME="tokenizing_runner"
+   export TOKENIZING_ROLE_NAME="tokenizing_runner2"
 
    gcloud iam roles create ${TOKENIZING_ROLE_NAME} \
    --project=${PROJECT_ID} \
@@ -304,8 +304,8 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 --stagingLocation="gs://${TEMP_GCS_BUCKET}/staging" \
 --workerMachineType="n1-standard-1" \
 --sampleSize=500 \
---fileType="AVRO" \
---inputFilePattern="gs://${TEMP_GCS_BUCKET}/userdata.avro" \
+--sourceType="AVRO" \
+--inputPattern="gs://${TEMP_GCS_BUCKET}/userdata.avro" \
 --reportLocation="gs://${TEMP_GCS_BUCKET}/dlp_report/"
 ```
 
@@ -379,8 +379,8 @@ tokenize_pipeline --project="${PROJECT_ID}" \
 --schema="$(<dlp_report/schema.json)" \
 --tinkEncryptionKeySetJson="$(<${WRAPPED_KEY_FILE})" \
 --mainKmsKeyUri="${MAIN_KMS_KEY_URI}" \
---fileType="AVRO" \
---inputFilePattern="gs://${TEMP_GCS_BUCKET}/userdata.avro" \
+--sourceType="AVRO" \
+--inputPattern="gs://${TEMP_GCS_BUCKET}/userdata.avro" \
 --outputDirectory="gs://${TEMP_GCS_BUCKET}/encrypted/" \
 --tokenizeColumns="$.kylosample.cc" \
 --tokenizeColumns="$.kylosample.email"

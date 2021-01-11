@@ -21,6 +21,26 @@ includedPermissions:
   # DLP permissions
   - serviceusage.services.use
   - dlp.kms.encrypt
+  # BigQuery permissions
+  - bigquery.jobs.create
+  - bigquery.jobs.get
+  - bigquery.jobs.list
+  - bigquery.jobs.listAll
+  - bigquery.jobs.update
+  - bigquery.tables.get
+  - bigquery.tables.create
+  - bigquery.tables.getIamPolicy
+  - bigquery.tables.setIamPolicy
+  - bigquery.tables.getData
+  - bigquery.tables.list
+  - bigquery.tables.export
+  - bigquery.datasets.get
+  - bigquery.datasets.create
+  - bigquery.datasets.getIamPolicy
+  - bigquery.datasets.setIamPolicy
+  - bigquery.readsessions.create
+  - bigquery.readsessions.getData
+  - bigquery.readsessions.update
   # Dataflow permissions
   - compute.instanceGroupManagers.update
   - compute.instances.delete

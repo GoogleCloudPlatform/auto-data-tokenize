@@ -48,6 +48,7 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.splittabledofn.OffsetRangeTracker;
 import org.apache.beam.sdk.transforms.splittabledofn.RestrictionTracker;
+import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.hadoop.conf.Configuration;
@@ -91,6 +92,59 @@ public abstract class TransformingParquetIO {
         .setSplittable(false)
         .build();
   }
+
+  public static <T> Read<T> parseGenericRecords(
+    SerializableFunction<GenericRecord, T> parseFn) {
+    return new AutoValue_TransformingParquetIO_Read.Builder<T>()
+      .setParseFn(parseFn)
+      .setSplittable(false)
+      .build();
+  }
+
+
+  @AutoValue
+  public abstract static class Read<T> extends PTransform<PBegin, PCollection<T>> {
+
+    abstract SerializableFunction<GenericRecord, T> getParseFn();
+
+    abstract boolean isSplittable();
+
+    abstract @Nullable String getFilePattern();
+
+
+    @AutoValue.Builder
+    public abstract static class Builder<T> {
+      public abstract Builder<T> setParseFn(SerializableFunction<GenericRecord, T> newParseFn);
+
+      public abstract Builder<T> setSplittable(boolean newSplittable);
+
+      public abstract Builder<T> setFilePattern(String newFilePattern);
+
+      public abstract Read<T> build();
+    }
+
+    abstract Builder<T> toBuilder();
+
+    public Read<T> from(String filePattern) {
+      return toBuilder().setFilePattern(filePattern).build();
+    }
+
+    @Override
+    public PCollection<T> expand(PBegin input) {
+      checkNotNull(getFilePattern(), "Provide input files");
+
+      ReadFiles<T> readFiles = parseFilesGenericRecords(getParseFn());
+
+      if (isSplittable()) {
+        readFiles = readFiles.withSplit();
+      }
+
+      return input.apply(FileIO.match().filepattern(getFilePattern()))
+        .apply(FileIO.readMatches())
+        .apply(readFiles);
+    }
+  }
+
 
   /**
    * Copied from the ParquetIO#readFiles with an additional transform using the provided Parse

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
 import java.util.List;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.Validation.Required;
@@ -26,14 +27,14 @@ import org.apache.beam.sdk.options.Validation.Required;
 public interface EncryptingPipelineOptions extends GcpOptions {
 
   @Required
-  String getFileType();
+  AutoTokenizeMessages.SourceType getSourceType();
 
-  void setFileType(String fileType);
+  void setSourceType(AutoTokenizeMessages.SourceType fileType);
 
   @Required
-  String getInputFilePattern();
+  String getInputPattern();
 
-  void setInputFilePattern(String inputFilePattern);
+  void setInputPattern(String inputPattern);
 
   @Required
   String getSchema();

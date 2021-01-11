@@ -16,28 +16,45 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-import static com.google.cloud.solutions.autotokenize.common.RecordFlattener.flattenGenericRecord;
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.KV;
 
 /**
  * Flattens a GenericRecord and separates the Avro schema as a KV.
  */
-public class FlatRecordConvertFn implements
-    SerializableFunction<GenericRecord, KV<FlatRecord, String>> {
+public interface FlatRecordConvertFn<T> extends SerializableFunction<T, KV<FlatRecord, String>> {
 
-  @Override
-  public KV<FlatRecord, String> apply(GenericRecord record) {
-    return KV.of(flattenGenericRecord(record), record.getSchema().toString());
+
+  final class GenericRecordFlatteningFn implements FlatRecordConvertFn<GenericRecord> {
+
+    private static GenericRecordFlatteningFn genericRecordFlatteningFn = new GenericRecordFlatteningFn();
+
+    @Override
+    public KV<FlatRecord, String> apply(GenericRecord record) {
+      return KV.of(RecordFlattener.forGenericRecord().flatten(record), record.getSchema().toString());
+    }
+
+    private GenericRecordFlatteningFn() {}
   }
 
-  public static FlatRecordConvertFn create() {
-    return new FlatRecordConvertFn();
+  final class TableRowFlatteningFn implements FlatRecordConvertFn<SchemaAndRecord> {
+
+    private static TableRowFlatteningFn tableRowFlatteningFn = new TableRowFlatteningFn();
+
+    @Override
+    public KV<FlatRecord, String> apply(SchemaAndRecord input) {
+      return KV.of(RecordFlattener.forGenericRecord().flatten(input.getRecord()), input.getRecord().getSchema().toString());
+    }
+
+    private TableRowFlatteningFn() {}
   }
 
-  private FlatRecordConvertFn() {
+  static GenericRecordFlatteningFn forGenericRecord() {
+    return GenericRecordFlatteningFn.genericRecordFlatteningFn;
   }
+
+  static TableRowFlatteningFn forBigQueryTableRow() { return TableRowFlatteningFn.tableRowFlatteningFn;}
 }

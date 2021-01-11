@@ -32,10 +32,12 @@ message DlpReport {
 }
 
 // The supported file types.
-enum FileType {
+enum SourceType {
   UNKNOWN_FILE_TYPE = 0;
   AVRO = 1;
   PARQUET = 2;
+  BIGQUERY_TABLE = 3;
+  BIGQUERY_QUERY = 4;
 }
 
 // The information types associated with each column of the input structured file.

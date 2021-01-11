@@ -138,7 +138,7 @@ public final class ValueEncryptionTransformTest {
                 MapElements
                     .into(TypeDescriptors
                         .kvs(TypeDescriptor.of(FlatRecord.class), TypeDescriptor.of(String.class)))
-                    .via(FlatRecordConvertFn.create()))
+                    .via(FlatRecordConvertFn.forGenericRecord()))
             .apply(Keys.create())
             .apply(
                 "test_encrypt_transform",
