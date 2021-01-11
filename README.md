@@ -302,6 +302,7 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 --serviceAccount=${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL} \
 --gcpTempLocation="gs://${TEMP_GCS_BUCKET}/temp" \
 --stagingLocation="gs://${TEMP_GCS_BUCKET}/staging" \
+--tempLocation="gs://${TEMP_GCS_BUCKET}/bqtemp" \
 --workerMachineType="n1-standard-1" \
 --sampleSize=500 \
 --sourceType="AVRO" \
@@ -374,6 +375,7 @@ Encryption Key (DEK).
 tokenize_pipeline --project="${PROJECT_ID}" \
 --region="${REGION_ID}" \
 --runner="DataflowRunner" \
+--tempLocation="gs://${TEMP_GCS_BUCKET}/bqtemp" \
 --serviceAccount=${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL} \
 --workerMachineType="n1-standard-1" \
 --schema="$(<dlp_report/schema.json)" \
