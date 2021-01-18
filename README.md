@@ -310,7 +310,16 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 --reportLocation="gs://${TEMP_GCS_BUCKET}/dlp_report/"
 ```
 
-The pipeline detects all the standard infotypes supported by DLP.
+The pipeline supports multiple **Source Types**, use the following table to use the right combination of `sourceType` and `inputPattern` arguments.
+
+| Data source | sourceType | inputPattern |
+| --- | --- | --- |
+| **Avro** file in Cloud Storage  | `AVRO` | `gs://<location of the file(s)` |
+| **Parquet** file in Cloud Storage  | `PARQUET` | `gs://<location of the file(s)` |
+| BigQuery table   | `BIGQUERY_TABLE` | `<project-id>:<dataset>.<table>` |
+| Query results in BigQuery | `BIGQUERY_QUERY` | BigQuery SQL statement in StandardSQL dialect. |
+
+The pipeline detects all the [standard infotypes](https://cloud.google.com/dlp/docs/infotypes-reference) supported by DLP.
 Use `--observableInfoTypes` to provide additional custom info-types that you need.
 
 ### Sample & Identify pipeline DAG
@@ -387,6 +396,14 @@ tokenize_pipeline --project="${PROJECT_ID}" \
 --tokenizeColumns="$.kylosample.cc" \
 --tokenizeColumns="$.kylosample.email"
 ```
+
+The pipeline supports following destinations for storing the tokenized output.
+
+| Destination | Description | Pipeline parameter |
+| --- | --- | --- |
+| File in Cloud Storage  | Stores as an AVRO file | `--outputDirectory=gs://<location of the directory/` |
+| BigQuery table | uses `WRITE_TRUNCATE` mode to write results to a BigQuery Table. | `--outputBigQueryTable=<project-id>:<dataset>.<table>` |
+You can use one or both of them simultaneously.
 
 The pipeline executes asynchronously on Dataflow. You can check the progress by following the JobLink printed in the following format:
 ```

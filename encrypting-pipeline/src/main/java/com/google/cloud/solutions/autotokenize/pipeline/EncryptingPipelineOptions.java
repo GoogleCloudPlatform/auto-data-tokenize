@@ -46,10 +46,13 @@ public interface EncryptingPipelineOptions extends GcpOptions {
 
   void setTokenizeColumns(List<String> fileDlpReportJson);
 
-  @Required
   String getOutputDirectory();
 
   void setOutputDirectory(String outputFilePattern);
+
+  String getOutputBigQueryTable();
+
+  void setOutputBigQueryTable(String outputBigQueryTable);
 
   @Required
   String getTinkEncryptionKeySetJson();

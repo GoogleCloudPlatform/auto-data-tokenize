@@ -17,6 +17,7 @@
 package com.google.cloud.solutions.autotokenize.pipeline;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
@@ -35,10 +36,13 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.runners.dataflow.DataflowPipelineJob;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.AvroIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
 
 /**
@@ -64,8 +68,22 @@ public class EncryptionPipeline {
       return;
     }
 
-    DataflowPipelineJob encryptingJob = (DataflowPipelineJob) EncryptingPipelineFactory
-      .using(options).buildPipeline().run();
+    if (options.getOutputDirectory() == null && options.getOutputBigQueryTable() == null) {
+      logger.atSevere().log(
+        "===================================%n" +
+          "          Abandoning Pipeline.      %n" +
+          "====================================%n" +
+          "          No output defined.        %n" +
+          "  Provide a GCS or BigQuery output  %n" +
+          "====================================");
+      return;
+    }
+
+    DataflowPipelineJob encryptingJob =
+      (DataflowPipelineJob) EncryptingPipelineFactory
+        .using(options)
+        .buildPipeline()
+        .run();
 
     logger.atInfo().log(
       "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s",
@@ -107,6 +125,7 @@ public class EncryptionPipeline {
 
       TupleTag<FlatRecord> flatRecordsTag = new TupleTag<>();
 
+      PCollection<GenericRecord> encryptedRecords =
       pipeline
         .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
           TransformingFileReader
@@ -120,13 +139,29 @@ public class EncryptionPipeline {
             .encryptedSchema(encryptedSchema)
             .valueTokenizerFactory(
               new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
-            .build())
-        .apply("WriteAVRO",
-          AvroIO
-            .writeGenericRecords(encryptedSchema)
-            .withSuffix(".avro")
-            .to(cleanDirectoryString(options.getOutputDirectory()) + "/data")
-            .withCodec(CodecFactory.snappyCodec()));
+            .build());
+
+      if (options.getOutputDirectory() != null) {
+        encryptedRecords
+          .apply("WriteAVRO",
+            AvroIO
+              .writeGenericRecords(encryptedSchema)
+              .withSuffix(".avro")
+              .to(cleanDirectoryString(options.getOutputDirectory()) + "/data")
+              .withCodec(CodecFactory.snappyCodec()));
+      }
+
+      if (options.getOutputBigQueryTable() != null) {
+
+        encryptedRecords
+          .apply(
+          "WriteToBigQuery",
+          BigQueryIO.
+            <GenericRecord>write()
+            .to(options.getOutputBigQueryTable())
+            .useBeamSchema()
+            .withWriteDisposition(WRITE_TRUNCATE));
+      }
 
       return pipeline;
     }

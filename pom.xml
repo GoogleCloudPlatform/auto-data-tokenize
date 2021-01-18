@@ -47,7 +47,7 @@
     <auto-value.version>1.7.4</auto-value.version>
     <autotokenize.version>0.1-SNAPSHOT</autotokenize.version>
     <avro.version>1.10.1</avro.version>
-    <beam.version>2.26.0</beam.version>
+    <beam.version>2.27.0</beam.version>
     <commons-crypto.version>1.1.0</commons-crypto.version>
     <flogger.version>0.5.1</flogger.version>
     <guava.version>29.0-jre</guava.version>
