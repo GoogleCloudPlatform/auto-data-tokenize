@@ -24,7 +24,7 @@ import com.google.cloud.solutions.autotokenize.pipeline.encryptors.EncryptingFla
 import com.google.common.collect.ImmutableSet;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.coders.AvroCoder;
+import org.apache.beam.sdk.schemas.utils.AvroUtils;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -61,7 +61,7 @@ public abstract class ValueEncryptionTransform
                     .withTokenizerFactory(valueTokenizerFactory())
                     .encryptFn()))
         .apply("NestAsGenericRecord", MapElements.via(new RecordNester(encryptedSchemaJson())))
-        .setCoder(AvroCoder.of(new Schema.Parser().parse(encryptedSchemaJson())));
+        .setCoder(AvroUtils.schemaCoder(GenericRecord.class, new Schema.Parser().parse(encryptedSchemaJson())));
   }
 
   /**
