@@ -19,9 +19,12 @@ package com.google.cloud.solutions.autotokenize.common;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 import com.google.api.client.util.Maps;
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Function;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.flogger.GoogleLogger;
@@ -136,4 +139,39 @@ public class DlpColumnValueAccumulator implements
     }
   }
 
+
+  /**
+   * Represents Batch of elements as {@link Table} elements and its attributes.
+   */
+  @AutoValue
+  public static abstract class DlpTableBatch implements
+    BatchAccumulator.Batch<KV<Table, Map<String, String>>> {
+
+    /**
+     * Returns number of columns in the table.
+     */
+    abstract int columns();
+
+    /**
+     * Returns number of rows excluding header row in the table.
+     */
+    abstract int rows();
+
+    @Override
+    public final String report() {
+      return MoreObjects.toStringHelper(DlpTableBatch.class)
+        .add("columns", columns())
+        .add("rows", rows())
+        .add("serializedSize", serializedSize())
+        .toString();
+    }
+
+    public static DlpTableBatch create(KV<Table, Map<String, String>> batchValue) {
+      int rows = firstNonNull(batchValue.getKey().getRowsCount(), 0);
+      int columns = firstNonNull(batchValue.getKey().getHeadersCount(), 0);
+
+      return new AutoValue_DlpColumnValueAccumulator_DlpTableBatch(batchValue, rows * columns,
+        batchValue.getKey().getSerializedSize(), columns, rows);
+    }
+  }
 }

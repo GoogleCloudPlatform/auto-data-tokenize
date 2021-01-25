@@ -38,6 +38,7 @@
     <module>common-util</module>
     <module>test-util</module>
     <module>common</module>
+    <module>dlp</module>
     <module>encrypting-pipeline</module>
     <module>sampler-pipeline</module>
   </modules>

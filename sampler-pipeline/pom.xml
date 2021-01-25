@@ -42,6 +42,12 @@
       <version>${autotokenize.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.cloud.solutions.autotokenize</groupId>
+      <artifactId>dlp</artifactId>
+      <version>${autotokenize.version}</version>
+    </dependency>
+
     <!-- Testing Dependencies -->
     <!-- Common Testing resources JAR -->
     <dependency>

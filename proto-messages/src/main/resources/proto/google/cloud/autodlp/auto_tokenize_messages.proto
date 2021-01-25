@@ -113,3 +113,18 @@ message FlatRecord {
   // The Value object allows simplified access to convert values to bytes.
   map<string, .google.privacy.dlp.v2.Value> values = 10;
 }
+
+message DlpEncryptConfig {
+  repeated ColumnTransform transforms = 1;
+}
+
+message ColumnTransform {
+  string column_id = 1;
+  .google.privacy.dlp.v2.PrimitiveTransformation transform = 5;
+}
+
+
+message PartialColumnDlpTable {
+  .google.privacy.dlp.v2.Table table = 1;
+  repeated FlatRecord records = 5;
+}
