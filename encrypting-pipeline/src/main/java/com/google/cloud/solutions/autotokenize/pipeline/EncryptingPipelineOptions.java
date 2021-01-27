@@ -54,13 +54,15 @@ public interface EncryptingPipelineOptions extends GcpOptions {
 
   void setOutputBigQueryTable(String outputBigQueryTable);
 
-  @Required
   String getTinkEncryptionKeySetJson();
 
   void setTinkEncryptionKeySetJson(String tinkKeySetJson);
 
-  @Required
   String getMainKmsKeyUri();
 
   void setMainKmsKeyUri(String mainKmsKeyUri);
+
+  String getDlpEncryptConfigJson();
+
+  void setDlpEncryptConfigJson(String dlpEncryptConfigJson);
 }

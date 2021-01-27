@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.common;
+package com.google.cloud.solutions.autotokenize.pipeline.dlp;
+
+import com.google.common.collect.ImmutableList;
+import java.util.Iterator;
 
 /**
  * Provides mechanism to batch input data of type {@code <I>} using some business logic.
  *
- * @param <I> the type of input data type
- * @param <O> the type of output data type
+ * @param <InputT> the type of input data type
+ * @param <OutputT> the type of output data type
  */
-public interface BatchAccumulator<I, O> {
+public interface BatchAccumulator<InputT, OutputT> {
 
   /**
    * Offer one element to be added to the batch.
@@ -30,25 +33,49 @@ public interface BatchAccumulator<I, O> {
    * @param element the element to be added.
    * @return true if addition successful, false otherwise.
    */
-  boolean addElement(I element);
+  boolean addElement(InputT element);
+
+
+  default ImmutableList<InputT> addAllElements (Iterable<InputT> elements) {
+    return addAllElements(elements.iterator());
+  }
+
+  /**
+   * Adds all elements in the Iterable to the accumulator.
+   *
+   * @param elements the elements to add to accumulator.
+   * @return List of elements that could not be added due to accumulator full.
+   */
+  default ImmutableList<InputT> addAllElements (Iterator<InputT> elements) {
+
+    while(elements.hasNext()) {
+      InputT element = elements.next();
+
+      if (!addElement(element)) {
+        return ImmutableList.<InputT>builder().add(element).addAll(elements).build();
+      }
+    }
+
+    return ImmutableList.of();
+  }
 
   /**
    * Returns the accumulated elements as batch of type O.
    */
-  Batch<O> makeBatch();
+  Batch<OutputT> makeBatch();
 
 
   /**
    * Provides interface to access attributes of the Batch and the batched data object.
    *
-   * @param <O> the type of batched data object.
+   * @param <T> the type of batched data object.
    */
-  interface Batch<O> {
+  interface Batch<T> {
 
     /**
      * Returns the batched elements.
      */
-    O get();
+    T get();
 
     /**
      * The number of elements in the batch.

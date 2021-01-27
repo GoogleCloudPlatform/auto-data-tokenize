@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,20 @@ import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileStream;
+import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 
 /**
@@ -43,11 +48,11 @@ import org.apache.avro.generic.GenericRecord;
  */
 public abstract class TestResourceLoader {
 
-  private static final String TEST_RESOURCE_FOLDER = "test";
+  public abstract String loadResourceAsString(String resourcePath) throws IOException, URISyntaxException;
 
-  public static ResourceActions local() {
-    return new ResourceActions(new LocalTestResourceLoader());
-  }
+  public abstract InputStream loadResourceInputStream(String resourcePath) throws IOException, URISyntaxException;
+
+  public abstract URI getResourceUri(String resourcePath) throws URISyntaxException;
 
   public static ResourceActions classPath() {
     return new ResourceActions(new ClassPathTestResourceLoader());
@@ -57,27 +62,11 @@ public abstract class TestResourceLoader {
     return new ResourceActions(new ClassPathTestResourceLoader(contextClass));
   }
 
-  public abstract String loadResourceAsString(String resourcePath) throws IOException;
-
   public final String loadAsString(String resourcePath) {
     try {
       return loadResourceAsString(resourcePath);
-    } catch (IOException ioException) {
+    } catch (URISyntaxException | IOException ioException) {
       throw new ResourceLoadException(resourcePath, ioException);
-    }
-  }
-
-  public static final class LocalTestResourceLoader extends TestResourceLoader {
-
-    private LocalTestResourceLoader() {
-    }
-
-    @Override
-    public String loadResourceAsString(String resourceFileName) throws IOException {
-
-      byte[] bytes =
-          Files.readAllBytes(Paths.get("src", TEST_RESOURCE_FOLDER, "resources", resourceFileName));
-      return new String(bytes, StandardCharsets.UTF_8);
     }
   }
 
@@ -94,21 +83,28 @@ public abstract class TestResourceLoader {
     }
 
     @Override
-    public String loadResourceAsString(String resourcePath) throws IOException {
+    public String loadResourceAsString(String resourcePath) throws IOException, URISyntaxException {
 
       try (BufferedReader reader =
-          new BufferedReader(
-              new InputStreamReader(
-                  loadResource(resourcePath).openStream(), StandardCharsets.UTF_8))) {
+             new BufferedReader(
+               new InputStreamReader(
+                 loadResourceInputStream(resourcePath), StandardCharsets.UTF_8))) {
         return reader.lines().collect(Collectors.joining("\n"));
       }
     }
 
+    @Override
+    public InputStream loadResourceInputStream(String resourcePath) throws IOException, URISyntaxException {
+      return Files.newInputStream(Paths.get(getResourceUri(resourcePath)), StandardOpenOption.READ);
+    }
+
+    @Override
     @SuppressWarnings("UnstableApiUsage")
-    private URL loadResource(String resourcePath) {
-      return (contextClass == null)
-          ? Resources.getResource(resourcePath)
-          : Resources.getResource(contextClass, resourcePath);
+    public URI getResourceUri(String resourcePath) throws URISyntaxException {
+      return ((contextClass == null)
+        ? Resources.getResource(resourcePath)
+        : Resources.getResource(contextClass, resourcePath))
+        .toURI();
     }
   }
 
@@ -125,6 +121,14 @@ public abstract class TestResourceLoader {
 
     private ResourceActions(TestResourceLoader resourceLoader) {
       this.resourceLoader = resourceLoader;
+    }
+
+    public URI getResourceUri(String resource) {
+      try {
+        return resourceLoader.getResourceUri(resource);
+      } catch (URISyntaxException e) {
+        throw new ResourceLoadException(resource, e);
+      }
     }
 
     public String loadAsString(String resourceUri) {
@@ -180,12 +184,44 @@ public abstract class TestResourceLoader {
         return new Schema.Parser().parse(resourceLoader.loadAsString(resourcePath));
       }
 
+      public AvroFileActions readFile(String resourcePath) {
+        return new AvroFileActions(resourcePath);
+      }
+
       public AvroRecordActions withSchema(Schema schema) {
         return new AvroRecordActions(schema);
       }
 
       public AvroRecordActions withSchemaFile(String schemaFile) {
         return new AvroRecordActions(asSchema(schemaFile));
+      }
+    }
+
+    public class AvroFileActions {
+
+      private final String filePath;
+
+      public AvroFileActions(String filePath) {
+        this.filePath = filePath;
+      }
+
+      public ImmutableList<GenericRecord> loadAllRecords() {
+
+        try (
+          DataFileStream<GenericRecord> fileStream =
+            new DataFileStream<>(
+              resourceLoader.loadResourceInputStream(filePath), new GenericDatumReader<>())) {
+
+          ImmutableList.Builder<GenericRecord> recordBuilder = ImmutableList.builder();
+
+          while (fileStream.hasNext()) {
+            recordBuilder.add(fileStream.next());
+          }
+
+          return recordBuilder.build();
+        } catch (Exception e) {
+          throw new ResourceLoadException(filePath, e);
+        }
       }
     }
 
@@ -199,13 +235,13 @@ public abstract class TestResourceLoader {
 
       public GenericRecord loadRecord(String recordResourcePath) {
         return JsonConvertor.convertJsonToAvro(
-            schema, resourceLoader.loadAsString(recordResourcePath));
+          schema, resourceLoader.loadAsString(recordResourcePath));
       }
 
       public ImmutableList<GenericRecord> loadAllRecords(List<String> recordFiles) {
         return ImmutableList.copyOf(recordFiles).stream()
-            .map(this::loadRecord)
-            .collect(toImmutableList());
+          .map(this::loadRecord)
+          .collect(toImmutableList());
       }
 
       public ImmutableList<GenericRecord> loadAllRecords(String... recordFiles) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.common;
+package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.function.Function.identity;
@@ -23,6 +23,8 @@ import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 import com.google.api.client.util.Maps;
 import com.google.auto.value.AutoValue;
+import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
+import com.google.cloud.solutions.autotokenize.common.ZippingIterator;
 import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -99,9 +101,7 @@ public class DlpColumnValueAccumulator implements
 
     Table batchedTable =
         Table.newBuilder()
-            .addAllHeaders(
-                allHeaders.stream()
-                    .map(h -> FieldId.newBuilder().setName(h).build()).collect(toList()))
+            .addAllHeaders(DeidentifyColumns.fieldIdsFor(allHeaders))
             .addAllRows(valueRows)
             .build();
 

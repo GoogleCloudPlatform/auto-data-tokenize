@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2020 Google LLC
+  ~ Copyright 2021 Google LLC
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -35,6 +35,12 @@
       <version>${autotokenize.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.cloud.solutions.autotokenize</groupId>
+      <artifactId>proto-messages</artifactId>
+      <version>${autotokenize.version}</version>
+    </dependency>
+
     <!-- JSONAssert -->
     <dependency>
       <groupId>org.skyscreamer</groupId>
@@ -45,6 +51,11 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
+      <version>${truth.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.truth.extensions</groupId>
+      <artifactId>truth-proto-extension</artifactId>
       <version>${truth.version}</version>
     </dependency>
   </dependencies>

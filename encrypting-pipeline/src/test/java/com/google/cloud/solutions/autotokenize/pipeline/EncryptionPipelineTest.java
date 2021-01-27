@@ -1,0 +1,126 @@
+package com.google.cloud.solutions.autotokenize.pipeline;
+
+
+import static com.google.common.truth.Truth.assertThat;
+
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
+import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
+import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
+import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
+import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
+import com.google.cloud.solutions.autotokenize.pipeline.dlp.DlpClientFactory;
+import com.google.cloud.solutions.autotokenize.pipeline.dlp.PartialColumnBatchAccumulator;
+import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
+import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
+import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Set;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.io.AvroIO;
+import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.testing.PAssert;
+import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.sdk.values.PCollection;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+@RunWith(JUnit4.class)
+public final class EncryptionPipelineTest implements Serializable {
+
+  @Rule
+  public transient TestPipeline mainPipeline = TestPipeline.create();
+
+  @Rule
+  public transient TestPipeline readPipeline = TestPipeline.create();
+
+  @Rule
+  public transient TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  private static final ImmutableList<GenericRecord> TEST_RECORDS;
+  private static final Schema TEST_RECORD_SCHEMA;
+  private static final String TEST_DLP_ENCRYPT_CONFIG_JSON;
+  private static final String PROJECT_ID = "test-project";
+
+
+  static {
+    TEST_RECORDS = TestResourceLoader.classPath().forAvro().readFile("userdata.avro").loadAllRecords();
+    TEST_RECORD_SCHEMA = TEST_RECORDS.get(0).getSchema();
+    TEST_DLP_ENCRYPT_CONFIG_JSON = TestResourceLoader.classPath().loadAsString("email_cc_dlp_encrypt_config.json");
+  }
+
+  @Test
+  public void expand() throws Exception {
+
+    EncryptingPipelineOptions options = PipelineOptionsFactory.as(EncryptingPipelineOptions.class);
+    options.setDlpEncryptConfigJson(TEST_DLP_ENCRYPT_CONFIG_JSON);
+    options.setInputPattern(Paths.get(TestResourceLoader.classPath().getResourceUri("userdata.avro")).toAbsolutePath().toString());
+    options.setSourceType(SourceType.AVRO);
+    options.setSchema(TEST_RECORD_SCHEMA.toString());
+    options.setOutputDirectory(temporaryFolder.getRoot().getAbsolutePath());
+    options.setTokenizeColumns(DeidentifyColumns.columnNamesIn(JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class)));
+    options.setProject(PROJECT_ID);
+
+    new EncryptionPipeline.EncryptingPipelineFactory(options, mainPipeline, DlpClientFactory.withStub(makeDlpStub()))
+      .buildPipeline()
+      .run()
+      .waitUntilFinish();
+
+    System.out.println(options.toString());
+    Schema encryptedSchema = DeIdentifiedRecordSchemaConverter.withOriginalSchema(TEST_RECORD_SCHEMA).withEncryptColumnKeys(options.getTokenizeColumns()).updatedSchema();
+
+    PCollection<GenericRecord> encryptedRecords =
+      readPipeline
+        .apply(
+          AvroIO
+            .readGenericRecords(encryptedSchema)
+          .from(options.getOutputDirectory() + "/*"));
+
+
+    PAssert.that(encryptedRecords).satisfies(new MatchRecordsCountFn<>(TEST_RECORDS.size()));
+
+    readPipeline.run();
+  }
+
+  private static class MatchRecordsCountFn<T> implements SerializableFunction<Iterable<T>, Void> {
+
+    private final int expectedRecordCount;
+
+    public MatchRecordsCountFn(int expectedRecordCount) {
+      this.expectedRecordCount = expectedRecordCount;
+    }
+
+    @Override
+    public Void apply(Iterable<T> input) {
+      assertThat(input).hasSize(expectedRecordCount);
+      return null;
+    }
+  }
+
+  private static Base64EncodingDlpStub makeDlpStub() {
+    return new Base64EncodingDlpStub(PartialColumnBatchAccumulator.RECORD_ID_COLUMN_NAME, buildExpectedHeaders(), PROJECT_ID);
+  }
+
+  private static ImmutableList<String> buildExpectedHeaders() {
+    ImmutableList<String> encryptColumns = DeidentifyColumns.columnNamesIn(JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class));
+
+    return TEST_RECORDS.stream().map(RecordFlattener.forGenericRecord()::flatten)
+      .map(FlatRecord::getFlatKeySchemaMap)
+      .map(Map::entrySet)
+      .flatMap(Set::stream)
+      .filter(e -> encryptColumns.contains(e.getValue()))
+      .map(Map.Entry::getKey)
+      .distinct()
+      .collect(ImmutableList.toImmutableList());
+  }
+
+
+}

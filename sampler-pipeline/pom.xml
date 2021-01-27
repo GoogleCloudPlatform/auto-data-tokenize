@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2020 Google LLC
+  ~ Copyright 2021 Google LLC
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@
       <version>${autotokenize.version}</version>
     </dependency>
 
+    <!-- DLP Transforms -->
     <dependency>
       <groupId>com.google.cloud.solutions.autotokenize</groupId>
       <artifactId>dlp</artifactId>

@@ -414,6 +414,19 @@ The tokenize pipeline's DAG will look like following:
 ![Encrypting Pipeline DAG](encryption_pipeline_dag.png)
 
 
+#### Using DLP for De-Identification
+Create a [DlpEncryptConfig](proto-messages/src/main/resources/proto/google/cloud/autodlp/auto_tokenize_messages.proto) 
+JSON to provide [PrimitiveTransformation](https://cloud.google.com/dlp/docs/reference/rest/v2/projects.deidentifyTemplates#DeidentifyTemplate.PrimitiveTransformation)
+for each `tokenizedColumn`.
+
+You can use the [transformation reference](https://cloud.google.com/dlp/docs/transformations-reference) to understand each of the transformations.
+
+Add the following parameter when launching the tokenize_pipeline:
+```
+--dlpEncryptConfigJson="$(<email_cc_dlp_encrypt_config.json)"
+```
+
+
 ### Verify encrypted result
 
 Load the bulk tokenize pipeline's output file(s) into BigQuery to verify that all the columns specified using `tokenizeColumns` flag have been encrypted.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,11 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
-import com.google.cloud.solutions.autotokenize.common.RecordUnflattener;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.DaeadEncryptingValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.EncryptingFlatRecordTokenizer;
-import com.google.common.collect.ImmutableSet;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.schemas.utils.AvroUtils;
+import java.util.Collection;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
@@ -37,7 +32,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  */
 @AutoValue
 public abstract class ValueEncryptionTransform
-    extends PTransform<PCollection<FlatRecord>, PCollection<GenericRecord>> {
+    extends PTransform<PCollection<FlatRecord>, PCollection<FlatRecord>> {
 
   public static Builder builder() {
     return new AutoValue_ValueEncryptionTransform.Builder();
@@ -45,59 +40,28 @@ public abstract class ValueEncryptionTransform
 
   abstract DaeadEncryptingValueTokenizerFactory valueTokenizerFactory();
 
-  abstract ImmutableSet<String> encryptColumnNames();
-
-  abstract String encryptedSchemaJson();
+  abstract Collection<String> encryptColumnNames();
 
   @Override
-  public PCollection<GenericRecord> expand(PCollection<FlatRecord> input) {
+  public PCollection<FlatRecord> expand(PCollection<FlatRecord> input) {
     return input
         .apply(
-            "EncryptRecordColumns",
+            "TinkEncryptRecordColumns",
             MapElements
                 .into(TypeDescriptor.of(FlatRecord.class))
                 .via(EncryptingFlatRecordTokenizer
                     .withTokenizeSchemaKeys(encryptColumnNames())
                     .withTokenizerFactory(valueTokenizerFactory())
-                    .encryptFn()))
-        .apply("NestAsGenericRecord", MapElements.via(new RecordNester(encryptedSchemaJson())))
-        .setCoder(AvroUtils.schemaCoder(GenericRecord.class, new Schema.Parser().parse(encryptedSchemaJson())));
+                    .encryptFn()));
   }
 
-  /**
-   * Convert a FlatRecord to Generic Record.
-   */
-  private static class RecordNester extends SimpleFunction<FlatRecord, GenericRecord> {
-
-    private final String outputSchemaString;
-
-    public RecordNester(String outputSchemaString) {
-      this.outputSchemaString = outputSchemaString;
-    }
-
-    @Override
-    public GenericRecord apply(FlatRecord flatRecord) {
-      Schema outputSchema = new Schema.Parser().parse(outputSchemaString);
-      return RecordUnflattener.forSchema(outputSchema).unflatten(flatRecord);
-    }
-  }
-
-  /**
-   * Convenience builder class for the EncryptionTransform.
-   */
+  /** Convenience builder class for the EncryptionTransform. */
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder valueTokenizerFactory(
-        DaeadEncryptingValueTokenizerFactory valueTokenizerFactory);
+    public abstract Builder valueTokenizerFactory(DaeadEncryptingValueTokenizerFactory valueTokenizerFactory);
 
-    public abstract Builder encryptColumnNames(ImmutableSet<String> encryptColumnNames);
-
-    public abstract Builder encryptedSchemaJson(String encryptedSchemaJson);
-
-    public Builder encryptedSchema(Schema encryptedSchema) {
-      return encryptedSchemaJson(encryptedSchema.toString());
-    }
+    public abstract Builder encryptColumnNames(Collection<String> encryptColumnNames);
 
     public abstract ValueEncryptionTransform build();
   }

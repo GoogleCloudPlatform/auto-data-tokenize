@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,46 @@
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
 import com.google.cloud.dlp.v2.DlpServiceClient;
+import com.google.cloud.dlp.v2.stub.DlpServiceStub;
 import java.io.IOException;
 import java.io.Serializable;
 
 /**
  * Client factory to be used in
  */
-public final class DlpClientFactory implements Serializable {
+public interface DlpClientFactory extends Serializable {
 
-  public DlpServiceClient newClient() throws IOException {
-    return DlpServiceClient.create();
+  DlpServiceClient newClient() throws IOException;
+
+
+  static DefaultClientFactory defaultFactory() {
+    return new DefaultClientFactory();
+  }
+
+  static StubbingClientFactory withStub(DlpServiceStub stub) {
+    return new StubbingClientFactory(stub);
+  }
+
+  final class DefaultClientFactory implements DlpClientFactory {
+
+    @Override
+    public DlpServiceClient newClient() throws IOException {
+      return DlpServiceClient.create();
+    }
+  }
+
+  final class StubbingClientFactory implements DlpClientFactory {
+
+    private final DlpServiceStub stub;
+
+    public StubbingClientFactory(DlpServiceStub stub) {
+      this.stub = stub;
+    }
+
+    @Override
+    public DlpServiceClient newClient() throws IOException {
+      return DlpServiceClient.create(stub);
+    }
   }
 
 }

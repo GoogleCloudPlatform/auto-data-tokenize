@@ -16,15 +16,26 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.logicalXor;
 import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
+import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
+import com.google.cloud.solutions.autotokenize.common.RecordNester;
 import com.google.cloud.solutions.autotokenize.common.SourceNames;
 import com.google.cloud.solutions.autotokenize.common.TransformingFileReader;
+import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
+import com.google.cloud.solutions.autotokenize.pipeline.dlp.BatchAndDlpDeIdRecords;
+import com.google.cloud.solutions.autotokenize.pipeline.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.DaeadEncryptingValueTokenizerFactory;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.flogger.GoogleLogger;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
@@ -42,8 +53,11 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
+import org.joda.time.Duration;
 
 /**
  * Creates and launches a Dataflow pipeline to encrypt the provided input files using the
@@ -53,31 +67,10 @@ public class EncryptionPipeline {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  public static void main(String[] args) throws GeneralSecurityException, IOException {
+  public static void main(String[] args) throws Exception {
 
     EncryptingPipelineOptions options =
       PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
-
-    if (options.getTokenizeColumns() == null || options.getTokenizeColumns().isEmpty()) {
-      logger.atInfo().log(
-        "====================%n" +
-          "Abandoning Pipeline.%n" +
-          "====================%n" +
-          "No columns to tokenize%n" +
-          "====================");
-      return;
-    }
-
-    if (options.getOutputDirectory() == null && options.getOutputBigQueryTable() == null) {
-      logger.atSevere().log(
-        "===================================%n" +
-          "          Abandoning Pipeline.      %n" +
-          "====================================%n" +
-          "          No output defined.        %n" +
-          "  Provide a GCS or BigQuery output  %n" +
-          "====================================");
-      return;
-    }
 
     DataflowPipelineJob encryptingJob =
       (DataflowPipelineJob) EncryptingPipelineFactory
@@ -94,7 +87,8 @@ public class EncryptionPipeline {
   /**
    * The pipeline creator.
    */
-  private static class EncryptingPipelineFactory {
+  @VisibleForTesting
+  static class EncryptingPipelineFactory {
 
     private final EncryptingPipelineOptions options;
     private final Schema inputSchema;
@@ -102,9 +96,11 @@ public class EncryptionPipeline {
     private final Pipeline pipeline;
     private final String tinkKeySetJson;
     private final String mainKeyKmsUri;
+    private final DlpEncryptConfig dlpEncryptConfig;
+    private final DlpClientFactory dlpClientFactory;
 
-    private EncryptingPipelineFactory(EncryptingPipelineOptions options) {
-      this.options = options;
+    EncryptingPipelineFactory(EncryptingPipelineOptions options, Pipeline pipeline, DlpClientFactory dlpClientFactory) {
+      this.options = checkValid(options);
       this.inputSchema =
         new Schema.Parser().parse(options.getSchema());
       this.encryptedSchema =
@@ -114,32 +110,68 @@ public class EncryptionPipeline {
           .updatedSchema();
       this.tinkKeySetJson = options.getTinkEncryptionKeySetJson();
       this.mainKeyKmsUri = options.getMainKmsKeyUri();
-      this.pipeline = Pipeline.create(options);
+      this.dlpEncryptConfig =
+        isNotBlank(options.getDlpEncryptConfigJson()) ?
+          JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class) :
+          null;
+
+      this.pipeline = pipeline;
+      this.dlpClientFactory = dlpClientFactory;
     }
 
     public static EncryptingPipelineFactory using(EncryptingPipelineOptions options) {
-      return new EncryptingPipelineFactory(options);
+      return new EncryptingPipelineFactory(options, Pipeline.create(checkValid(options)), DlpClientFactory.defaultFactory());
     }
 
-    public Pipeline buildPipeline() throws GeneralSecurityException, IOException {
+    private static EncryptingPipelineOptions checkValid(EncryptingPipelineOptions options) {
+      checkArgument(
+        options.getTokenizeColumns() != null && !options.getTokenizeColumns().isEmpty(),
+        "No columns to tokenize%n");
+
+      checkArgument(
+        isNotBlank(options.getOutputDirectory()) || isNotBlank(options.getOutputBigQueryTable()),
+        "No output defined.%nProvide a GCS or BigQuery output");
+
+
+      boolean isEncryption = isNotBlank(options.getMainKmsKeyUri()) && isNotBlank(options.getTinkEncryptionKeySetJson());
+      boolean isDlpDeid = isNotBlank(options.getDlpEncryptConfigJson());
+
+      checkArgument(
+        logicalXor(isEncryption, isDlpDeid),
+        "Provide one of Tink & KMS key or DlpDeidentifyConfig.%nFound both or none.");
+
+      if (isDlpDeid) {
+        // Validate DeidConfig is valid
+        DlpEncryptConfig encryptConfig = JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class);
+
+        Sets.SetView<String> columnDiff =
+          Sets.symmetricDifference(
+            ImmutableSet.copyOf(options.getTokenizeColumns()),
+            ImmutableSet.copyOf(DeidentifyColumns.columnNamesIn(encryptConfig)));
+
+        checkArgument(
+          columnDiff.isEmpty(),
+          "DlpEncrypt config does not contain all tokenize columns.%nDifference: %s", columnDiff.toString());
+      }
+
+      return options;
+    }
+
+    Pipeline buildPipeline() throws Exception {
 
       TupleTag<FlatRecord> flatRecordsTag = new TupleTag<>();
 
       PCollection<GenericRecord> encryptedRecords =
-      pipeline
-        .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
-          TransformingFileReader
-            .forSourceType(options.getSourceType())
-            .from(options.getInputPattern())
-            .withRecordsTag(flatRecordsTag))
-        .get(flatRecordsTag)
-        .apply("EncryptRecords",
-          ValueEncryptionTransform.builder()
-            .encryptColumnNames(ImmutableSet.copyOf(options.getTokenizeColumns()))
-            .encryptedSchema(encryptedSchema)
-            .valueTokenizerFactory(
-              new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
-            .build());
+        pipeline
+          .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
+            TransformingFileReader
+              .forSourceType(options.getSourceType())
+              .from(options.getInputPattern())
+              .withRecordsTag(flatRecordsTag))
+          .get(flatRecordsTag)
+          .apply((dlpEncryptConfig != null) ? dlpDeidentify() : tinkEncryption())
+          .apply(Window.into(FixedWindows.of(Duration.standardSeconds(60))))
+          .apply(RecordNester.forSchema(encryptedSchema));
 
       if (options.getOutputDirectory() != null) {
         encryptedRecords
@@ -155,15 +187,31 @@ public class EncryptionPipeline {
 
         encryptedRecords
           .apply(
-          "WriteToBigQuery",
-          BigQueryIO.
-            <GenericRecord>write()
-            .to(options.getOutputBigQueryTable())
-            .useBeamSchema()
-            .withWriteDisposition(WRITE_TRUNCATE));
+            "WriteToBigQuery",
+            BigQueryIO.
+              <GenericRecord>write()
+              .to(options.getOutputBigQueryTable())
+              .useBeamSchema()
+              .withWriteDisposition(WRITE_TRUNCATE));
       }
 
       return pipeline;
+    }
+
+    private BatchAndDlpDeIdRecords dlpDeidentify() {
+      return
+        BatchAndDlpDeIdRecords
+          .withEncryptConfig(dlpEncryptConfig)
+          .withDlpClientFactory(dlpClientFactory)
+          .withDlpProjectId(options.getProject());
+    }
+
+    private ValueEncryptionTransform tinkEncryption() throws Exception {
+      return
+        ValueEncryptionTransform.builder()
+          .encryptColumnNames(options.getTokenizeColumns())
+          .valueTokenizerFactory(new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
+          .build();
     }
 
     /**

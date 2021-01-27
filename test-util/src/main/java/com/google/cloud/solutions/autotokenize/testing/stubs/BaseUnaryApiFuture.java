@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.stubs;
+package com.google.cloud.solutions.autotokenize.testing.stubs;
 
 import com.google.api.core.ApiFuture;
+import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-public abstract class BaseUnaryApiFuture<T> implements ApiFuture<T> {
+public abstract class BaseUnaryApiFuture<T> implements ApiFuture<T>, Serializable {
 
   @Override
   public final void addListener(Runnable runnable, Executor executor) {

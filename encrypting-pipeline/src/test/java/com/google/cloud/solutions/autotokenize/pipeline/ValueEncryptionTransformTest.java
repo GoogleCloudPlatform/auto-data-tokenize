@@ -16,10 +16,14 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
 import com.google.cloud.solutions.autotokenize.common.FlatRecordConvertFn;
+import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.DaeadEncryptingValueTokenizerFactory;
+import com.google.cloud.solutions.autotokenize.testing.FlatRecordsCheckerFn;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -48,8 +52,7 @@ public final class ValueEncryptionTransformTest {
   private final ImmutableSet<String> encryptColumnNames;
   private final Schema inputSchema;
   private final ImmutableList<GenericRecord> testRecords;
-  private final Schema expectedSchema;
-  private final ImmutableList<GenericRecord> expectedRecords;
+  private final ImmutableList<FlatRecord> expectedRecords;
   @Rule
   public TestPipeline p = TestPipeline.create();
 
@@ -70,16 +73,21 @@ public final class ValueEncryptionTransformTest {
             .withSchemaFile(inputSchemaFile)
             .loadAllRecords(testRecordFiles);
 
-    expectedSchema =
+    Schema expectedSchema =
         DeIdentifiedRecordSchemaConverter.withOriginalSchema(inputSchema)
             .withEncryptColumnKeys(encryptColumnNames)
             .updatedSchema();
+
+    RecordFlattener<GenericRecord> recordFlattener = RecordFlattener.forGenericRecord();
 
     expectedRecords =
         TestResourceLoader.classPath()
             .forAvro()
             .withSchema(expectedSchema)
-            .loadAllRecords(expectedRecordFiles);
+            .loadAllRecords(expectedRecordFiles)
+            .stream()
+            .map(recordFlattener::flatten)
+            .collect(toImmutableList());
   }
 
   @Parameters(name = "{0}")
@@ -132,7 +140,7 @@ public final class ValueEncryptionTransformTest {
 
   @Test
   public void expand_valid() {
-    PCollection<GenericRecord> transformedRecords =
+    PCollection<FlatRecord> transformedRecords =
         p.apply("load test avro data", Create.of(testRecords).withCoder(AvroCoder.of(inputSchema)))
             .apply(
                 MapElements
@@ -146,10 +154,10 @@ public final class ValueEncryptionTransformTest {
                     .valueTokenizerFactory(
                         new DaeadEncryptingValueTokenizerFactory(TEST_ENCRYPTION_KEYSET_JSON))
                     .encryptColumnNames(encryptColumnNames)
-                    .encryptedSchema(expectedSchema)
                     .build());
 
-    PAssert.that(transformedRecords).containsInAnyOrder(expectedRecords);
+    PAssert.that(transformedRecords)
+      .satisfies(FlatRecordsCheckerFn.withExpectedRecords(expectedRecords).withoutFlatKeySchema());
 
     p.run();
   }

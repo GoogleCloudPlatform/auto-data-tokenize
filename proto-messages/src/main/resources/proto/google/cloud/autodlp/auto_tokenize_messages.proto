@@ -125,6 +125,8 @@ message ColumnTransform {
 
 
 message PartialColumnDlpTable {
-  .google.privacy.dlp.v2.Table table = 1;
-  repeated FlatRecord records = 5;
+  string record_id_column_name = 1;
+  repeated FlatRecord records = 2;
+  .google.privacy.dlp.v2.Table table = 5;
+  .google.privacy.dlp.v2.DeidentifyConfig deidentify_config = 10;
 }
