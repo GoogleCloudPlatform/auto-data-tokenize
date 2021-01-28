@@ -170,7 +170,6 @@ public class EncryptionPipeline {
               .withRecordsTag(flatRecordsTag))
           .get(flatRecordsTag)
           .apply((dlpEncryptConfig != null) ? dlpDeidentify() : tinkEncryption())
-          .apply(Window.into(FixedWindows.of(Duration.standardSeconds(60))))
           .apply(RecordNester.forSchema(encryptedSchema));
 
       if (options.getOutputDirectory() != null) {

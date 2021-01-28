@@ -15,8 +15,8 @@ import com.google.cloud.solutions.autotokenize.pipeline.dlp.PartialColumnBatchAc
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import org.apache.avro.Schema;
@@ -27,6 +27,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -45,6 +46,8 @@ public final class EncryptionPipelineTest implements Serializable {
   @Rule
   public transient TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+  private transient String tempAvroFile;
+
   private static final ImmutableList<GenericRecord> TEST_RECORDS;
   private static final Schema TEST_RECORD_SCHEMA;
   private static final String TEST_DLP_ENCRYPT_CONFIG_JSON;
@@ -57,32 +60,44 @@ public final class EncryptionPipelineTest implements Serializable {
     TEST_DLP_ENCRYPT_CONFIG_JSON = TestResourceLoader.classPath().loadAsString("email_cc_dlp_encrypt_config.json");
   }
 
+  @Before
+  public void makeTempCopyOfUserDataAvro() throws IOException {
+    tempAvroFile =
+      TestResourceLoader.classPath()
+        .copyTo(temporaryFolder.newFolder())
+        .createFileTestCopy("userdata.avro")
+        .getAbsolutePath();
+  }
+
   @Test
   public void expand() throws Exception {
-
     EncryptingPipelineOptions options = PipelineOptionsFactory.as(EncryptingPipelineOptions.class);
     options.setDlpEncryptConfigJson(TEST_DLP_ENCRYPT_CONFIG_JSON);
-    options.setInputPattern(Paths.get(TestResourceLoader.classPath().getResourceUri("userdata.avro")).toAbsolutePath().toString());
+    options.setInputPattern(tempAvroFile);
     options.setSourceType(SourceType.AVRO);
     options.setSchema(TEST_RECORD_SCHEMA.toString());
-    options.setOutputDirectory(temporaryFolder.getRoot().getAbsolutePath());
+    options.setOutputDirectory(temporaryFolder.newFolder().getAbsolutePath());
     options.setTokenizeColumns(DeidentifyColumns.columnNamesIn(JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class)));
     options.setProject(PROJECT_ID);
+    Schema encryptedSchema =
+      DeIdentifiedRecordSchemaConverter
+        .withOriginalSchema(TEST_RECORD_SCHEMA)
+        .withEncryptColumnKeys(options.getTokenizeColumns())
+        .updatedSchema();
 
+    // Perform the Encryption pipeline
     new EncryptionPipeline.EncryptingPipelineFactory(options, mainPipeline, DlpClientFactory.withStub(makeDlpStub()))
       .buildPipeline()
       .run()
       .waitUntilFinish();
 
-    System.out.println(options.toString());
-    Schema encryptedSchema = DeIdentifiedRecordSchemaConverter.withOriginalSchema(TEST_RECORD_SCHEMA).withEncryptColumnKeys(options.getTokenizeColumns()).updatedSchema();
-
+    // Read the output Avro file
     PCollection<GenericRecord> encryptedRecords =
       readPipeline
         .apply(
           AvroIO
             .readGenericRecords(encryptedSchema)
-          .from(options.getOutputDirectory() + "/*"));
+            .from(options.getOutputDirectory() + "/*"));
 
 
     PAssert.that(encryptedRecords).satisfies(new MatchRecordsCountFn<>(TEST_RECORDS.size()));

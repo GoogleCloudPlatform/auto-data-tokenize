@@ -190,14 +190,22 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
 
     @ProcessElement
     public void processBatch(@Element PartialColumnDlpTable batch, OutputReceiver<Iterable<FlatRecord>> receiver) {
-      GoogleLogger.forEnclosingClass().atInfo().log("max recordId count:%n%s", batch.getTable().getRowsCount());
+
+      Table batchTable = batch.getTable();
+
+      GoogleLogger.forEnclosingClass()
+        .atFine()
+        .log("Sending Batch:%nBytes:%s%nColumns:%s%nRowCount:%s",
+          batchTable.getSerializedSize(),
+          DeidentifyColumns.columnNamesFromHeaders(batchTable.getHeadersList()),
+          batchTable.getRowsCount());
 
       DeidentifyContentResponse deidResponse =
         dlpClient.deidentifyContent(
           DeidentifyContentRequest.newBuilder()
             .setParent(String.format("projects/%s", dlpProjectId()))
             .setDeidentifyConfig(batch.getDeidentifyConfig())
-            .setItem(ContentItem.newBuilder().setTable(batch.getTable()).build())
+            .setItem(ContentItem.newBuilder().setTable(batchTable).build())
             .build());
 
 

@@ -20,20 +20,19 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.common.collect.ImmutableList;
+import com.google.common.flogger.GoogleLogger;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,11 +47,12 @@ import org.apache.avro.generic.GenericRecord;
  */
 public abstract class TestResourceLoader {
 
-  public abstract String loadResourceAsString(String resourcePath) throws IOException, URISyntaxException;
+  private static final String TEST_RESOURCE_FOLDER = "test";
 
-  public abstract InputStream loadResourceInputStream(String resourcePath) throws IOException, URISyntaxException;
+  public abstract String loadResourceAsString(String resourcePath) throws IOException;
 
-  public abstract URI getResourceUri(String resourcePath) throws URISyntaxException;
+  public abstract InputStream loadResourceInputStream(String resourcePath) throws IOException;
+
 
   public static ResourceActions classPath() {
     return new ResourceActions(new ClassPathTestResourceLoader());
@@ -65,7 +65,7 @@ public abstract class TestResourceLoader {
   public final String loadAsString(String resourcePath) {
     try {
       return loadResourceAsString(resourcePath);
-    } catch (URISyntaxException | IOException ioException) {
+    } catch (IOException ioException) {
       throw new ResourceLoadException(resourcePath, ioException);
     }
   }
@@ -83,29 +83,31 @@ public abstract class TestResourceLoader {
     }
 
     @Override
-    public String loadResourceAsString(String resourcePath) throws IOException, URISyntaxException {
+    public String loadResourceAsString(String resourcePath) throws IOException {
 
       try (BufferedReader reader =
              new BufferedReader(
                new InputStreamReader(
-                 loadResourceInputStream(resourcePath), StandardCharsets.UTF_8))) {
+                 loadResource(resourcePath).openStream(), StandardCharsets.UTF_8))) {
         return reader.lines().collect(Collectors.joining("\n"));
       }
     }
 
     @Override
-    public InputStream loadResourceInputStream(String resourcePath) throws IOException, URISyntaxException {
-      return Files.newInputStream(Paths.get(getResourceUri(resourcePath)), StandardOpenOption.READ);
+    public InputStream loadResourceInputStream(String resourcePath) throws IOException {
+      return loadResource(resourcePath).openStream();
     }
 
-    @Override
     @SuppressWarnings("UnstableApiUsage")
-    public URI getResourceUri(String resourcePath) throws URISyntaxException {
-      return ((contextClass == null)
+    private URL loadResource(String resourcePath) {
+      return (contextClass == null)
         ? Resources.getResource(resourcePath)
-        : Resources.getResource(contextClass, resourcePath))
-        .toURI();
+        : Resources.getResource(contextClass, resourcePath);
     }
+  }
+
+  public interface CopyActions {
+    File createFileTestCopy(String resourcePath) throws IOException;
   }
 
   public static class ResourceLoadException extends RuntimeException {
@@ -123,16 +125,22 @@ public abstract class TestResourceLoader {
       this.resourceLoader = resourceLoader;
     }
 
-    public URI getResourceUri(String resource) {
-      try {
-        return resourceLoader.getResourceUri(resource);
-      } catch (URISyntaxException e) {
-        throw new ResourceLoadException(resource, e);
-      }
-    }
-
     public String loadAsString(String resourceUri) {
       return resourceLoader.loadAsString(resourceUri);
+    }
+
+    public CopyActions copyTo(File folder) {
+      return resourcePath -> {
+        File outputFile = File.createTempFile("temp_", "", folder);
+
+        long copiedBytes =
+          Files.asByteSink(outputFile).writeFrom(resourceLoader.loadResourceInputStream(resourcePath));
+
+        GoogleLogger.forEnclosingClass().atInfo()
+          .log("Copied %s bytes from %s to %s", copiedBytes, resourcePath, outputFile.getAbsolutePath());
+
+        return outputFile;
+      };
     }
 
     public <T extends Message> ProtoActions<T> forProto(Class<T> protoClazz) {

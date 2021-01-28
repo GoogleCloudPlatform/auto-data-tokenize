@@ -38,7 +38,7 @@ import org.apache.beam.sdk.values.KV;
 /**
  * Sends the BatchTable to DLP API and makes the findings available as future result.
  */
-final class DlpBatchSender {
+final class DlpBatchInspect {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -46,9 +46,9 @@ final class DlpBatchSender {
   private final ImmutableSet<InfoType> observableTypes;
   private final DlpServiceClient dlpServiceClient;
 
-  public DlpBatchSender(String dlpProjectId,
-      ImmutableSet<InfoType> observableTypes,
-      DlpServiceClient dlpServiceClient) {
+  public DlpBatchInspect(String dlpProjectId,
+                         ImmutableSet<InfoType> observableTypes,
+                         DlpServiceClient dlpServiceClient) {
     this.dlpProjectId = dlpProjectId;
     this.observableTypes = observableTypes;
     this.dlpServiceClient = dlpServiceClient;
@@ -107,7 +107,7 @@ final class DlpBatchSender {
     abstract Map<String, String> flatKeySchemaKeyMap();
 
     static FindingsTranslateFn create(Map<String, String> flatKeySchemaKeyMap) {
-      return new AutoValue_DlpBatchSender_FindingsTranslateFn(flatKeySchemaKeyMap);
+      return new AutoValue_DlpBatchInspect_FindingsTranslateFn(flatKeySchemaKeyMap);
     }
 
     @Override

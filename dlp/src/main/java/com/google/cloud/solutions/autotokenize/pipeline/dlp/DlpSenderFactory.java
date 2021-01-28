@@ -36,8 +36,8 @@ public abstract class DlpSenderFactory implements Serializable {
 
   public abstract DlpClientFactory dlpFactory();
 
-  public DlpBatchSender newSender() throws IOException {
-    return new DlpBatchSender(projectId(), observableType(), dlpFactory().newClient());
+  public DlpBatchInspect newSender() throws IOException {
+    return new DlpBatchInspect(projectId(), observableType(), dlpFactory().newClient());
   }
 
   public static Builder builder() {
