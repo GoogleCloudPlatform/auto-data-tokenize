@@ -397,6 +397,46 @@ tokenize_pipeline --project="${PROJECT_ID}" \
 --tokenizeColumns="$.kylosample.email"
 ```
 
+#### Parameter reference:
+
+The encryption pipeline supports two encryption modes:
+
+<table>
+  <thead>
+    <tr>
+      <th>Encryption Mode</th>
+      <th>Parameter</th>
+      <th>Parameter information</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="3">Fixed encryption</td>
+      <td><code>--tinkEncryptionKeySetJson</code></td>
+      <td>The wrapped encryption key details</td>
+    </tr>
+<tr>
+      <td><code>--mainKmsKeyUri</code></td>
+      <td>The KMS key used to wrap the tinkEncryption key. <br>In following format:<br><code>gcp-kms://projects/${PROJECT_ID}/locations/${REGION_ID}/keyRings/${KMS_KEYRING_ID}/cryptoKeys/${KMS_KEY_ID}</code></td>
+</tr>
+<tr>
+      <td><code>--tokenizeColumns</code></td>
+      <td>One or more logical column names in JSONPath format</td>
+</tr>
+    <tr>
+      <td>DLP De-identify</td>
+<td><code>--dlpEncryptConfigJson</code></td>
+<td><a href="proto-messages/src/main/resources/proto/google/cloud/autodlp/auto_tokenize_messages.proto">DlpEncryptConfig</a>
+JSON to provide <a href="https://cloud.google.com/dlp/docs/reference/rest/v2/projects.deidentifyTemplates#DeidentifyTemplate.PrimitiveTransformation">PrimitiveTransformation</a>
+for each <code>tokenizedColumn</code>.
+<br>
+Use the <a href="email_cc_dlp_encrypt_config.json">sample</a> configuration JSON for reference, and the <a href="https://cloud.google.com/dlp/docs/transformations-reference">transformation reference</a> to understand each of the transformations.
+</td>
+    </tr>
+  </tbody>
+</table>
+<br>
+
 The pipeline supports following destinations for storing the tokenized output.
 
 | Destination | Description | Pipeline parameter |
@@ -412,20 +452,6 @@ INFO: JobLink: https://console.cloud.google.com/dataflow/jobs/<your-dataflow-job
 
 The tokenize pipeline's DAG will look like following:
 ![Encrypting Pipeline DAG](encryption_pipeline_dag.png)
-
-
-#### Using DLP for De-Identification
-Create a [DlpEncryptConfig](proto-messages/src/main/resources/proto/google/cloud/autodlp/auto_tokenize_messages.proto) 
-JSON to provide [PrimitiveTransformation](https://cloud.google.com/dlp/docs/reference/rest/v2/projects.deidentifyTemplates#DeidentifyTemplate.PrimitiveTransformation)
-for each `tokenizedColumn`.
-
-You can use the [transformation reference](https://cloud.google.com/dlp/docs/transformations-reference) to understand each of the transformations.
-
-Add the following parameter when launching the tokenize_pipeline:
-```
---dlpEncryptConfigJson="$(<email_cc_dlp_encrypt_config.json)"
-```
-
 
 ### Verify encrypted result
 
