@@ -20,6 +20,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.logicalXor;
 import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
@@ -45,6 +47,7 @@ import com.google.crypto.tink.integration.gcpkms.GcpKmsClient;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.generic.GenericRecord;
@@ -57,6 +60,7 @@ import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Duration;
 
 /**
@@ -103,17 +107,26 @@ public class EncryptionPipeline {
       this.options = checkValid(options);
       this.inputSchema =
         new Schema.Parser().parse(options.getSchema());
-      this.encryptedSchema =
-        DeIdentifiedRecordSchemaConverter
-          .withOriginalSchema(inputSchema)
-          .withEncryptColumnKeys(options.getTokenizeColumns())
-          .updatedSchema();
+
       this.tinkKeySetJson = options.getTinkEncryptionKeySetJson();
       this.mainKeyKmsUri = options.getMainKmsKeyUri();
       this.dlpEncryptConfig =
         isNotBlank(options.getDlpEncryptConfigJson()) ?
           JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class) :
           null;
+
+      List<String> tokenizeColumnNames =
+        (this.dlpEncryptConfig == null)?
+          // Use provided tokenizeColumnNames
+          options.getTokenizeColumns():
+          //For DLP Tokenize use columnNames from config
+          DeidentifyColumns.columnNamesIn(dlpEncryptConfig);
+
+      this.encryptedSchema =
+        DeIdentifiedRecordSchemaConverter
+          .withOriginalSchema(inputSchema)
+          .withEncryptColumnKeys(tokenizeColumnNames)
+          .updatedSchema();
 
       this.pipeline = pipeline;
       this.dlpClientFactory = dlpClientFactory;
@@ -142,16 +155,12 @@ public class EncryptionPipeline {
 
       if (isDlpDeid) {
         // Validate DeidConfig is valid
-        DlpEncryptConfig encryptConfig = JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class);
-
-        Sets.SetView<String> columnDiff =
-          Sets.symmetricDifference(
-            ImmutableSet.copyOf(options.getTokenizeColumns()),
-            ImmutableSet.copyOf(DeidentifyColumns.columnNamesIn(encryptConfig)));
+        DlpEncryptConfig encryptConfig =
+          JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class);
 
         checkArgument(
-          columnDiff.isEmpty(),
-          "DlpEncrypt config does not contain all tokenize columns.%nDifference: %s", columnDiff.toString());
+          !DeidentifyColumns.columnNamesIn(encryptConfig).isEmpty(),
+          "DlpEncrypt config does not contain any tokenize columns.");
       }
 
       return options;
