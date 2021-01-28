@@ -112,7 +112,7 @@ public final class DlpSamplerIdentifyPipeline {
     DlpSenderFactory.Builder dlpIdentifierBuilder =
       DlpSenderFactory.builder()
         .projectId(options.getProject())
-        .dlpFactory(new DlpClientFactory());
+        .dlpFactory(DlpClientFactory.defaultFactory());
 
     if (options.getObservableInfoTypes() != null && !options.getObservableInfoTypes().isEmpty()) {
       ImmutableSet<InfoType> userProvidedInfoTypes =

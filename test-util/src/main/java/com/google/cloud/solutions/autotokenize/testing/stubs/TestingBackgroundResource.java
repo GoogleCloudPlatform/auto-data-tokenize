@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.stubs;
+package com.google.cloud.solutions.autotokenize.testing.stubs;
 
 import com.google.api.gax.core.BackgroundResource;
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
-public final class TestingBackgroundResource implements BackgroundResource {
+public final class TestingBackgroundResource implements BackgroundResource, Serializable {
 
   private boolean closed;
   private boolean shutdown;

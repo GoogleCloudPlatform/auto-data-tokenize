@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ public abstract class DlpSenderFactory implements Serializable {
 
   public abstract DlpClientFactory dlpFactory();
 
-  public DlpBatchSender newSender() throws IOException {
-    return new DlpBatchSender(projectId(), observableType(), dlpFactory().newClient());
+  public DlpBatchInspect newSender() throws IOException {
+    return new DlpBatchInspect(projectId(), observableType(), dlpFactory().newClient());
   }
 
   public static Builder builder() {

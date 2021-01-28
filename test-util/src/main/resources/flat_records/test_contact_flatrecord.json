@@ -1,0 +1,27 @@
+{
+  "recordId": "98b43a26-1728-4847-9ad6-af3e6168c7c3",
+  "flatKeySchema": {
+    "$.contacts[0].contact.number": "$.contacts.contact.number",
+    "$.contacts[1].contact.number": "$.contacts.contact.number",
+    "$.contacts[2].contact.number": "$.contacts.contact.number",
+    "$.emails[0]": "$.emails",
+    "$.name": "$.name"
+  },
+  "values": {
+    "$.contacts[0].contact.number": {
+      "stringValue": "5576616301"
+    },
+    "$.contacts[1].contact.number": {
+      "stringValue": "2828506786"
+    },
+    "$.contacts[2].contact.number": {
+      "stringValue": "1487058314"
+    },
+    "$.emails[0]": {
+      "stringValue": "UORYUDIJJAXKONVLY"
+    },
+    "$.name": {
+      "stringValue": "LROIAHDUGSTAAQJHLJRTWRDJA"
+    }
+  }
+}

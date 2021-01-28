@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
-import com.google.cloud.dlp.v2.DlpServiceClient;
-import java.io.IOException;
-import java.io.Serializable;
 
-/**
- * Client factory to be used in
- */
-public final class DlpClientFactory implements Serializable {
-
-  public DlpServiceClient newClient() throws IOException {
-    return DlpServiceClient.create();
-  }
-
+public interface BatchAccumulatorFactory<InputT, OutputT> {
+  BatchAccumulator<InputT, OutputT> newAccumulator();
 }
