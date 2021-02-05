@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
+
 import com.google.privacy.dlp.v2.Table;
 import com.google.privacy.dlp.v2.Value;
 import java.io.Serializable;
@@ -30,24 +31,26 @@ import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 
-/**
- * Splits the columnName-values lists into chunks that are within the DLP Table limits.
- */
-public class BatchColumnsForDlp extends
-  PTransform<PCollection<KV<String, Iterable<Value>>>, PCollection<KV<Table, Map<String, String>>>> {
+/** Splits the columnName-values lists into chunks that are within the DLP Table limits. */
+public class BatchColumnsForDlp
+    extends PTransform<
+        PCollection<KV<String, Iterable<Value>>>, PCollection<KV<Table, Map<String, String>>>> {
 
   @Override
   public PCollection<KV<Table, Map<String, String>>> expand(
-    PCollection<KV<String, Iterable<Value>>> input) {
+      PCollection<KV<String, Iterable<Value>>> input) {
 
     return input
-      .apply(MapElements.via(new ColumnNameKeys()))
-      .apply("BatchColumnsForDlp", GroupByBatchSize.with(new DlpColumnAccumulatorFactory()))
-      .setCoder(KvCoder.of(ProtoCoder.of(Table.class),
-        MapCoder.of(StringUtf8Coder.of(), StringUtf8Coder.of())));
+        .apply(MapElements.via(new ColumnNameKeys()))
+        .apply("BatchColumnsForDlp", GroupByBatchSize.with(new DlpColumnAccumulatorFactory()))
+        .setCoder(
+            KvCoder.of(
+                ProtoCoder.of(Table.class),
+                MapCoder.of(StringUtf8Coder.of(), StringUtf8Coder.of())));
   }
 
-  private static class ColumnNameKeys extends SimpleFunction<KV<String, Iterable<Value>>, KV<String, KV<String, Iterable<Value>>>> {
+  private static class ColumnNameKeys
+      extends SimpleFunction<KV<String, Iterable<Value>>, KV<String, KV<String, Iterable<Value>>>> {
 
     @Override
     public KV<String, KV<String, Iterable<Value>>> apply(KV<String, Iterable<Value>> input) {
@@ -55,11 +58,13 @@ public class BatchColumnsForDlp extends
     }
   }
 
-
   private static class DlpColumnAccumulatorFactory
-    implements BatchAccumulatorFactory<KV<String, Iterable<Value>>, KV<Table, Map<String, String>>>, Serializable {
+      implements BatchAccumulatorFactory<
+              KV<String, Iterable<Value>>, KV<Table, Map<String, String>>>,
+          Serializable {
     @Override
-    public BatchAccumulator<KV<String, Iterable<Value>>, KV<Table, Map<String, String>>> newAccumulator() {
+    public BatchAccumulator<KV<String, Iterable<Value>>, KV<Table, Map<String, String>>>
+        newAccumulator() {
       return DlpColumnValueAccumulator.create();
     }
   }

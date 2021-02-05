@@ -47,11 +47,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @AutoValue
-public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<FlatRecord, PartialColumnDlpTable> {
+public abstract class PartialColumnBatchAccumulator
+    implements BatchAccumulator<FlatRecord, PartialColumnDlpTable> {
 
   public static final String RECORD_ID_COLUMN_NAME = "__AUTOTOKENIZE__RECORD_ID__";
-  public static final int MAX_DLP_PAYLOAD_SIZE_BYTES = 500000; //500kB
-  public static final int MAX_DLP_PAYLOAD_CELLS = 50000; //50K
+  public static final int MAX_DLP_PAYLOAD_SIZE_BYTES = 500000; // 500kB
+  public static final int MAX_DLP_PAYLOAD_CELLS = 50000; // 50K
 
   abstract int maxPayloadSize();
 
@@ -69,18 +70,15 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
 
   public static PartialColumnBatchAccumulator withConfig(DlpEncryptConfig encryptConfig) {
     ImmutableSet<String> encryptColumnNames =
-      encryptConfig
-        .getTransformsList()
-        .stream()
-        .map(AutoTokenizeMessages.ColumnTransform::getColumnId)
-        .collect(toImmutableSet());
+        encryptConfig.getTransformsList().stream()
+            .map(AutoTokenizeMessages.ColumnTransform::getColumnId)
+            .collect(toImmutableSet());
 
     return builder().dlpEncryptConfig(encryptConfig).encryptColumns(encryptColumnNames).build();
   }
 
   private static Builder builder() {
-    return
-      new AutoValue_PartialColumnBatchAccumulator.Builder()
+    return new AutoValue_PartialColumnBatchAccumulator.Builder()
         .maxCellCount(MAX_DLP_PAYLOAD_CELLS)
         .maxPayloadSize(MAX_DLP_PAYLOAD_SIZE_BYTES)
         .recordIdColumnName(RECORD_ID_COLUMN_NAME);
@@ -118,16 +116,14 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
   @Override
   public final boolean addElement(FlatRecord element) {
     checkNotNull(element, "Null element not allowed");
-    checkArgument(!isBlank(element.getRecordId()), "Provide FlatRecord with unique RecordId, found empty");
+    checkArgument(
+        !isBlank(element.getRecordId()), "Provide FlatRecord with unique RecordId, found empty");
 
     Table updatedTable = new TableUpdater(element).updateTable();
 
     if (isTableWithinDlpLimits(updatedTable)) {
       accumulatedRecords =
-        accumulatedRecords.toBuilder()
-          .addRecords(element)
-          .setTable(updatedTable)
-          .build();
+          accumulatedRecords.toBuilder().addRecords(element).setTable(updatedTable).build();
 
       updateElementColumnKeys(element);
       return true;
@@ -137,16 +133,16 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
   }
 
   private void updateElementColumnKeys(FlatRecord element) {
-    element.getFlatKeySchemaMap()
-      .forEach((key, value) -> columnSchemaKeyMap.put(value, key));
+    element.getFlatKeySchemaMap().forEach((key, value) -> columnSchemaKeyMap.put(value, key));
   }
 
   @Override
   public final BatchPartialColumnDlpTable makeBatch() {
     PartialColumnDlpTable tableWithDeidentifyConfig =
-      accumulatedRecords.toBuilder()
-        .setRecordIdColumnName(recordIdColumnName())
-        .setDeidentifyConfig(buildTableDeidentifyConfig()).build();
+        accumulatedRecords.toBuilder()
+            .setRecordIdColumnName(recordIdColumnName())
+            .setDeidentifyConfig(buildTableDeidentifyConfig())
+            .build();
 
     return BatchPartialColumnDlpTable.create(tableWithDeidentifyConfig);
   }
@@ -154,18 +150,21 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
   private DeidentifyConfig buildTableDeidentifyConfig() {
 
     ImmutableList<FieldTransformation> fieldTransformations =
-      dlpEncryptConfig().getTransformsList().stream()
-        .map(colEncryptConfig -> FieldTransformation.newBuilder()
-          .addAllFields(DeidentifyColumns.fieldIdsFor(columnSchemaKeyMap.get(colEncryptConfig.getColumnId())))
-          .setPrimitiveTransformation(colEncryptConfig.getTransform())
-          .build())
-        .collect(toImmutableList());
+        dlpEncryptConfig().getTransformsList().stream()
+            .map(
+                colEncryptConfig ->
+                    FieldTransformation.newBuilder()
+                        .addAllFields(
+                            DeidentifyColumns.fieldIdsFor(
+                                columnSchemaKeyMap.get(colEncryptConfig.getColumnId())))
+                        .setPrimitiveTransformation(colEncryptConfig.getTransform())
+                        .build())
+            .collect(toImmutableList());
 
     return DeidentifyConfig.newBuilder()
-      .setRecordTransformations(
-        RecordTransformations.newBuilder()
-          .addAllFieldTransformations(fieldTransformations))
-      .build();
+        .setRecordTransformations(
+            RecordTransformations.newBuilder().addAllFieldTransformations(fieldTransformations))
+        .build();
   }
 
   private class TableUpdater {
@@ -180,14 +179,17 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
       ImmutableList<String> existingHeaders = existingAccumulatedHeaders();
 
       Set<String> encryptColumnsInElement =
-        Sets.union(ImmutableSet.of(recordIdColumnName()), extractEncryptColumns()).immutableCopy();
+          Sets.union(ImmutableSet.of(recordIdColumnName()), extractEncryptColumns())
+              .immutableCopy();
 
       Set<String> newHeaders =
-        Sets.difference(encryptColumnsInElement, ImmutableSet.copyOf(existingHeaders)).immutableCopy();
+          Sets.difference(encryptColumnsInElement, ImmutableSet.copyOf(existingHeaders))
+              .immutableCopy();
 
       List<Table.Row> updatedRows = new RowsUpdater(existingHeaders, newHeaders).addRecord();
       List<FieldId> updatedHeaders =
-        DeidentifyColumns.fieldIdsFrom(Stream.concat(existingHeaders.stream(), newHeaders.stream()));
+          DeidentifyColumns.fieldIdsFrom(
+              Stream.concat(existingHeaders.stream(), newHeaders.stream()));
 
       return Table.newBuilder().addAllHeaders(updatedHeaders).addAllRows(updatedRows).build();
     }
@@ -204,15 +206,14 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
 
       public List<Table.Row> addRecord() {
         return Stream.concat(updatedRows(), Stream.of(convertElementToRow()))
-          .collect(toImmutableList());
+            .collect(toImmutableList());
       }
 
       private Stream<Table.Row> updatedRows() {
         ImmutableList<Value> additionalCells = makeEmptyValues(newHeaders.size());
 
-        return accumulatedRecords.getTable().getRowsList()
-          .stream()
-          .map(row -> row.toBuilder().addAllValues(additionalCells).build());
+        return accumulatedRecords.getTable().getRowsList().stream()
+            .map(row -> row.toBuilder().addAllValues(additionalCells).build());
       }
 
       private ImmutableList<Value> makeEmptyValues(int count) {
@@ -223,33 +224,28 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
         return builder.build();
       }
 
-
       public Table.Row convertElementToRow() {
         List<Value> rowValues =
-          Stream.concat(existingHeaders.stream(), newHeaders.stream())
-            .map(h -> {
-              if (h.equals(recordIdColumnName())) {
-                return Value.newBuilder().setStringValue(element.getRecordId()).build();
-              }
-              return element.getValuesMap().getOrDefault(h, Value.getDefaultInstance());
-            })
-            .collect(toImmutableList());
+            Stream.concat(existingHeaders.stream(), newHeaders.stream())
+                .map(
+                    h -> {
+                      if (h.equals(recordIdColumnName())) {
+                        return Value.newBuilder().setStringValue(element.getRecordId()).build();
+                      }
+                      return element.getValuesMap().getOrDefault(h, Value.getDefaultInstance());
+                    })
+                .collect(toImmutableList());
 
         return Table.Row.newBuilder().addAllValues(rowValues).build();
       }
-
     }
-
 
     private ImmutableSet<String> extractEncryptColumns() {
-      return element.getFlatKeySchemaMap()
-        .entrySet()
-        .stream()
-        .filter(entry -> encryptColumns().contains(entry.getValue()))
-        .map(Map.Entry::getKey)
-        .collect(toImmutableSet());
+      return element.getFlatKeySchemaMap().entrySet().stream()
+          .filter(entry -> encryptColumns().contains(entry.getValue()))
+          .map(Map.Entry::getKey)
+          .collect(toImmutableSet());
     }
-
 
     private ImmutableList<String> existingAccumulatedHeaders() {
       return DeidentifyColumns.columnNamesIn(accumulatedRecords.getTable());
@@ -262,7 +258,7 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
   }
 
   @AutoValue
-  static abstract class BatchPartialColumnDlpTable implements Batch<PartialColumnDlpTable> {
+  abstract static class BatchPartialColumnDlpTable implements Batch<PartialColumnDlpTable> {
 
     public static BatchPartialColumnDlpTable create(PartialColumnDlpTable partialColumnDlpTable) {
 
@@ -270,14 +266,15 @@ public abstract class PartialColumnBatchAccumulator implements BatchAccumulator<
       int columns = partialColumnDlpTable.getTable().getHeadersCount();
       int serializedSize = partialColumnDlpTable.getTable().getSerializedSize();
 
-      String report = MoreObjects.toStringHelper(BatchPartialColumnDlpTable.class)
-        .add("rows", rows)
-        .add("columns", columns)
-        .add("serializedSize", serializedSize)
-        .toString();
+      String report =
+          MoreObjects.toStringHelper(BatchPartialColumnDlpTable.class)
+              .add("rows", rows)
+              .add("columns", columns)
+              .add("serializedSize", serializedSize)
+              .toString();
 
       return new AutoValue_PartialColumnBatchAccumulator_BatchPartialColumnDlpTable(
-        partialColumnDlpTable, rows, serializedSize, report);
+          partialColumnDlpTable, rows, serializedSize, report);
     }
   }
 }

@@ -29,7 +29,9 @@ import java.util.stream.Stream;
 public final class DeidentifyColumns {
 
   public static ImmutableList<String> columnNamesIn(DlpEncryptConfig dlpEncryptConfig) {
-    return dlpEncryptConfig.getTransformsList().stream().map(ColumnTransform::getColumnId).collect(toImmutableList());
+    return dlpEncryptConfig.getTransformsList().stream()
+        .map(ColumnTransform::getColumnId)
+        .collect(toImmutableList());
   }
 
   public static ImmutableList<String> columnNamesIn(Table dlpTable) {
@@ -37,7 +39,10 @@ public final class DeidentifyColumns {
   }
 
   public static ImmutableList<FieldId> fieldIdsFor(Collection<String> flatColumnNames) {
-    return flatColumnNames.stream().map(FieldId.newBuilder()::setName).map(FieldId.Builder::build).collect(toImmutableList());
+    return flatColumnNames.stream()
+        .map(FieldId.newBuilder()::setName)
+        .map(FieldId.Builder::build)
+        .collect(toImmutableList());
   }
 
   public static ImmutableList<String> columnNamesFromHeaders(Collection<FieldId> fieldIds) {
@@ -45,7 +50,10 @@ public final class DeidentifyColumns {
   }
 
   public static ImmutableList<FieldId> fieldIdsFrom(Stream<String> columnNameStream) {
-    return columnNameStream.map(FieldId.newBuilder()::setName).map(FieldId.Builder::build).collect(toImmutableList());
+    return columnNameStream
+        .map(FieldId.newBuilder()::setName)
+        .map(FieldId.Builder::build)
+        .collect(toImmutableList());
   }
 
   private DeidentifyColumns() {}

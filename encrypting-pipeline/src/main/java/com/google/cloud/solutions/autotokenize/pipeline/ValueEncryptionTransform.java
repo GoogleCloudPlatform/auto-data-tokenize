@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.DaeadEncryptingValueTokenizerFactory;
@@ -44,13 +45,11 @@ public abstract class ValueEncryptionTransform
 
   @Override
   public PCollection<FlatRecord> expand(PCollection<FlatRecord> input) {
-    return input
-        .apply(
-            "TinkEncryptRecordColumns",
-            MapElements
-                .into(TypeDescriptor.of(FlatRecord.class))
-                .via(EncryptingFlatRecordTokenizer
-                    .withTokenizeSchemaKeys(encryptColumnNames())
+    return input.apply(
+        "TinkEncryptRecordColumns",
+        MapElements.into(TypeDescriptor.of(FlatRecord.class))
+            .via(
+                EncryptingFlatRecordTokenizer.withTokenizeSchemaKeys(encryptColumnNames())
                     .withTokenizerFactory(valueTokenizerFactory())
                     .encryptFn()));
   }
@@ -59,7 +58,8 @@ public abstract class ValueEncryptionTransform
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder valueTokenizerFactory(DaeadEncryptingValueTokenizerFactory valueTokenizerFactory);
+    public abstract Builder valueTokenizerFactory(
+        DaeadEncryptingValueTokenizerFactory valueTokenizerFactory);
 
     public abstract Builder encryptColumnNames(Collection<String> encryptColumnNames);
 

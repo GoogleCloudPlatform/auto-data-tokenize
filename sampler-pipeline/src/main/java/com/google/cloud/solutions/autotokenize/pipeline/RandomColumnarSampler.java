@@ -34,8 +34,8 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 
 @AutoValue
-public abstract class RandomColumnarSampler extends
-    PTransform<PCollection<FlatRecord>, PCollection<KV<String, Iterable<Value>>>> {
+public abstract class RandomColumnarSampler
+    extends PTransform<PCollection<FlatRecord>, PCollection<KV<String, Iterable<Value>>>> {
 
   abstract int sampleSize();
 
@@ -53,17 +53,15 @@ public abstract class RandomColumnarSampler extends
         .apply(Sample.fixedSizePerKey(sampleSize()));
   }
 
-  private static class SplitRecordByKeys extends
-      SimpleFunction<FlatRecord, List<KV<String, Value>>> {
+  private static class SplitRecordByKeys
+      extends SimpleFunction<FlatRecord, List<KV<String, Value>>> {
 
     @Override
     public ImmutableList<KV<String, Value>> apply(FlatRecord input) {
 
       Map<String, String> flatKeySchemaKeyMap = input.getFlatKeySchemaMap();
 
-      return input
-          .getValuesMap()
-          .entrySet().stream()
+      return input.getValuesMap().entrySet().stream()
           .map(
               valueEntry ->
                   KV.of(flatKeySchemaKeyMap.get(valueEntry.getKey()), valueEntry.getValue()))

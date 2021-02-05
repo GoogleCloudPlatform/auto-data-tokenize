@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
+
 import com.google.api.client.util.Maps;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.common.collect.ImmutableList;
@@ -54,7 +55,6 @@ public class ContactsFlatRecordSampleGenerator {
       valuesMap.put("$.name", Value.newBuilder().setStringValue(randomName()).build());
       flatKeyMap.put("$.name", "$.name");
 
-
       final int numbers = new Random().nextInt(10);
       for (int n = 0; n < numbers; n++) {
         String key = "$.contacts[" + n + "].contact.number";
@@ -71,8 +71,8 @@ public class ContactsFlatRecordSampleGenerator {
         valuesMap.put(key, Value.newBuilder().setStringValue(randomName()).build());
       }
 
-
-      recordListBuilder.add(flatRecordBuilder().putAllValues(valuesMap).putAllFlatKeySchema(flatKeyMap).build());
+      recordListBuilder.add(
+          flatRecordBuilder().putAllValues(valuesMap).putAllFlatKeySchema(flatKeyMap).build());
     }
 
     return recordListBuilder.build();
@@ -86,8 +86,7 @@ public class ContactsFlatRecordSampleGenerator {
   private String randomName() {
     StringBuilder stringBuilder = new StringBuilder();
 
-    random.ints(random.nextInt(26), 'A', 'Z')
-      .forEach(i -> stringBuilder.append((char) i));
+    random.ints(random.nextInt(26), 'A', 'Z').forEach(i -> stringBuilder.append((char) i));
 
     return stringBuilder.toString();
   }
@@ -95,10 +94,8 @@ public class ContactsFlatRecordSampleGenerator {
   private String randomPhoneNumber(int numLength) {
     StringBuilder builder = new StringBuilder();
 
-    random.ints(numLength, '0', '9')
-      .forEach(i -> builder.append((char) i));
+    random.ints(numLength, '0', '9').forEach(i -> builder.append((char) i));
 
     return builder.toString();
   }
-
 }

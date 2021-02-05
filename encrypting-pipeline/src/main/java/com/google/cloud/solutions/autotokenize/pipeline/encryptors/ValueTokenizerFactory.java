@@ -16,15 +16,12 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.encryptors;
 
+
 import java.io.Serializable;
 
-/**
- * Factory interface to create new instances of a {@link ValueTokenizer}.
- */
+/** Factory interface to create new instances of a {@link ValueTokenizer}. */
 public interface ValueTokenizerFactory extends Serializable {
 
-  /**
-   * Returns a new instance.
-   */
+  /** Returns a new instance. */
   ValueTokenizer makeValueTokenizer();
 }

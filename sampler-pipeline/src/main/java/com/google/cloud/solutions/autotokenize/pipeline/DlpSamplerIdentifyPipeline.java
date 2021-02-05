@@ -42,9 +42,7 @@ import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
 
-/**
- * Instantiates the sampling Dataflow pipeline based on provided options.
- */
+/** Instantiates the sampling Dataflow pipeline based on provided options. */
 public final class DlpSamplerIdentifyPipeline {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -58,48 +56,53 @@ public final class DlpSamplerIdentifyPipeline {
     this.pipeline = Pipeline.create(options);
   }
 
-  /**
-   * Creates the pipeline and applies the transforms.
-   */
+  /** Creates the pipeline and applies the transforms. */
   private Pipeline makePipeline() {
     TupleTag<FlatRecord> recordsTag = new TupleTag<>();
     TupleTag<String> avroSchemaTag = new TupleTag<>();
 
     PCollectionTuple recordSchemaTuple =
-      pipeline
-        .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
-          TransformingFileReader
-            .forSourceType(options.getSourceType())
-            .from(options.getInputPattern())
-            .withRecordsTag(recordsTag)
-            .withAvroSchemaTag(avroSchemaTag));
+        pipeline.apply(
+            "Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
+            TransformingFileReader.forSourceType(options.getSourceType())
+                .from(options.getInputPattern())
+                .withRecordsTag(recordsTag)
+                .withAvroSchemaTag(avroSchemaTag));
 
     // Write the schema to a file.
-    recordSchemaTuple.get(avroSchemaTag)
-      .apply("WriteSchema",
-        TextIO.write().to(options.getReportLocation()).withoutSharding()
-          .withSuffix("schema.json"));
+    recordSchemaTuple
+        .get(avroSchemaTag)
+        .apply(
+            "WriteSchema",
+            TextIO.write()
+                .to(options.getReportLocation())
+                .withoutSharding()
+                .withSuffix("schema.json"));
 
     // Sample and Identify columns
-    recordSchemaTuple.get(recordsTag)
-      .apply("RandomColumnarSample", RandomColumnarSampler.any(options.getSampleSize()))
-      .apply("BatchForDlp", new BatchColumnsForDlp())
-      .apply("DlpIdentify", DlpIdentify.withIdentifierFactory(makeDlpBatchIdentifierFactory()))
-      .apply("WriteColumnReport",
-        FileIO.<String, ColumnInformation>writeDynamic()
-          .via(Contextful.fn(JsonConvertor::asJsonString),
-            Contextful.fn(colName -> TextIO.sink()))
-          .by(ColumnInformation::getColumnName)
-          .withDestinationCoder(StringUtf8Coder.of())
-          .withNoSpilling()
-          .withNaming(
-            Contextful.fn(
-              colName ->
-                defaultNaming( /*prefix=*/
-                  String.format("col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
-                    .replaceAll("[-]+", "-"), /*suffix=*/ ".json")))
-
-          .to(options.getReportLocation()));
+    recordSchemaTuple
+        .get(recordsTag)
+        .apply("RandomColumnarSample", RandomColumnarSampler.any(options.getSampleSize()))
+        .apply("BatchForDlp", new BatchColumnsForDlp())
+        .apply("DlpIdentify", DlpIdentify.withIdentifierFactory(makeDlpBatchIdentifierFactory()))
+        .apply(
+            "WriteColumnReport",
+            FileIO.<String, ColumnInformation>writeDynamic()
+                .via(
+                    Contextful.fn(JsonConvertor::asJsonString),
+                    Contextful.fn(colName -> TextIO.sink()))
+                .by(ColumnInformation::getColumnName)
+                .withDestinationCoder(StringUtf8Coder.of())
+                .withNoSpilling()
+                .withNaming(
+                    Contextful.fn(
+                        colName ->
+                            defaultNaming(
+                                /*prefix=*/ String.format(
+                                        "col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
+                                    .replaceAll("[-]+", "-"),
+                                /*suffix=*/ ".json")))
+                .to(options.getReportLocation()));
 
     return pipeline;
   }
@@ -110,16 +113,16 @@ public final class DlpSamplerIdentifyPipeline {
    */
   private DlpSenderFactory makeDlpBatchIdentifierFactory() {
     DlpSenderFactory.Builder dlpIdentifierBuilder =
-      DlpSenderFactory.builder()
-        .projectId(options.getProject())
-        .dlpFactory(DlpClientFactory.defaultFactory());
+        DlpSenderFactory.builder()
+            .projectId(options.getProject())
+            .dlpFactory(DlpClientFactory.defaultFactory());
 
     if (options.getObservableInfoTypes() != null && !options.getObservableInfoTypes().isEmpty()) {
       ImmutableSet<InfoType> userProvidedInfoTypes =
-        options.getObservableInfoTypes().stream()
-          .map(InfoType.newBuilder()::setName)
-          .map(InfoType.Builder::build)
-          .collect(toImmutableSet());
+          options.getObservableInfoTypes().stream()
+              .map(InfoType.newBuilder()::setName)
+              .map(InfoType.Builder::build)
+              .collect(toImmutableSet());
 
       dlpIdentifierBuilder.observableType(userProvidedInfoTypes);
     }
@@ -129,17 +132,16 @@ public final class DlpSamplerIdentifyPipeline {
 
   public static void main(String[] args) {
     PipelineOptionsFactory.register(DlpSamplerIdentifyOptions.class);
-    DlpSamplerIdentifyOptions options = PipelineOptionsFactory.fromArgs(args)
-      .as(DlpSamplerIdentifyOptions.class);
+    DlpSamplerIdentifyOptions options =
+        PipelineOptionsFactory.fromArgs(args).as(DlpSamplerIdentifyOptions.class);
 
     logger.atInfo().log("Staging the Dataflow job");
 
     DataflowPipelineJob samplingJob =
-      (DataflowPipelineJob) new DlpSamplerIdentifyPipeline(options).makePipeline().run();
+        (DataflowPipelineJob) new DlpSamplerIdentifyPipeline(options).makePipeline().run();
 
     logger.atInfo().log(
-      "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s%n",
-      samplingJob.getJobId(),
-      samplingJob.getProjectId());
+        "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s%n",
+        samplingJob.getJobId(), samplingJob.getProjectId());
   }
 }

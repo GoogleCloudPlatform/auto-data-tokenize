@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
+
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 
@@ -35,8 +36,7 @@ public interface BatchAccumulator<InputT, OutputT> {
    */
   boolean addElement(InputT element);
 
-
-  default ImmutableList<InputT> addAllElements (Iterable<InputT> elements) {
+  default ImmutableList<InputT> addAllElements(Iterable<InputT> elements) {
     return addAllElements(elements.iterator());
   }
 
@@ -46,9 +46,9 @@ public interface BatchAccumulator<InputT, OutputT> {
    * @param elements the elements to add to accumulator.
    * @return List of elements that could not be added due to accumulator full.
    */
-  default ImmutableList<InputT> addAllElements (Iterator<InputT> elements) {
+  default ImmutableList<InputT> addAllElements(Iterator<InputT> elements) {
 
-    while(elements.hasNext()) {
+    while (elements.hasNext()) {
       InputT element = elements.next();
 
       if (!addElement(element)) {
@@ -59,11 +59,8 @@ public interface BatchAccumulator<InputT, OutputT> {
     return ImmutableList.of();
   }
 
-  /**
-   * Returns the accumulated elements as batch of type O.
-   */
+  /** Returns the accumulated elements as batch of type O. */
   Batch<OutputT> makeBatch();
-
 
   /**
    * Provides interface to access attributes of the Batch and the batched data object.
@@ -72,24 +69,16 @@ public interface BatchAccumulator<InputT, OutputT> {
    */
   interface Batch<T> {
 
-    /**
-     * Returns the batched elements.
-     */
+    /** Returns the batched elements. */
     T get();
 
-    /**
-     * The number of elements in the batch.
-     */
+    /** The number of elements in the batch. */
     int elementsCount();
 
-    /**
-     * The serialized size of the batch.
-     */
+    /** The serialized size of the batch. */
     int serializedSize();
 
-    /**
-     * A printable report of statistics.
-     */
+    /** A printable report of statistics. */
     String report();
   }
 }

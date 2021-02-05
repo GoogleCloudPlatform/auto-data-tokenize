@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
+
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InfoTypeInformation;
@@ -26,6 +27,9 @@ import com.google.privacy.dlp.v2.Table;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.GroupByKey;
@@ -40,19 +44,20 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Composite transform to send batched data to DLP and extract {@link InfoType} information for each
  * of the input columns.
  *
- * <p> The expected {@code KV<Table, Map<String,String>>} is a pair of DLP table and a Map of
- * headers used in the table to reporting columnNames.
+ * <p>The expected {@code KV<Table, Map<String,String>>} is a pair of DLP table and a Map of headers
+ * used in the table to reporting columnNames.
  *
  * <pre>{@code
- *   PCollection<KV<Table, Map<String, String>>> batchedData = ...;
+ * PCollection<KV<Table, Map<String, String>>> batchedData = ...;
  *
- *   batchedData
- *     .apply(DlpIdentify.withIdentifierFactory(dlpSenderFactory);
+ * batchedData
+ *   .apply(DlpIdentify.withIdentifierFactory(dlpSenderFactory);
  * }</pre>
  */
 @AutoValue
-public abstract class DlpIdentify extends
-    PTransform<PCollection<KV<Table, Map<String, String>>>, PCollection<ColumnInformation>> {
+public abstract class DlpIdentify
+    extends PTransform<
+        PCollection<KV<Table, Map<String, String>>>, PCollection<ColumnInformation>> {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -68,12 +73,13 @@ public abstract class DlpIdentify extends
     return batchedRecords
         .apply("IdentifyUsingDLP", MapElements.via(SendToDlp.create(batchIdentifierFactory())))
         .apply("FlattenColumnFindings", Flatten.iterables())
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), ProtoCoder.of(InfoType.class)))
         .apply("CountInfoTypesPerColumn", Count.perElement())
         .apply("ParseCounts", MapElements.via(new CountFlattener()))
         .apply("GroupByColumns", GroupByKey.create())
-        .apply("CreateColumnInformation",
-            MapElements
-                .into(TypeDescriptor.of(ColumnInformation.class))
+        .apply(
+            "CreateColumnInformation",
+            MapElements.into(TypeDescriptor.of(ColumnInformation.class))
                 .via(
                     columnGroupKv ->
                         ColumnInformation.newBuilder()
@@ -82,12 +88,10 @@ public abstract class DlpIdentify extends
                             .build()));
   }
 
-  /**
-   * Sends the batched records table to DLP identify service and emits the response.
-   */
+  /** Sends the batched records table to DLP identify service and emits the response. */
   @AutoValue
-  static abstract class SendToDlp extends
-      SimpleFunction<KV<Table, Map<String, String>>, List<KV<String, InfoType>>> {
+  abstract static class SendToDlp
+      extends SimpleFunction<KV<Table, Map<String, String>>, List<KV<String, InfoType>>> {
 
     abstract DlpSenderFactory identifierFactory();
 
@@ -107,11 +111,9 @@ public abstract class DlpIdentify extends
     }
   }
 
-  /**
-   * Extracts column name as Key and rest of the InfoType and count information as value.
-   */
-  private static class CountFlattener extends
-      SimpleFunction<KV<KV<String, InfoType>, Long>, KV<String, InfoTypeInformation>> {
+  /** Extracts column name as Key and rest of the InfoType and count information as value. */
+  private static class CountFlattener
+      extends SimpleFunction<KV<KV<String, InfoType>, Long>, KV<String, InfoTypeInformation>> {
 
     @Override
     public KV<String, InfoTypeInformation> apply(

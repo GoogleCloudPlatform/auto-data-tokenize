@@ -77,20 +77,20 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
     checkNotNull(tokenizeSchemaKeys, "tokenizeSchemaKeys should not be null.");
     checkNotNull(tokenizerFactory, "tokenizeFactory should not be null.");
 
-    FlatRecordTokenizer tokenizer = new FlatRecordTokenizer(tokenizeColumnNameUpdater.updaterFor(plainTextRecord));
+    FlatRecordTokenizer tokenizer =
+        new FlatRecordTokenizer(tokenizeColumnNameUpdater.updaterFor(plainTextRecord));
 
     ImmutableMap<String, Value> updatedValues =
         plainTextRecord.getValuesMap().entrySet().stream()
             .map(tokenizer::processValue)
             .collect(ImmutableMap.toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
 
-    return FlatRecord.newBuilder().putAllValues(updatedValues)
-        .build();//plainTextRecord.toBuilder().clearValues().putAllValues(updatedValues).build();
+    return FlatRecord.newBuilder()
+        .putAllValues(updatedValues)
+        .build(); // plainTextRecord.toBuilder().clearValues().putAllValues(updatedValues).build();
   }
 
-  /**
-   * Helper class to tokenize a flat record using the value tokenizer.
-   */
+  /** Helper class to tokenize a flat record using the value tokenizer. */
   private class FlatRecordTokenizer {
 
     private final TokenizeColumnNameUpdater.RecordColumnNameUpdater columnChecker;
@@ -110,9 +110,9 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
         if (columnChecker.isTokenizeColumn(flatKey)) {
           return ImmutablePair.of(
               columnChecker.encryptedColumnName(flatKey),
-              plainValue.getTypeCase().equals(Value.TypeCase.TYPE_NOT_SET) ?
-                  plainValue :
-                  Value.newBuilder().setStringValue(valueTokenizer.encrypt(plainValue)).build());
+              plainValue.getTypeCase().equals(Value.TypeCase.TYPE_NOT_SET)
+                  ? plainValue
+                  : Value.newBuilder().setStringValue(valueTokenizer.encrypt(plainValue)).build());
         }
       } catch (ValueTokenizer.ValueTokenizingException valueTokenizingException) {
         logger.atSevere().withCause(valueTokenizingException).withStackTrace(StackSize.MEDIUM).log(
@@ -121,5 +121,4 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
       return ImmutablePair.of(flatKey, plainValue);
     }
   }
-
 }

@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.encryptors;
 
+
 import com.google.privacy.dlp.v2.Value;
 
 /**
@@ -35,9 +36,7 @@ public interface ValueTokenizer {
 
   Value decrypt(String cipherText) throws ValueTokenizingException;
 
-  /**
-   * Encapsulates any exception thrown during tokenization process.
-   */
+  /** Encapsulates any exception thrown during tokenization process. */
   class ValueTokenizingException extends Exception {
 
     public ValueTokenizingException(String message, Throwable cause) {

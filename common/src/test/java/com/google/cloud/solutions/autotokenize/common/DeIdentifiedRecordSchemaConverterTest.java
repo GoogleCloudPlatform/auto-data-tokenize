@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,12 @@ public final class DeIdentifiedRecordSchemaConverterTest {
     @Test
     public void build_usesSystemClockUtc() {
       assertThat(
-          DeIdentifiedRecordSchemaConverter
-              .withOriginalSchema(
-                  TestResourceLoader.classPath()
-                      .forAvro()
-                      .asSchema("avro_records/union_with_array_schema.json"))
-              .withEncryptColumnKeys(DUMMY_ENCRYPT_COLUMN)
-              .getClock())
+              DeIdentifiedRecordSchemaConverter.withOriginalSchema(
+                      TestResourceLoader.classPath()
+                          .forAvro()
+                          .asSchema("avro_records/union_with_array_schema.json"))
+                  .withEncryptColumnKeys(DUMMY_ENCRYPT_COLUMN)
+                  .getClock())
           .isEqualTo(Clock.systemUTC());
     }
 
@@ -67,8 +66,8 @@ public final class DeIdentifiedRecordSchemaConverterTest {
       IllegalStateException illegalStateException =
           assertThrows(
               IllegalStateException.class,
-              () -> DeIdentifiedRecordSchemaConverter.withOriginalSchema(testSchema)
-                  .updatedSchema());
+              () ->
+                  DeIdentifiedRecordSchemaConverter.withOriginalSchema(testSchema).updatedSchema());
 
       assertThat(illegalStateException)
           .hasMessageThat()
@@ -88,7 +87,8 @@ public final class DeIdentifiedRecordSchemaConverterTest {
               IllegalStateException.class,
               () ->
                   DeIdentifiedRecordSchemaConverter.withOriginalSchema(testSchema)
-                      .withEncryptColumnKeys(ImmutableList.of()).updatedSchema());
+                      .withEncryptColumnKeys(ImmutableList.of())
+                      .updatedSchema());
 
       assertThat(illegalStateException)
           .hasMessageThat()
@@ -102,9 +102,7 @@ public final class DeIdentifiedRecordSchemaConverterTest {
               NullPointerException.class,
               () -> DeIdentifiedRecordSchemaConverter.withOriginalSchema(null));
 
-      assertThat(nullPointerException)
-          .hasMessageThat()
-          .contains("original schema can't be null");
+      assertThat(nullPointerException).hasMessageThat().contains("original schema can't be null");
     }
 
     @Test
@@ -112,11 +110,10 @@ public final class DeIdentifiedRecordSchemaConverterTest {
 
       IllegalStateException illegalStateException =
           assertThrows(
-              IllegalStateException.class, () ->
-                  DeIdentifiedRecordSchemaConverter
-                      .withOriginalSchema(
-                          TestResourceLoader
-                              .classPath()
+              IllegalStateException.class,
+              () ->
+                  DeIdentifiedRecordSchemaConverter.withOriginalSchema(
+                          TestResourceLoader.classPath()
                               .forAvro()
                               .asSchema("avro_records/union_with_array_schema.json"))
                       .updatedSchema());
@@ -151,96 +148,96 @@ public final class DeIdentifiedRecordSchemaConverterTest {
     public static Collection<Object[]> schemaData() {
       return ImmutableList.<Object[]>builder()
           .add(
-              new Object[]{
-                  "encrypted_column_in_union_record_field",
-                  "2020-10-21T00:30:15Z",
-                  "avro_records/array_with_null_union_record_avro_schema.json",
-                  "avro_records/array_with_null_union_record_avro_encrypted_schema.json",
-                  ImmutableSet.of("$.kylosample.name", "$.kylosample.contacts.contact.number")
+              new Object[] {
+                "encrypted_column_in_union_record_field",
+                "2020-10-21T00:30:15Z",
+                "avro_records/array_with_null_union_record_avro_schema.json",
+                "avro_records/array_with_null_union_record_avro_encrypted_schema.json",
+                ImmutableSet.of("$.kylosample.name", "$.kylosample.contacts.contact.number")
               })
           .add(
-              new Object[]{
-                  "encrypted_column_in_union_long_field",
-                  "2020-10-21T00:40:15Z",
-                  "avro_records/array_with_null_union_long_avro_schema.json",
-                  "avro_records/array_with_null_union_long_avro_encrypted_schema.json",
-                  ImmutableSet.of("$.kylosample.name", "$.kylosample.nums")
+              new Object[] {
+                "encrypted_column_in_union_long_field",
+                "2020-10-21T00:40:15Z",
+                "avro_records/array_with_null_union_long_avro_schema.json",
+                "avro_records/array_with_null_union_long_avro_encrypted_schema.json",
+                ImmutableSet.of("$.kylosample.name", "$.kylosample.nums")
               })
           .add(
-              new Object[]{
-                  "fields_with_aliases_copied_valid",
-                  "2020-10-21T00:50:15Z",
-                  "avro_records/nullable_encryption_column_schema.json",
-                  "avro_records/nullable_encryption_column_encrypted_schema.json",
-                  ImmutableSet.of("$.kylosample.name", "$.kylosample.contacts.contact.number")
+              new Object[] {
+                "fields_with_aliases_copied_valid",
+                "2020-10-21T00:50:15Z",
+                "avro_records/nullable_encryption_column_schema.json",
+                "avro_records/nullable_encryption_column_encrypted_schema.json",
+                ImmutableSet.of("$.kylosample.name", "$.kylosample.contacts.contact.number")
               })
           .add(
-              new Object[]{
-                  "copies_user_defined_props",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/avroSchema_with_user_defined_props.json",
-                  "avro_records/avroSchema_with_user_defined_props_encrypted.json",
-                  ImmutableSet.of("$.kylosample.name", "$.kylosample.contacts.contact.number")
+              new Object[] {
+                "copies_user_defined_props",
+                "2020-10-21T01:00:15Z",
+                "avro_records/avroSchema_with_user_defined_props.json",
+                "avro_records/avroSchema_with_user_defined_props_encrypted.json",
+                ImmutableSet.of("$.kylosample.name", "$.kylosample.contacts.contact.number")
               })
           .add(
-              new Object[]{
-                  "union_with_all_types",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/union_with_all_types_avro_schema.json",
-                  "avro_records/union_with_all_types_avro_encrypted_schema.json",
-                  ImmutableSet.of(
-                      "$.union_all_test.union_with_enum",
-                      "$.union_all_test.union_with_boolean",
-                      "$.union_all_test.union_with_long",
-                      "$.union_all_test.union_with_int",
-                      "$.union_all_test.union_with_string",
-                      "$.union_all_test.union_with_float",
-                      "$.union_all_test.union_with_double",
-                      "$.union_all_test.union_with_fixed",
-                      "$.union_all_test.union_with_bytes",
-                      "$.union_all_test.union_with_record.custom_record.custom_field"
-                          + ".custom_field_record.second_level_field_string")
+              new Object[] {
+                "union_with_all_types",
+                "2020-10-21T01:00:15Z",
+                "avro_records/union_with_all_types_avro_schema.json",
+                "avro_records/union_with_all_types_avro_encrypted_schema.json",
+                ImmutableSet.of(
+                    "$.union_all_test.union_with_enum",
+                    "$.union_all_test.union_with_boolean",
+                    "$.union_all_test.union_with_long",
+                    "$.union_all_test.union_with_int",
+                    "$.union_all_test.union_with_string",
+                    "$.union_all_test.union_with_float",
+                    "$.union_all_test.union_with_double",
+                    "$.union_all_test.union_with_fixed",
+                    "$.union_all_test.union_with_bytes",
+                    "$.union_all_test.union_with_record.custom_record.custom_field"
+                        + ".custom_field_record.second_level_field_string")
               })
           .add(
-              new Object[]{
-                  "union_with_simple_type_array: string type for encrypted field",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/union_with_array_long_schema.json",
-                  "avro_records/union_with_array_long_encrypted_schema.json",
-                  ImmutableSet.of("$.kylosample.cc")
+              new Object[] {
+                "union_with_simple_type_array: string type for encrypted field",
+                "2020-10-21T01:00:15Z",
+                "avro_records/union_with_array_long_schema.json",
+                "avro_records/union_with_array_long_encrypted_schema.json",
+                ImmutableSet.of("$.kylosample.cc")
               })
           .add(
-              new Object[]{
-                  "union_with_simple_type_array: string type for encrypted field",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/union_with_array_schema.json",
-                  "avro_records/union_with_array_encrypted_schema.json",
-                  ImmutableSet.of("$.kylosample.cc")
+              new Object[] {
+                "union_with_simple_type_array: string type for encrypted field",
+                "2020-10-21T01:00:15Z",
+                "avro_records/union_with_array_schema.json",
+                "avro_records/union_with_array_encrypted_schema.json",
+                ImmutableSet.of("$.kylosample.cc")
               })
           .add(
-              new Object[]{
-                  "contact_schema",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/contacts_schema/person_name_union_null_long_contact_schema.json",
-                  "avro_records/contacts_schema/person_name_union_null_long_contact_encrypted_schema.json",
-                  ImmutableSet.of("$.contact_records.contacts.contact.number")
+              new Object[] {
+                "contact_schema",
+                "2020-10-21T01:00:15Z",
+                "avro_records/contacts_schema/person_name_union_null_long_contact_schema.json",
+                "avro_records/contacts_schema/person_name_union_null_long_contact_encrypted_schema.json",
+                ImmutableSet.of("$.contact_records.contacts.contact.number")
               })
           .add(
-              new Object[]{
-                  "contact_schema",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/contact_records_with_namespace/bq_contacts_schema.json",
-                  "avro_records/contact_records_with_namespace/bq_contacts_schema_encrypted.json",
-                  ImmutableSet.of("$.Root.contact.root.Contact.nums.root.contact.Nums.number")
+              new Object[] {
+                "contact_schema",
+                "2020-10-21T01:00:15Z",
+                "avro_records/contact_records_with_namespace/bq_contacts_schema.json",
+                "avro_records/contact_records_with_namespace/bq_contacts_schema_encrypted.json",
+                ImmutableSet.of("$.Root.contact.root.Contact.nums.root.contact.Nums.number")
               })
           .add(
-              new Object[]{
-                  "nyc_taxi_parquet_avro_schema",
-                  "2020-10-21T01:00:15Z",
-                  "avro_records/nyc_taxi_avro_schema.json",
-                  "avro_records/nyc_taxi_avro_schema_encrypted.json",
-                  ImmutableSet.of("$.schema.vendor_id", "$.schema.dropoff_latitude",
-                      "$.schema.dropoff_longitude")
+              new Object[] {
+                "nyc_taxi_parquet_avro_schema",
+                "2020-10-21T01:00:15Z",
+                "avro_records/nyc_taxi_avro_schema.json",
+                "avro_records/nyc_taxi_avro_schema_encrypted.json",
+                ImmutableSet.of(
+                    "$.schema.vendor_id", "$.schema.dropoff_latitude", "$.schema.dropoff_longitude")
               })
           .build();
     }
@@ -278,25 +275,25 @@ public final class DeIdentifiedRecordSchemaConverterTest {
     public static ImmutableList<Object[]> exceptionParameters() {
       return ImmutableList.<Object[]>builder()
           .add(
-              new Object[]{
-                  "union_3_fields",
-                  "avro_records/array_with_union_3types_avro_schema.json",
-                  "Union can contain max of two types. with first being null",
-                  UnsupportedOperationException.class
+              new Object[] {
+                "union_3_fields",
+                "avro_records/array_with_union_3types_avro_schema.json",
+                "Union can contain max of two types. with first being null",
+                UnsupportedOperationException.class
               })
           .add(
-              new Object[]{
-                  "map_field",
-                  "avro_records/simple_map_field_avro_schema.json",
-                  "Type not supported in Schema - MAP",
-                  UnsupportedOperationException.class
+              new Object[] {
+                "map_field",
+                "avro_records/simple_map_field_avro_schema.json",
+                "Type not supported in Schema - MAP",
+                UnsupportedOperationException.class
               })
           .add(
-              new Object[]{
-                  "union_field_with_map",
-                  "avro_records/union_with_map_schema.json",
-                  "Union of Union/Map is invalid schema",
-                  UnsupportedOperationException.class
+              new Object[] {
+                "union_field_with_map",
+                "avro_records/union_with_map_schema.json",
+                "Union of Union/Map is invalid schema",
+                UnsupportedOperationException.class
               })
           .build();
     }

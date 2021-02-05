@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.cloud.solutions.autotokenize.common.util;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -43,15 +44,12 @@ import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.io.JsonEncoder;
 
-/**
- * Utility methods to transform to/from JSON for Java-beans, Proto and AVRO types.
- */
+/** Utility methods to transform to/from JSON for Java-beans, Proto and AVRO types. */
 public final class JsonConvertor {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private JsonConvertor() {
-  }
+  private JsonConvertor() {}
 
   /**
    * Returns the Object serialized as JSON using Jackson ObjectWriter or Protobuf JsonFormat if the
@@ -74,7 +72,7 @@ public final class JsonConvertor {
       if (object instanceof Collection) {
         return "["
             + ((Collection<?>) object)
-            .stream().map(JsonConvertor::asJsonString).collect(Collectors.joining(","))
+                .stream().map(JsonConvertor::asJsonString).collect(Collectors.joining(","))
             + "]";
       }
 
@@ -91,9 +89,7 @@ public final class JsonConvertor {
     return "";
   }
 
-  /**
-   * Returns a JSON string of the given Map.
-   */
+  /** Returns a JSON string of the given Map. */
   private static String mapAsJsonString(Map<?, ?> map) {
     if (map == null || map.isEmpty()) {
       return "{}";
@@ -101,23 +97,19 @@ public final class JsonConvertor {
 
     return "{"
         + map.entrySet().stream()
-        .map(
-            entry ->
-                String.format("\"%s\": %s", entry.getKey(), asJsonString(entry.getValue())))
-        .collect(Collectors.joining(","))
+            .map(
+                entry ->
+                    String.format("\"%s\": %s", entry.getKey(), asJsonString(entry.getValue())))
+            .collect(Collectors.joining(","))
         + "}";
   }
 
-  /**
-   * Returns a JSON String representation using Jackson ObjectWriter.
-   */
+  /** Returns a JSON String representation using Jackson ObjectWriter. */
   private static <T> String convertJavaBeans(T object) throws JsonProcessingException {
     return new ObjectMapper().writer().writeValueAsString(object);
   }
 
-  /**
-   * Returns a JSON String representation using Protobuf JsonFormat.
-   */
+  /** Returns a JSON String representation using Protobuf JsonFormat. */
   public static String convertProtobufMessage(MessageOrBuilder message)
       throws InvalidProtocolBufferException {
     return JsonFormat.printer().print(message);
@@ -214,9 +206,7 @@ public final class JsonConvertor {
     return baos.toString();
   }
 
-  /**
-   * A Runtime class to encapsulate any conversion exceptions/errors.
-   */
+  /** A Runtime class to encapsulate any conversion exceptions/errors. */
   public static class JsonConversionException extends RuntimeException {
 
     public JsonConversionException(String message, Throwable cause) {

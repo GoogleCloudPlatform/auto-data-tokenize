@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
+
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import org.apache.avro.Schema;
@@ -28,7 +29,8 @@ import org.apache.beam.sdk.values.PCollection;
 
 /** Convert a FlatRecord to Generic Record and set Beam schema accordingly. */
 @AutoValue
-public abstract class RecordNester extends PTransform<PCollection<FlatRecord>, PCollection<GenericRecord>> {
+public abstract class RecordNester
+    extends PTransform<PCollection<FlatRecord>, PCollection<GenericRecord>> {
 
   abstract String schemaJson();
 
@@ -42,10 +44,11 @@ public abstract class RecordNester extends PTransform<PCollection<FlatRecord>, P
 
   @Override
   public PCollection<GenericRecord> expand(PCollection<FlatRecord> flatRecords) {
-    return flatRecords.apply("ReNestRecords", MapElements.via(new RecordNesterFn(schemaJson())))
-      .setCoder(AvroUtils.schemaCoder(GenericRecord.class, new Schema.Parser().parse(schemaJson())));
+    return flatRecords
+        .apply("ReNestRecords", MapElements.via(new RecordNesterFn(schemaJson())))
+        .setCoder(
+            AvroUtils.schemaCoder(GenericRecord.class, new Schema.Parser().parse(schemaJson())));
   }
-
 
   private static class RecordNesterFn extends SimpleFunction<FlatRecord, GenericRecord> {
 

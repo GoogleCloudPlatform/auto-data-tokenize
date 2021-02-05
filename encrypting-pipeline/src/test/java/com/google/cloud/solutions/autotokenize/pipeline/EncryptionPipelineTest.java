@@ -52,14 +52,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class EncryptionPipelineTest implements Serializable {
 
-  @Rule
-  public transient TestPipeline mainPipeline = TestPipeline.create();
+  @Rule public transient TestPipeline mainPipeline = TestPipeline.create();
 
-  @Rule
-  public transient TestPipeline readPipeline = TestPipeline.create();
+  @Rule public transient TestPipeline readPipeline = TestPipeline.create();
 
-  @Rule
-  public transient TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public transient TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private transient String tempAvroFile;
 
@@ -68,20 +65,21 @@ public final class EncryptionPipelineTest implements Serializable {
   private static final String TEST_DLP_ENCRYPT_CONFIG_JSON;
   private static final String PROJECT_ID = "test-project";
 
-
   static {
-    TEST_RECORDS = TestResourceLoader.classPath().forAvro().readFile("userdata.avro").loadAllRecords();
+    TEST_RECORDS =
+        TestResourceLoader.classPath().forAvro().readFile("userdata.avro").loadAllRecords();
     TEST_RECORD_SCHEMA = TEST_RECORDS.get(0).getSchema();
-    TEST_DLP_ENCRYPT_CONFIG_JSON = TestResourceLoader.classPath().loadAsString("email_cc_dlp_encrypt_config.json");
+    TEST_DLP_ENCRYPT_CONFIG_JSON =
+        TestResourceLoader.classPath().loadAsString("email_cc_dlp_encrypt_config.json");
   }
 
   @Before
   public void makeTempCopyOfUserDataAvro() throws IOException {
     tempAvroFile =
-      TestResourceLoader.classPath()
-        .copyTo(temporaryFolder.newFolder())
-        .createFileTestCopy("userdata.avro")
-        .getAbsolutePath();
+        TestResourceLoader.classPath()
+            .copyTo(temporaryFolder.newFolder())
+            .createFileTestCopy("userdata.avro")
+            .getAbsolutePath();
   }
 
   @Test
@@ -92,28 +90,26 @@ public final class EncryptionPipelineTest implements Serializable {
     options.setSourceType(SourceType.AVRO);
     options.setSchema(TEST_RECORD_SCHEMA.toString());
     options.setOutputDirectory(temporaryFolder.newFolder().getAbsolutePath());
-    options.setTokenizeColumns(DeidentifyColumns.columnNamesIn(JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class)));
+    options.setTokenizeColumns(
+        DeidentifyColumns.columnNamesIn(
+            JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class)));
     options.setProject(PROJECT_ID);
     Schema encryptedSchema =
-      DeIdentifiedRecordSchemaConverter
-        .withOriginalSchema(TEST_RECORD_SCHEMA)
-        .withEncryptColumnKeys(options.getTokenizeColumns())
-        .updatedSchema();
+        DeIdentifiedRecordSchemaConverter.withOriginalSchema(TEST_RECORD_SCHEMA)
+            .withEncryptColumnKeys(options.getTokenizeColumns())
+            .updatedSchema();
 
     // Perform the Encryption pipeline
-    new EncryptionPipeline.EncryptingPipelineFactory(options, mainPipeline, DlpClientFactory.withStub(makeDlpStub()))
-      .buildPipeline()
-      .run()
-      .waitUntilFinish();
+    new EncryptionPipeline.EncryptingPipelineFactory(
+            options, mainPipeline, DlpClientFactory.withStub(makeDlpStub()))
+        .buildPipeline()
+        .run()
+        .waitUntilFinish();
 
     // Read the output Avro file
     PCollection<GenericRecord> encryptedRecords =
-      readPipeline
-        .apply(
-          AvroIO
-            .readGenericRecords(encryptedSchema)
-            .from(options.getOutputDirectory() + "/*"));
-
+        readPipeline.apply(
+            AvroIO.readGenericRecords(encryptedSchema).from(options.getOutputDirectory() + "/*"));
 
     PAssert.that(encryptedRecords).satisfies(new MatchRecordsCountFn<>(TEST_RECORDS.size()));
 
@@ -136,21 +132,23 @@ public final class EncryptionPipelineTest implements Serializable {
   }
 
   private static Base64EncodingDlpStub makeDlpStub() {
-    return new Base64EncodingDlpStub(PartialColumnBatchAccumulator.RECORD_ID_COLUMN_NAME, buildExpectedHeaders(), PROJECT_ID);
+    return new Base64EncodingDlpStub(
+        PartialColumnBatchAccumulator.RECORD_ID_COLUMN_NAME, buildExpectedHeaders(), PROJECT_ID);
   }
 
   private static ImmutableList<String> buildExpectedHeaders() {
-    ImmutableList<String> encryptColumns = DeidentifyColumns.columnNamesIn(JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class));
+    ImmutableList<String> encryptColumns =
+        DeidentifyColumns.columnNamesIn(
+            JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class));
 
-    return TEST_RECORDS.stream().map(RecordFlattener.forGenericRecord()::flatten)
-      .map(FlatRecord::getFlatKeySchemaMap)
-      .map(Map::entrySet)
-      .flatMap(Set::stream)
-      .filter(e -> encryptColumns.contains(e.getValue()))
-      .map(Map.Entry::getKey)
-      .distinct()
-      .collect(ImmutableList.toImmutableList());
+    return TEST_RECORDS.stream()
+        .map(RecordFlattener.forGenericRecord()::flatten)
+        .map(FlatRecord::getFlatKeySchemaMap)
+        .map(Map::entrySet)
+        .flatMap(Set::stream)
+        .filter(e -> encryptColumns.contains(e.getValue()))
+        .map(Map.Entry::getKey)
+        .distinct()
+        .collect(ImmutableList.toImmutableList());
   }
-
-
 }

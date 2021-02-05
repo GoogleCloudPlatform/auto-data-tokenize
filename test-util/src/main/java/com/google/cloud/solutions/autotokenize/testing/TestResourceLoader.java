@@ -53,7 +53,6 @@ public abstract class TestResourceLoader {
 
   public abstract InputStream loadResourceInputStream(String resourcePath) throws IOException;
 
-
   public static ResourceActions classPath() {
     return new ResourceActions(new ClassPathTestResourceLoader());
   }
@@ -86,9 +85,9 @@ public abstract class TestResourceLoader {
     public String loadResourceAsString(String resourcePath) throws IOException {
 
       try (BufferedReader reader =
-             new BufferedReader(
-               new InputStreamReader(
-                 loadResource(resourcePath).openStream(), StandardCharsets.UTF_8))) {
+          new BufferedReader(
+              new InputStreamReader(
+                  loadResource(resourcePath).openStream(), StandardCharsets.UTF_8))) {
         return reader.lines().collect(Collectors.joining("\n"));
       }
     }
@@ -101,8 +100,8 @@ public abstract class TestResourceLoader {
     @SuppressWarnings("UnstableApiUsage")
     private URL loadResource(String resourcePath) {
       return (contextClass == null)
-        ? Resources.getResource(resourcePath)
-        : Resources.getResource(contextClass, resourcePath);
+          ? Resources.getResource(resourcePath)
+          : Resources.getResource(contextClass, resourcePath);
     }
   }
 
@@ -134,10 +133,14 @@ public abstract class TestResourceLoader {
         File outputFile = File.createTempFile("temp_", "", folder);
 
         long copiedBytes =
-          Files.asByteSink(outputFile).writeFrom(resourceLoader.loadResourceInputStream(resourcePath));
+            Files.asByteSink(outputFile)
+                .writeFrom(resourceLoader.loadResourceInputStream(resourcePath));
 
-        GoogleLogger.forEnclosingClass().atInfo()
-          .log("Copied %s bytes from %s to %s", copiedBytes, resourcePath, outputFile.getAbsolutePath());
+        GoogleLogger.forEnclosingClass()
+            .atInfo()
+            .log(
+                "Copied %s bytes from %s to %s",
+                copiedBytes, resourcePath, outputFile.getAbsolutePath());
 
         return outputFile;
       };
@@ -215,10 +218,9 @@ public abstract class TestResourceLoader {
 
       public ImmutableList<GenericRecord> loadAllRecords() {
 
-        try (
-          DataFileStream<GenericRecord> fileStream =
+        try (DataFileStream<GenericRecord> fileStream =
             new DataFileStream<>(
-              resourceLoader.loadResourceInputStream(filePath), new GenericDatumReader<>())) {
+                resourceLoader.loadResourceInputStream(filePath), new GenericDatumReader<>())) {
 
           ImmutableList.Builder<GenericRecord> recordBuilder = ImmutableList.builder();
 
@@ -243,13 +245,13 @@ public abstract class TestResourceLoader {
 
       public GenericRecord loadRecord(String recordResourcePath) {
         return JsonConvertor.convertJsonToAvro(
-          schema, resourceLoader.loadAsString(recordResourcePath));
+            schema, resourceLoader.loadAsString(recordResourcePath));
       }
 
       public ImmutableList<GenericRecord> loadAllRecords(List<String> recordFiles) {
         return ImmutableList.copyOf(recordFiles).stream()
-          .map(this::loadRecord)
-          .collect(toImmutableList());
+            .map(this::loadRecord)
+            .collect(toImmutableList());
       }
 
       public ImmutableList<GenericRecord> loadAllRecords(String... recordFiles) {

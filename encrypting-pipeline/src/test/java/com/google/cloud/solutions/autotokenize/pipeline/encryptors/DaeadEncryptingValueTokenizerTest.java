@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,24 +41,24 @@ public final class DaeadEncryptingValueTokenizerTest {
     DeterministicAeadConfig.register();
     testEncrypter =
         CleartextKeysetHandle.read(
-            JsonKeysetReader.withString(
-                TestResourceLoader.classPath().loadAsString("test_encryption_key.json")))
+                JsonKeysetReader.withString(
+                    TestResourceLoader.classPath().loadAsString("test_encryption_key.json")))
             .getPrimitive(DeterministicAead.class);
   }
 
   @Test
   public void encrypt_valid() throws ValueTokenizer.ValueTokenizingException {
     assertThat(
-        new DaeadEncryptingValueTokenizer(testEncrypter)
-            .encrypt(Value.newBuilder().setStringValue("this is sample string").build()))
+            new DaeadEncryptingValueTokenizer(testEncrypter)
+                .encrypt(Value.newBuilder().setStringValue("this is sample string").build()))
         .isEqualTo("AWWfEcxShER0JUXMtNDppkQ83xhl4J/ZwU6QL/ExcJz93UD7mWOAxvPoKz8=");
   }
 
   @Test
   public void decrypt_valid() throws ValueTokenizer.ValueTokenizingException {
     assertThat(
-        new DaeadEncryptingValueTokenizer(testEncrypter)
-            .decrypt("AWWfEcxShER0JUXMtNDppkQ83xhl4J/ZwU6QL/ExcJz93UD7mWOAxvPoKz8="))
+            new DaeadEncryptingValueTokenizer(testEncrypter)
+                .decrypt("AWWfEcxShER0JUXMtNDppkQ83xhl4J/ZwU6QL/ExcJz93UD7mWOAxvPoKz8="))
         .isEqualTo(Value.newBuilder().setStringValue("this is sample string").build());
   }
 }

@@ -217,14 +217,6 @@ in the Cloud Console.
    --role=roles/dataflow.worker
    ```
 
-1. Create and download the credential file of the service account to allow calling Google Cloud services with this
-   service-account's credentials.
-   ```shell script
-   gcloud iam service-accounts keys create \
-   service-account-key.json \
-   --iam-account="${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL}"
-   ```
-
 ### Create Key encryption key
 
 The data would be encrypted using a Data Encryption Key (DEK). You will
@@ -245,15 +237,15 @@ it.
    ```shell script
    mkdir tinkey/
    tar zxf tinkey-<version>.tar.gz -C tinkey/
-   alias tinkey='${PWD}/tinkey/tinkey'
+   export TINKEY="${PWD}/tinkey/tinkey"
+   alias tinkey="${TINKEY}"
    ```
 
 1. Create a new wrapped data encryption key.
    ```shell script
    tinkey create-keyset \
    --master-key-uri="${MAIN_KMS_KEY_URI}" \
-   --key-template=AES256_SIV \
-   --credential="service-account-key.json" \
+   --key-template=AES256_SIV \   
    --out="${WRAPPED_KEY_FILE}" \
    --out-format=json
    ```
@@ -279,10 +271,11 @@ gsutil cp userdata.avro gs://${TEMP_GCS_BUCKET}
 You need to compile all the modules to build executables for deploying the _sample & identify_ and _bulk tokenize_ pipelines.
 
 ```shell script
-mvn clean generate-sources compile package
+gradle clean buildNeeded shadowJar
 ```
 
-> Add `-Dmaven.test.skip=true` flag to skip running tests.
+> Add `-x test` flag to skip running tests.
+> Add `--parallel` to allow gradle to use multiple threads. 
 
 ## Run Sample and Identify pipeline
 

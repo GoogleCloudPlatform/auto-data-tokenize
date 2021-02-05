@@ -47,74 +47,78 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
   private final String projectId;
 
   public Base64EncodingDlpStub(
-    String recordIdColumnName, ImmutableList<String> expectedHeaders, String projectId) {
+      String recordIdColumnName, ImmutableList<String> expectedHeaders, String projectId) {
     this.recordIdColumnName = recordIdColumnName;
     this.expectedHeaders =
-      expectedHeaders.stream()
-        .map(h -> FieldId.newBuilder().setName(h).build())
-        .collect(toImmutableList());
+        expectedHeaders.stream()
+            .map(h -> FieldId.newBuilder().setName(h).build())
+            .collect(toImmutableList());
     this.projectId = projectId;
   }
 
   @Override
   public UnaryCallable<DeidentifyContentRequest, DeidentifyContentResponse>
-  deidentifyContentCallable() {
+      deidentifyContentCallable() {
     return new UnaryCallable<DeidentifyContentRequest, DeidentifyContentResponse>() {
       @Override
       public ApiFuture<DeidentifyContentResponse> futureCall(
-        DeidentifyContentRequest deidentifyContentRequest, ApiCallContext apiCallContext) {
+          DeidentifyContentRequest deidentifyContentRequest, ApiCallContext apiCallContext) {
         return new BaseUnaryApiFuture<DeidentifyContentResponse>() {
           @Override
           public DeidentifyContentResponse get() {
 
             assertThat(deidentifyContentRequest.getParent())
-              .isEqualTo(String.format("projects/%s", projectId));
+                .isEqualTo(String.format("projects/%s", projectId));
 
             List<FieldTransformation> fieldTransformations =
-              deidentifyContentRequest
-                .getDeidentifyConfig()
-                .getRecordTransformations()
-                .getFieldTransformationsList();
+                deidentifyContentRequest
+                    .getDeidentifyConfig()
+                    .getRecordTransformations()
+                    .getFieldTransformationsList();
 
             List<FieldId> headers = deidentifyContentRequest.getItem().getTable().getHeadersList();
 
             assertThat(headers)
-              .containsAnyIn(
-                ImmutableList.builder()
-                  .add(recordIdColumnName)
-                  .addAll(expectedHeaders)
-                  .build());
+                .containsAnyIn(
+                    ImmutableList.builder()
+                        .add(recordIdColumnName)
+                        .addAll(expectedHeaders)
+                        .build());
 
             int recordIdColumnIndex =
-              deidentifyContentRequest.getItem().getTable()
-                .getHeadersList().indexOf(FieldId.newBuilder().setName(recordIdColumnName).build());
+                deidentifyContentRequest
+                    .getItem()
+                    .getTable()
+                    .getHeadersList()
+                    .indexOf(FieldId.newBuilder().setName(recordIdColumnName).build());
 
             List<Row> updatedRows =
-              deidentifyContentRequest.getItem().getTable().getRowsList().stream()
-                .map(
-                  row -> {
-                    List<Value> valuesList = row.getValuesList();
-                    ImmutableList.Builder<Value> outputValueBuilder = ImmutableList.builder();
+                deidentifyContentRequest.getItem().getTable().getRowsList().stream()
+                    .map(
+                        row -> {
+                          List<Value> valuesList = row.getValuesList();
+                          ImmutableList.Builder<Value> outputValueBuilder = ImmutableList.builder();
 
-                    for (int i = 0; i < valuesList.size(); i++) {
+                          for (int i = 0; i < valuesList.size(); i++) {
 
-                      Value value = valuesList.get(i);
-                      outputValueBuilder.add((i == recordIdColumnIndex) ? value : encodeBase64Value(value));
-                    }
+                            Value value = valuesList.get(i);
+                            outputValueBuilder.add(
+                                (i == recordIdColumnIndex) ? value : encodeBase64Value(value));
+                          }
 
-                    return row.toBuilder()
-                      .clearValues()
-                      .addAllValues(outputValueBuilder.build())
-                      .build();
-                  })
-                .collect(toImmutableList());
+                          return row.toBuilder()
+                              .clearValues()
+                              .addAllValues(outputValueBuilder.build())
+                              .build();
+                        })
+                    .collect(toImmutableList());
 
             return DeidentifyContentResponse.newBuilder()
-              .setItem(
-                ContentItem.newBuilder()
-                  .setTable(Table.newBuilder().addAllHeaders(headers).addAllRows(updatedRows))
-                  .build())
-              .build();
+                .setItem(
+                    ContentItem.newBuilder()
+                        .setTable(Table.newBuilder().addAllHeaders(headers).addAllRows(updatedRows))
+                        .build())
+                .build();
           }
         };
       }
@@ -150,7 +154,7 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
   }
 
   private final TestingBackgroundResource testingBackgroundResource =
-    new TestingBackgroundResource();
+      new TestingBackgroundResource();
 
   @Override
   public void shutdown() {

@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
-
 public interface BatchAccumulatorFactory<InputT, OutputT> {
   BatchAccumulator<InputT, OutputT> newAccumulator();
 }

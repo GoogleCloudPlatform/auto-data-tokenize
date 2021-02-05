@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,14 @@ public final class GenericRecordFlattenerTest {
   @RunWith(Parameterized.class)
   public static final class ValidInputOutputTests {
 
-    @Parameter
-    public String testConditionName;
+    @Parameter public String testConditionName;
+
     @Parameter(1)
     public String avroSchemaJsonFile;
+
     @Parameter(2)
     public String avroRecordJsonFile;
+
     @Parameter(3)
     public String expectedFlatRecordFile;
 
@@ -49,49 +51,50 @@ public final class GenericRecordFlattenerTest {
     public static ImmutableList<Object[]> testingParameters() {
       return ImmutableList.<Object[]>builder()
           .add(
-              new Object[]{
-                  "nonComplexFields",
-                  "avro_records/simple_field_avro_schema.json",
-                  "avro_records/simple_field_avro_record.json",
-                  "flat_records/simple_field_flat_record.textpb"
+              new Object[] {
+                "nonComplexFields",
+                "avro_records/simple_field_avro_schema.json",
+                "avro_records/simple_field_avro_record.json",
+                "flat_records/simple_field_flat_record.textpb"
               })
           .add(
-              new Object[]{
-                  "simpleArrayField",
-                  "avro_records/array_with_null_union_long_avro_schema.json",
-                  "avro_records/array_with_null_union_long_avro_record.json",
-                  "flat_records/array_with_null_union_long_flat_record.textpb"
+              new Object[] {
+                "simpleArrayField",
+                "avro_records/array_with_null_union_long_avro_schema.json",
+                "avro_records/array_with_null_union_long_avro_record.json",
+                "flat_records/array_with_null_union_long_flat_record.textpb"
               })
           .add(
-              new Object[]{
-                  "recordArrayField",
-                  "avro_records/array_with_null_union_record_avro_schema.json",
-                  "avro_records/array_with_null_union_record_avro_record.json",
-                  "flat_records/array_with_null_union_record_flat_record.textpb"
+              new Object[] {
+                "recordArrayField",
+                "avro_records/array_with_null_union_record_avro_schema.json",
+                "avro_records/array_with_null_union_record_avro_record.json",
+                "flat_records/array_with_null_union_record_flat_record.textpb"
               })
           .add(
-              new Object[]{
-                  "unionWithArrayField",
-                  "avro_records/union_with_array_schema.json",
-                  "avro_records/union_with_array_record.json",
-                  "flat_records/union_with_array_flat_record.textpb"
+              new Object[] {
+                "unionWithArrayField",
+                "avro_records/union_with_array_schema.json",
+                "avro_records/union_with_array_record.json",
+                "flat_records/union_with_array_flat_record.textpb"
               })
           .add(
-              new Object[]{
-                  "userdata_avro",
-                  "avro_records/userdata_records/schema.json",
-                  "avro_records/userdata_records/record-1.json",
-                  "flat_records/userdata_avro/record-1.textpb"
+              new Object[] {
+                "userdata_avro",
+                "avro_records/userdata_records/schema.json",
+                "avro_records/userdata_records/record-1.json",
+                "flat_records/userdata_avro/record-1.textpb"
               })
           .build();
     }
 
     @Test
     public void convert_valid() {
-      GenericRecord testRecord = TestResourceLoader.classPath()
-          .forAvro()
-          .withSchemaFile(avroSchemaJsonFile)
-          .loadRecord(avroRecordJsonFile);
+      GenericRecord testRecord =
+          TestResourceLoader.classPath()
+              .forAvro()
+              .withSchemaFile(avroSchemaJsonFile)
+              .loadRecord(avroRecordJsonFile);
 
       FlatRecord flatRecord = new GenericRecordFlattener().flatten(testRecord);
 
@@ -106,8 +109,7 @@ public final class GenericRecordFlattenerTest {
   @RunWith(Parameterized.class)
   public static final class InvalidSchemaExceptionTests {
 
-    @Parameter
-    public String testConditionName;
+    @Parameter public String testConditionName;
 
     @Parameter(1)
     public String avroSchemaJsonFile;
@@ -125,29 +127,29 @@ public final class GenericRecordFlattenerTest {
     public static ImmutableList<Object[]> testingParameters() {
       return ImmutableList.<Object[]>builder()
           .add(
-              new Object[]{
-                  "union3types",
-                  "avro_records/array_with_union_3types_avro_schema.json",
-                  "avro_records/array_with_union_3types_avro_record.json",
-                  UnsupportedOperationException.class,
-                  "Only nullable union with one type is supported. found [\"null\", \"long\","
-                      + " \"string\"]"
+              new Object[] {
+                "union3types",
+                "avro_records/array_with_union_3types_avro_schema.json",
+                "avro_records/array_with_union_3types_avro_record.json",
+                UnsupportedOperationException.class,
+                "Only nullable union with one type is supported. found [\"null\", \"long\","
+                    + " \"string\"]"
               })
           .add(
-              new Object[]{
-                  "unionFirstNonNullType",
-                  "avro_records/array_with_union_long_string_avro_schema.json",
-                  "avro_records/array_with_union_3types_avro_record.json",
-                  UnsupportedOperationException.class,
-                  "Only nullable union with one type is supported. found [\"long\", \"string\"]"
+              new Object[] {
+                "unionFirstNonNullType",
+                "avro_records/array_with_union_long_string_avro_schema.json",
+                "avro_records/array_with_union_3types_avro_record.json",
+                UnsupportedOperationException.class,
+                "Only nullable union with one type is supported. found [\"long\", \"string\"]"
               })
           .add(
-              new Object[]{
-                  "mapTypeField_",
-                  "avro_records/simple_map_field_avro_schema.json",
-                  "avro_records/simple_map_field_avro_record.json",
-                  UnsupportedOperationException.class,
-                  "Unsupported Type MAP at $.mapValue"
+              new Object[] {
+                "mapTypeField_",
+                "avro_records/simple_map_field_avro_schema.json",
+                "avro_records/simple_map_field_avro_record.json",
+                UnsupportedOperationException.class,
+                "Unsupported Type MAP at $.mapValue"
               })
           .build();
     }
@@ -155,14 +157,15 @@ public final class GenericRecordFlattenerTest {
     @Test
     public void convert_unsupportedSchema() {
       assertThat(
-          assertThrows(
-              exceptionClass,
-              () ->
-                new GenericRecordFlattener().flatten(
-                      TestResourceLoader.classPath()
-                          .forAvro()
-                          .withSchemaFile(avroSchemaJsonFile)
-                          .loadRecord(avroRecordJsonFile))))
+              assertThrows(
+                  exceptionClass,
+                  () ->
+                      new GenericRecordFlattener()
+                          .flatten(
+                              TestResourceLoader.classPath()
+                                  .forAvro()
+                                  .withSchemaFile(avroSchemaJsonFile)
+                                  .loadRecord(avroRecordJsonFile))))
           .hasMessageThat()
           .contains(expectedExceptionMessage);
     }

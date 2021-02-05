@@ -53,7 +53,6 @@ public class TokenizeColumnNameUpdater implements Serializable {
     private final FlatRecord record;
     private final ImmutableMap<String, String> flatKeySchemaKey;
 
-
     public RecordColumnNameUpdater(ImmutableSet<String> tokenizeSchemaKeys, FlatRecord record) {
       this.tokenizeSchemaKeys = tokenizeSchemaKeys;
       this.record = record;
@@ -63,32 +62,31 @@ public class TokenizeColumnNameUpdater implements Serializable {
     public FlatRecord update() {
 
       ImmutableMap<String, Value> updatedColumnNameWithValues =
-        record.getValuesMap().entrySet().stream().map(
-          entry -> {
-            if (isTokenizeColumn(entry.getKey())) {
-              return ImmutablePair.of(encryptedColumnName(entry.getKey()), entry.getValue());
-            }
+          record.getValuesMap().entrySet().stream()
+              .map(
+                  entry -> {
+                    if (isTokenizeColumn(entry.getKey())) {
+                      return ImmutablePair.of(
+                          encryptedColumnName(entry.getKey()), entry.getValue());
+                    }
 
-            return ImmutablePair.of(entry.getKey(), entry.getValue());
-          })
-          .collect(toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
+                    return ImmutablePair.of(entry.getKey(), entry.getValue());
+                  })
+              .collect(toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
 
       return record.toBuilder().clearValues().putAllValues(updatedColumnNameWithValues).build();
     }
 
-    /**
-     * Returns {@code true} if the flatKey is present in the tokenize-schema-keys.
-     */
+    /** Returns {@code true} if the flatKey is present in the tokenize-schema-keys. */
     public boolean isTokenizeColumn(String flatKey) {
       return tokenizeSchemaKeys.contains(flatKeySchemaKey.get(flatKey));
     }
 
     /**
      * Generates the encrypted schema key for the a tokenize-column.
-     * <p>
-     * It identifies if the schemaKey is of an array-element and handles appropriately. e.g.
+     *
+     * <p>It identifies if the schemaKey is of an array-element and handles appropriately. e.g.
      * $.contacts[1].contact.number => $.contacts[1].contact.<b>encrypted_</b>number
-     * </p>
      *
      * @param tokenizeFlatKey the column's schema key that needs to be converted to encrypted-name
      * @return the column's schema key with 'encrypted_' prefixed to the leaf field name.
@@ -96,22 +94,23 @@ public class TokenizeColumnNameUpdater implements Serializable {
     public String encryptedColumnName(String tokenizeFlatKey) {
       String[] flatKeyParts = Splitter.on(".").splitToList(tokenizeFlatKey).toArray(new String[0]);
       String[] schemaKeyParts =
-        Splitter.on(".").splitToList(flatKeySchemaKey.get(tokenizeFlatKey))
-          .toArray(new String[0]);
+          Splitter.on(".")
+              .splitToList(flatKeySchemaKey.get(tokenizeFlatKey))
+              .toArray(new String[0]);
       String encryptFieldName = schemaKeyParts[schemaKeyParts.length - 1];
 
       int fieldNameOffset = flatKeyParts[flatKeyParts.length - 1].equals(encryptFieldName) ? 1 : 2;
 
       int flatKeyFieldNamePartIndex = flatKeyParts.length - fieldNameOffset;
 
-      //check for type conversion for union
+      // check for type conversion for union
       if (fieldNameOffset == 2) {
         flatKeyParts[flatKeyFieldNamePartIndex + 1] = "string";
       }
 
       flatKeyParts[flatKeyFieldNamePartIndex] =
-        DeIdentifiedRecordSchemaConverter.DEIDENTIFIED_FIELD_NAME_PREFIX
-          + flatKeyParts[flatKeyFieldNamePartIndex];
+          DeIdentifiedRecordSchemaConverter.DEIDENTIFIED_FIELD_NAME_PREFIX
+              + flatKeyParts[flatKeyFieldNamePartIndex];
 
       return Joiner.on(".").join(flatKeyParts);
     }

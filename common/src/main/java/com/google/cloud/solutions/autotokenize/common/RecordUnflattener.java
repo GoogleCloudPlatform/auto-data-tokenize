@@ -51,9 +51,7 @@ public class RecordUnflattener {
     return new RecordUnflattener(schema);
   }
 
-  /**
-   * Returns an AVRO record by unflattening the FlatRecord through JSON unflattener.
-   */
+  /** Returns an AVRO record by unflattening the FlatRecord through JSON unflattener. */
   public GenericRecord unflatten(FlatRecord flatRecord) {
 
     Map<String, Object> jsonValueMap = Maps.newHashMap();
@@ -63,21 +61,17 @@ public class RecordUnflattener {
       jsonValueMap.put(valueProcessor.cleanKey(), valueProcessor.convertedValue());
     }
 
-    String unflattenedRecordJson =
-        new JsonUnflattener(jsonValueMap).unflatten();
+    String unflattenedRecordJson = new JsonUnflattener(jsonValueMap).unflatten();
 
     return convertJsonToAvro(schema, unflattenedRecordJson);
   }
 
-  /**
-   * Helper class to convert a {@link Value} to JSON compatible object.
-   */
+  /** Helper class to convert a {@link Value} to JSON compatible object. */
   private static class ValueProcessor {
 
-    /**
-     * REGEX pattern to extract a string value's actual type that is suffixed with the key name.
-     */
+    /** REGEX pattern to extract a string value's actual type that is suffixed with the key name. */
     private static final Pattern VALUE_PATTERN = Pattern.compile("/(?<type>\\w+)$");
+
     private final String rawKey;
     private final Value value;
 
@@ -118,9 +112,7 @@ public class RecordUnflattener {
       }
     }
 
-    /**
-     * Returns the original type of a string value.
-     */
+    /** Returns the original type of a string value. */
     private String keyType() {
       Matcher matcher = VALUE_PATTERN.matcher(rawKey);
       if (matcher.find()) {
@@ -130,9 +122,7 @@ public class RecordUnflattener {
       return null;
     }
 
-    /**
-     * Remove the type-suffix from string value's key.
-     */
+    /** Remove the type-suffix from string value's key. */
     private String cleanKey() {
       return VALUE_PATTERN.matcher(rawKey).replaceFirst("").replaceFirst("^\\$\\.", "");
     }

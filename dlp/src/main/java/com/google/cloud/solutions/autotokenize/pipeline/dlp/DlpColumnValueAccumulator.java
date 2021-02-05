@@ -41,15 +41,14 @@ import java.util.Optional;
 import org.apache.beam.sdk.values.KV;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Provides batching of column-values into DLP table, Along with a map of ColumnName mapping.
- */
-public class DlpColumnValueAccumulator implements
-    BatchAccumulator<KV<String, Iterable<Value>>, KV<Table, Map<String, String>>> {
+/** Provides batching of column-values into DLP table, Along with a map of ColumnName mapping. */
+public class DlpColumnValueAccumulator
+    implements BatchAccumulator<KV<String, Iterable<Value>>, KV<Table, Map<String, String>>> {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private static final int MAX_SERIALIZED_SIZE = 500000; // 500KB = max payload size for Dlp Content API
+  private static final int MAX_SERIALIZED_SIZE =
+      500000; // 500KB = max payload size for Dlp Content API
   private static final int MAX_TABLE_ROWS_COUNT = 50000; // 50K
   private final HashMap<String, LinkedList<Value>> values = Maps.newHashMap();
   private int accumulatedSize = 0;
@@ -63,16 +62,16 @@ public class DlpColumnValueAccumulator implements
   public boolean addElement(KV<String, Iterable<Value>> newColumnValues) {
     List<Value> newValues = Lists.newLinkedList(newColumnValues.getValue());
     int newSize =
-        computeSerializedSize(newValues) + FieldId.newBuilder().setName(newColumnValues.getKey())
-            .build().getSerializedSize();
-    int newElementsCount = newValues.size() + 1; //+1 for header.
+        computeSerializedSize(newValues)
+            + FieldId.newBuilder().setName(newColumnValues.getKey()).build().getSerializedSize();
+    int newElementsCount = newValues.size() + 1; // +1 for header.
 
     if (accumulatedSize + newSize <= MAX_SERIALIZED_SIZE
         && accumulatedElements + newElementsCount <= MAX_TABLE_ROWS_COUNT) {
       if (!values.containsKey(newColumnValues.getKey())) {
         values.put(newColumnValues.getKey(), Lists.newLinkedList());
       }
-      //Append values to header values if headerName exists.
+      // Append values to header values if headerName exists.
       values.get(newColumnValues.getKey()).addAll(newValues);
 
       logger.atInfo().log("Adding Col:%s, Elements:%s", newColumnValues.getKey(), newValues.size());
@@ -105,15 +104,13 @@ public class DlpColumnValueAccumulator implements
             .addAllRows(valueRows)
             .build();
 
-    Map<String, String> columnNameMap = allHeaders.stream()
-        .collect(toImmutableMap(identity(), identity()));
+    Map<String, String> columnNameMap =
+        allHeaders.stream().collect(toImmutableMap(identity(), identity()));
 
     return DlpTableBatch.create(KV.of(batchedTable, columnNameMap));
   }
 
-  /**
-   * Returns the total serialized size of all the elements in the list.
-   */
+  /** Returns the total serialized size of all the elements in the list. */
   private static int computeSerializedSize(List<Value> values) {
     if (values == null) {
       return 0;
@@ -122,11 +119,9 @@ public class DlpColumnValueAccumulator implements
     return values.stream().mapToInt(Value::getSerializedSize).sum();
   }
 
-  /**
-   * Converts empty elements as {@link Value#getDefaultInstance()}
-   */
-  private static class ConvertEmptyElementsToDefault implements
-      Function<List<Optional<Value>>, List<Value>> {
+  /** Converts empty elements as {@link Value#getDefaultInstance()} */
+  private static class ConvertEmptyElementsToDefault
+      implements Function<List<Optional<Value>>, List<Value>> {
 
     static ConvertEmptyElementsToDefault create() {
       return new ConvertEmptyElementsToDefault();
@@ -134,44 +129,38 @@ public class DlpColumnValueAccumulator implements
 
     @Override
     public @Nullable List<Value> apply(@Nullable List<Optional<Value>> elements) {
-      return elements.stream().map(element -> element.orElse(Value.getDefaultInstance()))
+      return elements.stream()
+          .map(element -> element.orElse(Value.getDefaultInstance()))
           .collect(toList());
     }
   }
 
-
-  /**
-   * Represents Batch of elements as {@link Table} elements and its attributes.
-   */
+  /** Represents Batch of elements as {@link Table} elements and its attributes. */
   @AutoValue
-  public static abstract class DlpTableBatch implements
-    BatchAccumulator.Batch<KV<Table, Map<String, String>>> {
+  public abstract static class DlpTableBatch
+      implements BatchAccumulator.Batch<KV<Table, Map<String, String>>> {
 
-    /**
-     * Returns number of columns in the table.
-     */
+    /** Returns number of columns in the table. */
     abstract int columns();
 
-    /**
-     * Returns number of rows excluding header row in the table.
-     */
+    /** Returns number of rows excluding header row in the table. */
     abstract int rows();
 
     @Override
     public final String report() {
       return MoreObjects.toStringHelper(DlpTableBatch.class)
-        .add("columns", columns())
-        .add("rows", rows())
-        .add("serializedSize", serializedSize())
-        .toString();
+          .add("columns", columns())
+          .add("rows", rows())
+          .add("serializedSize", serializedSize())
+          .toString();
     }
 
     public static DlpTableBatch create(KV<Table, Map<String, String>> batchValue) {
       int rows = firstNonNull(batchValue.getKey().getRowsCount(), 0);
       int columns = firstNonNull(batchValue.getKey().getHeadersCount(), 0);
 
-      return new AutoValue_DlpColumnValueAccumulator_DlpTableBatch(batchValue, rows * columns,
-        batchValue.getKey().getSerializedSize(), columns, rows);
+      return new AutoValue_DlpColumnValueAccumulator_DlpTableBatch(
+          batchValue, rows * columns, batchValue.getKey().getSerializedSize(), columns, rows);
     }
   }
 }

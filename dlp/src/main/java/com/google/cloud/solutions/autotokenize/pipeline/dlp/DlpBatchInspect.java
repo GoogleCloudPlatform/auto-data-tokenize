@@ -35,9 +35,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.apache.beam.sdk.values.KV;
 
-/**
- * Sends the BatchTable to DLP API and makes the findings available as future result.
- */
+/** Sends the BatchTable to DLP API and makes the findings available as future result. */
 final class DlpBatchInspect {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
@@ -46,9 +44,10 @@ final class DlpBatchInspect {
   private final ImmutableSet<InfoType> observableTypes;
   private final DlpServiceClient dlpServiceClient;
 
-  public DlpBatchInspect(String dlpProjectId,
-                         ImmutableSet<InfoType> observableTypes,
-                         DlpServiceClient dlpServiceClient) {
+  public DlpBatchInspect(
+      String dlpProjectId,
+      ImmutableSet<InfoType> observableTypes,
+      DlpServiceClient dlpServiceClient) {
     this.dlpProjectId = dlpProjectId;
     this.observableTypes = observableTypes;
     this.dlpServiceClient = dlpServiceClient;
@@ -58,7 +57,7 @@ final class DlpBatchInspect {
    * Sends the sample content table to DLP and un-bundles the DlpIdentify response.
    *
    * @param dlpTableForIdentify a KV of sample data to identify infotype, as a structured DLP table
-   * and the map of flatrecord's value key and schema-key.
+   *     and the map of flatrecord's value key and schema-key.
    * @return the column_name to information type map
    */
   public ImmutableList<KV<String, InfoType>> identifyInfoTypes(
@@ -75,16 +74,14 @@ final class DlpBatchInspect {
                 .build());
 
     logger.atInfo().log(
-        "sending %s bytes containing %s records", contentTable.getSerializedSize(),
-        contentTable.getRowsCount());
+        "sending %s bytes containing %s records",
+        contentTable.getSerializedSize(), contentTable.getRowsCount());
 
     FindingsTranslateFn findingsTranslate = FindingsTranslateFn.create(flatKeySchemaKeyMap);
 
-    return
-        inspectContentResponse.getResult()
-            .getFindingsList().stream()
-            .map(findingsTranslate)
-            .collect(toImmutableList());
+    return inspectContentResponse.getResult().getFindingsList().stream()
+        .map(findingsTranslate)
+        .collect(toImmutableList());
   }
 
   private InspectConfig.Builder buildInspectConfig() {
@@ -102,7 +99,7 @@ final class DlpBatchInspect {
    * Extracts the info-type information for flat-keys and emits as a KV of Schema-key -> InfoType
    */
   @AutoValue
-  static abstract class FindingsTranslateFn implements Function<Finding, KV<String, InfoType>> {
+  abstract static class FindingsTranslateFn implements Function<Finding, KV<String, InfoType>> {
 
     abstract Map<String, String> flatKeySchemaKeyMap();
 

@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.privacy.dlp.v2.InfoType;
@@ -23,9 +24,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * Factory to instantiate DlpBatchSender.
- */
+/** Factory to instantiate DlpBatchSender. */
 @AutoValue
 public abstract class DlpSenderFactory implements Serializable {
 

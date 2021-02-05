@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,64 +58,64 @@ public final class EncryptingFlatRecordTokenizerTest {
     public static ImmutableList<Object[]> validParameters() {
       return ImmutableList.<Object[]>builder()
           .add(
-              new Object[]{
-                  "all data types empty encrypt columns, no encryption",
-                  TestResourceLoader.classPath()
-                      .forProto(FlatRecord.class)
-                      .loadText("flat_records/simple_field_flat_record.textpb"),
-                  TestResourceLoader.classPath()
-                      .forProto(FlatRecord.class)
-                      .loadText("flat_records/simple_field_flat_record.textpb")
-                      .toBuilder()
-                      .clearFlatKeySchema()
-                      .build(),
-                  ImmutableSet.of("")
+              new Object[] {
+                "all data types empty encrypt columns, no encryption",
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadText("flat_records/simple_field_flat_record.textpb"),
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadText("flat_records/simple_field_flat_record.textpb")
+                    .toBuilder()
+                    .clearFlatKeySchema()
+                    .build(),
+                ImmutableSet.of("")
               })
           .add(
-              new Object[]{
-                  "all data types, union integer column encrypt, valid",
-                  TestResourceLoader.classPath()
-                      .forProto(FlatRecord.class)
-                      .loadText("flat_records/simple_field_flat_record.textpb"),
-                  TestResourceLoader.classPath()
-                      .forProto(FlatRecord.class)
-                      .loadText("flat_records/simple_field_flat_record.textpb")
-                      .toBuilder()
-                      .clearFlatKeySchema()
-                      .removeValues("$.cc.long")
-                      .putValues(
-                          "$.encrypted_cc.string",
-                          Value.newBuilder()
-                              .setStringValue("AWWfEcxlLFkfwRULhORnAz1dfHOUqVhUwfkUdeB4")
-                              .build())
-                      .build(),
-                  ImmutableSet.of("$.kylosample.cc")
+              new Object[] {
+                "all data types, union integer column encrypt, valid",
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadText("flat_records/simple_field_flat_record.textpb"),
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadText("flat_records/simple_field_flat_record.textpb")
+                    .toBuilder()
+                    .clearFlatKeySchema()
+                    .removeValues("$.cc.long")
+                    .putValues(
+                        "$.encrypted_cc.string",
+                        Value.newBuilder()
+                            .setStringValue("AWWfEcxlLFkfwRULhORnAz1dfHOUqVhUwfkUdeB4")
+                            .build())
+                    .build(),
+                ImmutableSet.of("$.kylosample.cc")
               })
           .add(
-              new Object[]{
-                  "all data types, union record sub-field encrypt, valid",
-                  TestResourceLoader.classPath()
-                      .forProto(FlatRecord.class)
-                      .loadText("flat_records/array_with_null_union_record_flat_record.textpb"),
-                  TestResourceLoader.classPath()
-                      .forProto(FlatRecord.class)
-                      .loadText("flat_records/array_with_null_union_record_flat_record.textpb")
-                      .toBuilder()
-                      .clearFlatKeySchema()
-                      .putValues(
-                          "$.contacts[0].[\"contact\"].encrypted_number",
-                          Value.newBuilder()
-                              .setStringValue("AWWfEczlhPa3K59gdZ/6VXzQMtIim8R81fMxSHv5QGJ8s6A=")
-                              .build())
-                      .putValues(
-                          "$.contacts[1].[\"contact\"].encrypted_number",
-                          Value.newBuilder()
-                              .setStringValue("AWWfEcx2udPxUo7gKS6cRwscJh/S0JYRS+FvR799vheUAQ8=")
-                              .build())
-                      .removeValues("$.contacts[0].[\"contact\"].number")
-                      .removeValues("$.contacts[1].[\"contact\"].number")
-                      .build(),
-                  ImmutableSet.of("$.kylosample.contacts.contact.number")
+              new Object[] {
+                "all data types, union record sub-field encrypt, valid",
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadText("flat_records/array_with_null_union_record_flat_record.textpb"),
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadText("flat_records/array_with_null_union_record_flat_record.textpb")
+                    .toBuilder()
+                    .clearFlatKeySchema()
+                    .putValues(
+                        "$.contacts[0].[\"contact\"].encrypted_number",
+                        Value.newBuilder()
+                            .setStringValue("AWWfEczlhPa3K59gdZ/6VXzQMtIim8R81fMxSHv5QGJ8s6A=")
+                            .build())
+                    .putValues(
+                        "$.contacts[1].[\"contact\"].encrypted_number",
+                        Value.newBuilder()
+                            .setStringValue("AWWfEcx2udPxUo7gKS6cRwscJh/S0JYRS+FvR799vheUAQ8=")
+                            .build())
+                    .removeValues("$.contacts[0].[\"contact\"].number")
+                    .removeValues("$.contacts[1].[\"contact\"].number")
+                    .build(),
+                ImmutableSet.of("$.kylosample.contacts.contact.number")
               })
           .build();
     }
@@ -123,10 +123,9 @@ public final class EncryptingFlatRecordTokenizerTest {
     @Test
     public void encrypt_valid() {
       assertThat(
-          EncryptingFlatRecordTokenizer
-              .withTokenizeSchemaKeys(encryptColumns)
-              .withTokenizerFactory(makeTestEncryptor())
-              .encrypt(testRecord))
+              EncryptingFlatRecordTokenizer.withTokenizeSchemaKeys(encryptColumns)
+                  .withTokenizerFactory(makeTestEncryptor())
+                  .encrypt(testRecord))
           .isEqualTo(expectedEncryptedRecord);
     }
   }
