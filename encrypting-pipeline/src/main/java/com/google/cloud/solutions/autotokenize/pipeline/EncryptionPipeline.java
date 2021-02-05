@@ -20,8 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.logicalXor;
 import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
@@ -36,8 +34,6 @@ import com.google.cloud.solutions.autotokenize.pipeline.dlp.BatchAndDlpDeIdRecor
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.pipeline.encryptors.DaeadEncryptingValueTokenizerFactory;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.common.flogger.GoogleLogger;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
@@ -56,12 +52,8 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.windowing.FixedWindows;
-import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
-import org.apache.commons.lang3.StringUtils;
-import org.joda.time.Duration;
 
 /**
  * Creates and launches a Dataflow pipeline to encrypt the provided input files using the
@@ -74,23 +66,17 @@ public class EncryptionPipeline {
   public static void main(String[] args) throws Exception {
 
     EncryptingPipelineOptions options =
-      PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
+        PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
 
     DataflowPipelineJob encryptingJob =
-      (DataflowPipelineJob) EncryptingPipelineFactory
-        .using(options)
-        .buildPipeline()
-        .run();
+        (DataflowPipelineJob) EncryptingPipelineFactory.using(options).buildPipeline().run();
 
     logger.atInfo().log(
-      "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s",
-      encryptingJob.getJobId(),
-      encryptingJob.getProjectId());
+        "JobLink: https://console.cloud.google.com/dataflow/jobs/%s?project=%s",
+        encryptingJob.getJobId(), encryptingJob.getProjectId());
   }
 
-  /**
-   * The pipeline creator.
-   */
+  /** The pipeline creator. */
   @VisibleForTesting
   static class EncryptingPipelineFactory {
 
@@ -103,64 +89,67 @@ public class EncryptionPipeline {
     private final DlpEncryptConfig dlpEncryptConfig;
     private final DlpClientFactory dlpClientFactory;
 
-    EncryptingPipelineFactory(EncryptingPipelineOptions options, Pipeline pipeline, DlpClientFactory dlpClientFactory) {
+    EncryptingPipelineFactory(
+        EncryptingPipelineOptions options, Pipeline pipeline, DlpClientFactory dlpClientFactory) {
       this.options = checkValid(options);
-      this.inputSchema =
-        new Schema.Parser().parse(options.getSchema());
+      this.inputSchema = new Schema.Parser().parse(options.getSchema());
 
       this.tinkKeySetJson = options.getTinkEncryptionKeySetJson();
       this.mainKeyKmsUri = options.getMainKmsKeyUri();
       this.dlpEncryptConfig =
-        isNotBlank(options.getDlpEncryptConfigJson()) ?
-          JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class) :
-          null;
+          isNotBlank(options.getDlpEncryptConfigJson())
+              ? JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class)
+              : null;
 
       List<String> tokenizeColumnNames =
-        (this.dlpEncryptConfig == null)?
-          // Use provided tokenizeColumnNames
-          options.getTokenizeColumns():
-          //For DLP Tokenize use columnNames from config
-          DeidentifyColumns.columnNamesIn(dlpEncryptConfig);
+          (this.dlpEncryptConfig == null)
+              ?
+              // Use provided tokenizeColumnNames
+              options.getTokenizeColumns()
+              :
+              // For DLP Tokenize use columnNames from config
+              DeidentifyColumns.columnNamesIn(dlpEncryptConfig);
 
       this.encryptedSchema =
-        DeIdentifiedRecordSchemaConverter
-          .withOriginalSchema(inputSchema)
-          .withEncryptColumnKeys(tokenizeColumnNames)
-          .updatedSchema();
+          DeIdentifiedRecordSchemaConverter.withOriginalSchema(inputSchema)
+              .withEncryptColumnKeys(tokenizeColumnNames)
+              .updatedSchema();
 
       this.pipeline = pipeline;
       this.dlpClientFactory = dlpClientFactory;
     }
 
     public static EncryptingPipelineFactory using(EncryptingPipelineOptions options) {
-      return new EncryptingPipelineFactory(options, Pipeline.create(checkValid(options)), DlpClientFactory.defaultFactory());
+      return new EncryptingPipelineFactory(
+          options, Pipeline.create(checkValid(options)), DlpClientFactory.defaultFactory());
     }
 
     private static EncryptingPipelineOptions checkValid(EncryptingPipelineOptions options) {
       checkArgument(
-        options.getTokenizeColumns() != null && !options.getTokenizeColumns().isEmpty(),
-        "No columns to tokenize%n");
+          options.getTokenizeColumns() != null && !options.getTokenizeColumns().isEmpty(),
+          "No columns to tokenize%n");
 
       checkArgument(
-        isNotBlank(options.getOutputDirectory()) || isNotBlank(options.getOutputBigQueryTable()),
-        "No output defined.%nProvide a GCS or BigQuery output");
+          isNotBlank(options.getOutputDirectory()) || isNotBlank(options.getOutputBigQueryTable()),
+          "No output defined.%nProvide a GCS or BigQuery output");
 
-
-      boolean isEncryption = isNotBlank(options.getMainKmsKeyUri()) && isNotBlank(options.getTinkEncryptionKeySetJson());
+      boolean isEncryption =
+          isNotBlank(options.getMainKmsKeyUri())
+              && isNotBlank(options.getTinkEncryptionKeySetJson());
       boolean isDlpDeid = isNotBlank(options.getDlpEncryptConfigJson());
 
       checkArgument(
-        logicalXor(isEncryption, isDlpDeid),
-        "Provide one of Tink & KMS key or DlpDeidentifyConfig.%nFound both or none.");
+          logicalXor(isEncryption, isDlpDeid),
+          "Provide one of Tink & KMS key or DlpDeidentifyConfig.%nFound both or none.");
 
       if (isDlpDeid) {
         // Validate DeidConfig is valid
         DlpEncryptConfig encryptConfig =
-          JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class);
+            JsonConvertor.parseJson(options.getDlpEncryptConfigJson(), DlpEncryptConfig.class);
 
         checkArgument(
-          !DeidentifyColumns.columnNamesIn(encryptConfig).isEmpty(),
-          "DlpEncrypt config does not contain any tokenize columns.");
+            !DeidentifyColumns.columnNamesIn(encryptConfig).isEmpty(),
+            "DlpEncrypt config does not contain any tokenize columns.");
       }
 
       return options;
@@ -171,54 +160,49 @@ public class EncryptionPipeline {
       TupleTag<FlatRecord> flatRecordsTag = new TupleTag<>();
 
       PCollection<GenericRecord> encryptedRecords =
-        pipeline
-          .apply("Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
-            TransformingFileReader
-              .forSourceType(options.getSourceType())
-              .from(options.getInputPattern())
-              .withRecordsTag(flatRecordsTag))
-          .get(flatRecordsTag)
-          .apply((dlpEncryptConfig != null) ? dlpDeidentify() : tinkEncryption())
-          .apply(RecordNester.forSchema(encryptedSchema));
+          pipeline
+              .apply(
+                  "Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
+                  TransformingFileReader.forSourceType(options.getSourceType())
+                      .from(options.getInputPattern())
+                      .withRecordsTag(flatRecordsTag))
+              .get(flatRecordsTag)
+              .apply((dlpEncryptConfig != null) ? dlpDeidentify() : tinkEncryption())
+              .apply(RecordNester.forSchema(encryptedSchema));
 
       if (options.getOutputDirectory() != null) {
-        encryptedRecords
-          .apply("WriteAVRO",
-            AvroIO
-              .writeGenericRecords(encryptedSchema)
-              .withSuffix(".avro")
-              .to(cleanDirectoryString(options.getOutputDirectory()) + "/data")
-              .withCodec(CodecFactory.snappyCodec()));
+        encryptedRecords.apply(
+            "WriteAVRO",
+            AvroIO.writeGenericRecords(encryptedSchema)
+                .withSuffix(".avro")
+                .to(cleanDirectoryString(options.getOutputDirectory()) + "/data")
+                .withCodec(CodecFactory.snappyCodec()));
       }
 
       if (options.getOutputBigQueryTable() != null) {
 
-        encryptedRecords
-          .apply(
+        encryptedRecords.apply(
             "WriteToBigQuery",
-            BigQueryIO.
-              <GenericRecord>write()
-              .to(options.getOutputBigQueryTable())
-              .useBeamSchema()
-              .withWriteDisposition(WRITE_TRUNCATE));
+            BigQueryIO.<GenericRecord>write()
+                .to(options.getOutputBigQueryTable())
+                .useBeamSchema()
+                .withWriteDisposition(WRITE_TRUNCATE));
       }
 
       return pipeline;
     }
 
     private BatchAndDlpDeIdRecords dlpDeidentify() {
-      return
-        BatchAndDlpDeIdRecords
-          .withEncryptConfig(dlpEncryptConfig)
+      return BatchAndDlpDeIdRecords.withEncryptConfig(dlpEncryptConfig)
           .withDlpClientFactory(dlpClientFactory)
           .withDlpProjectId(options.getProject());
     }
 
     private ValueEncryptionTransform tinkEncryption() throws Exception {
-      return
-        ValueEncryptionTransform.builder()
+      return ValueEncryptionTransform.builder()
           .encryptColumnNames(options.getTokenizeColumns())
-          .valueTokenizerFactory(new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
+          .valueTokenizerFactory(
+              new DaeadEncryptingValueTokenizerFactory(buildClearEncryptionKeyset()))
           .build();
     }
 
@@ -227,13 +211,13 @@ public class EncryptionPipeline {
      *
      * @return the plaintext encryption key-set
      * @throws GeneralSecurityException when provided wrapped Key-set is invalid.
-     * @throws IOException              when there is error reading from the GCP-KMS.
+     * @throws IOException when there is error reading from the GCP-KMS.
      */
     private String buildClearEncryptionKeyset() throws GeneralSecurityException, IOException {
       KeysetHandle tinkKeySet =
-        KeysetHandle.read(
-          JsonKeysetReader.withString(tinkKeySetJson),
-          new GcpKmsClient().withDefaultCredentials().getAead(mainKeyKmsUri));
+          KeysetHandle.read(
+              JsonKeysetReader.withString(tinkKeySetJson),
+              new GcpKmsClient().withDefaultCredentials().getAead(mainKeyKmsUri));
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       CleartextKeysetHandle.write(tinkKeySet, JsonKeysetWriter.withOutputStream(baos));
@@ -241,7 +225,11 @@ public class EncryptionPipeline {
     }
 
     /**
-     * Returns a directory path string without trailing <pre>/</pre>.
+     * Returns a directory path string without trailing
+     *
+     * <pre>/</pre>
+     *
+     * .
      */
     private static String cleanDirectoryString(String directory) {
       return checkNotNull(directory).replaceAll("(/)$", "");

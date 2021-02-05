@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.encryptors;
 
+
 import com.google.crypto.tink.DeterministicAead;
 import com.google.privacy.dlp.v2.Value;
 import com.google.protobuf.InvalidProtocolBufferException;

@@ -43,35 +43,34 @@ import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
-/**
- * Generic batching function that implements all the required functionality for batching.
- */
+/** Generic batching function that implements all the required functionality for batching. */
 @AutoValue
-public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PCollection<KV<K, InputT>>, PCollection<OutputT>> {
+public abstract class GroupByBatchSize<K, InputT, OutputT>
+    extends PTransform<PCollection<KV<K, InputT>>, PCollection<OutputT>> {
 
   abstract BatchAccumulatorFactory<InputT, OutputT> batchAccumulatorFactory();
 
   @Nullable
   abstract Duration maxBufferDuration();
 
-  public static <K, InputT, OutputT> GroupByBatchSize<K, InputT, OutputT> with(BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
-    return new AutoValue_GroupByBatchSize.Builder<K,InputT, OutputT>().batchAccumulatorFactory(accumulatorFactory).build();
+  public static <K, InputT, OutputT> GroupByBatchSize<K, InputT, OutputT> with(
+      BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
+    return new AutoValue_GroupByBatchSize.Builder<K, InputT, OutputT>()
+        .batchAccumulatorFactory(accumulatorFactory)
+        .build();
   }
 
-//  public static <K, InputT, OutputT> GroupByBatchSize<K, InputT, OutputT> with(Class<K> keyType, BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
-//    return new AutoValue_GroupByBatchSize.Builder<K, InputT, OutputT>().keyType(keyType).batchAccumulatorFactory(accumulatorFactory).build();
-//  }
-
   public GroupByBatchSize<K, InputT, OutputT> withMaxBufferDuration(Duration duration) {
-    checkArgument(duration != null && duration.isLongerThan(Duration.ZERO), "Provide non-zero buffer duration");
+    checkArgument(
+        duration != null && duration.isLongerThan(Duration.ZERO),
+        "Provide non-zero buffer duration");
     return toBuilder().maxBufferDuration(duration).build();
   }
 
   @AutoValue.Builder
   public abstract static class Builder<K, InputT, OutputT> {
-    abstract Builder<K, InputT, OutputT> batchAccumulatorFactory(BatchAccumulatorFactory<InputT, OutputT> batchAccumulatorFactory);
-
-//    abstract Builder<K, InputT, OutputT> keyType(Class<K> keyType);
+    abstract Builder<K, InputT, OutputT> batchAccumulatorFactory(
+        BatchAccumulatorFactory<InputT, OutputT> batchAccumulatorFactory);
 
     abstract Builder<K, InputT, OutputT> maxBufferDuration(Duration maxBufferDuration);
 
@@ -85,20 +84,20 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
     Duration allowedLateness = input.getWindowingStrategy().getAllowedLateness();
 
     checkArgument(
-      input.getCoder() instanceof KvCoder,
-      "coder specified in the input PCollection is not a KvCoder");
+        input.getCoder() instanceof KvCoder,
+        "coder specified in the input PCollection is not a KvCoder");
     KvCoder<K, InputT> inputCoder = (KvCoder<K, InputT>) input.getCoder();
-    Coder<K> keyCoder = (Coder<K>) inputCoder.getCoderArguments().get(0);
-    Coder<InputT> valueCoder = (Coder<InputT>) inputCoder.getCoderArguments().get(1);
+    Coder<K> keyCoder = inputCoder.getKeyCoder();
+    Coder<InputT> valueCoder = inputCoder.getValueCoder();
 
     return input.apply(
-      ParDo.of(
-        new BatchBySizeFn<>(
-          allowedLateness,
-          maxBufferDuration(),
-          keyCoder,
-          valueCoder,
-          batchAccumulatorFactory())));
+        ParDo.of(
+            new BatchBySizeFn<>(
+                allowedLateness,
+                maxBufferDuration(),
+                keyCoder,
+                valueCoder,
+                batchAccumulatorFactory())));
   }
 
   static class BatchBySizeFn<K, InputT, OutputT> extends DoFn<KV<K, InputT>, OutputT> {
@@ -127,45 +126,45 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
     private final BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory;
 
     BatchBySizeFn(
-      Duration allowedLateness,
-      Duration maxBufferingDuration,
-      Coder<K> inputKeyCoder,
-      Coder<InputT> inputValueCoder,
-      BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
+        Duration allowedLateness,
+        Duration maxBufferingDuration,
+        Coder<K> inputKeyCoder,
+        Coder<InputT> inputValueCoder,
+        BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
       this.allowedLateness = allowedLateness;
       this.maxBufferingDuration = maxBufferingDuration;
       this.batchSpec = StateSpecs.bag(inputValueCoder);
       this.numElementsInBatchSpec =
-        StateSpecs.combining(
-          new Combine.BinaryCombineLongFn() {
+          StateSpecs.combining(
+              new Combine.BinaryCombineLongFn() {
 
-            @Override
-            public long identity() {
-              return 0L;
-            }
+                @Override
+                public long identity() {
+                  return 0L;
+                }
 
-            @Override
-            public long apply(long left, long right) {
-              return left + right;
-            }
-          });
+                @Override
+                public long apply(long left, long right) {
+                  return left + right;
+                }
+              });
 
       this.accumulatorFactory = accumulatorFactory;
     }
 
     @ProcessElement
     public void processElement(
-      @TimerId(END_OF_WINDOW_ID) Timer windowTimer,
-      @TimerId(END_OF_BUFFERING_ID) Timer bufferingTimer,
-      @StateId(BATCH_ID) BagState<InputT> buffer,
-      @StateId(NUM_ELEMENTS_IN_BATCH_ID) CombiningState<Long, long[], Long> numElementsInBatch,
-      @Element KV<K, InputT> element,
-      BoundedWindow window,
-      OutputReceiver<OutputT> receiver) {
+        @TimerId(END_OF_WINDOW_ID) Timer windowTimer,
+        @TimerId(END_OF_BUFFERING_ID) Timer bufferingTimer,
+        @StateId(BATCH_ID) BagState<InputT> buffer,
+        @StateId(NUM_ELEMENTS_IN_BATCH_ID) CombiningState<Long, long[], Long> numElementsInBatch,
+        @Element KV<K, InputT> element,
+        BoundedWindow window,
+        OutputReceiver<OutputT> receiver) {
       Instant windowEnds = window.maxTimestamp().plus(allowedLateness);
-      logger.atFine().log("*** SET TIMER *** to point in time %s for window %s", windowEnds, window);
+      logger.atFine().log(
+          "*** SET TIMER *** to point in time %s for window %s", windowEnds, window);
       windowTimer.set(windowEnds);
-
 
       logger.atFine().log("*** BATCH *** Add element for window %s", window);
       buffer.add(element.getValue());
@@ -174,12 +173,13 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
 
       long num = numElementsInBatch.read();
       if (num == 1 && maxBufferingDuration != null) {
-        // This is the first element in batch. Start counting buffering time if a limit was set.
+        // This is the first element in batch. Start counting buffering time if a limit was
+        // set.
         bufferingTimer.offset(maxBufferingDuration).setRelative();
       }
 
       BatchedElements<InputT, OutputT> batchedElements =
-        new BatchMaker<>(/*noUnbatched*/false, accumulatorFactory).makeBatches(buffer);
+          new BatchMaker<>(/*noUnbatched*/ false, accumulatorFactory).makeBatches(buffer);
 
       if (!batchedElements.batches().isEmpty()) {
         flushBatch(batchedElements, receiver, buffer, numElementsInBatch, bufferingTimer);
@@ -188,38 +188,35 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
 
     @OnTimer(END_OF_BUFFERING_ID)
     public void onBufferingTimer(
-      OutputReceiver<OutputT> receiver,
-      @Timestamp Instant timestamp,
-      @StateId(BATCH_ID) BagState<InputT> buffer,
-      @StateId(NUM_ELEMENTS_IN_BATCH_ID) CombiningState<Long, long[], Long> numElementsInBatch,
-      @TimerId(END_OF_BUFFERING_ID) Timer bufferingTimer) {
+        OutputReceiver<OutputT> receiver,
+        @Timestamp Instant timestamp,
+        @StateId(BATCH_ID) BagState<InputT> buffer,
+        @StateId(NUM_ELEMENTS_IN_BATCH_ID) CombiningState<Long, long[], Long> numElementsInBatch,
+        @TimerId(END_OF_BUFFERING_ID) Timer bufferingTimer) {
       logger.atFine().log(
-        "*** END OF BUFFERING *** for timer timestamp %s with buffering duration %s",
-        timestamp,
-        maxBufferingDuration);
+          "*** END OF BUFFERING *** for timer timestamp %s with buffering duration %s",
+          timestamp, maxBufferingDuration);
 
       BatchedElements<InputT, OutputT> batchedElements =
-        new BatchMaker<>(/*noUnbatched=*/true, accumulatorFactory).makeBatches(buffer);
-
+          new BatchMaker<>(/*noUnbatched=*/ true, accumulatorFactory).makeBatches(buffer);
 
       flushBatch(batchedElements, receiver, buffer, numElementsInBatch, null);
     }
 
     @OnTimer(END_OF_WINDOW_ID)
     public void onWindowTimer(
-      OutputReceiver<OutputT> receiver,
-      @Timestamp Instant timestamp,
-      @StateId(BATCH_ID) BagState<InputT> buffer,
-      @StateId(NUM_ELEMENTS_IN_BATCH_ID) CombiningState<Long, long[], Long> numElementsInBatch,
-      @TimerId(END_OF_BUFFERING_ID) Timer bufferingTimer,
-      BoundedWindow window) {
+        OutputReceiver<OutputT> receiver,
+        @Timestamp Instant timestamp,
+        @StateId(BATCH_ID) BagState<InputT> buffer,
+        @StateId(NUM_ELEMENTS_IN_BATCH_ID) CombiningState<Long, long[], Long> numElementsInBatch,
+        @TimerId(END_OF_BUFFERING_ID) Timer bufferingTimer,
+        BoundedWindow window) {
       logger.atFine().log(
-        "*** END OF WINDOW *** for timer timestamp %s in windows %s",
-        timestamp,
-        window.toString());
+          "*** END OF WINDOW *** for timer timestamp %s in windows %s",
+          timestamp, window.toString());
 
       BatchedElements<InputT, OutputT> batchedElements =
-        new BatchMaker<>(/*noUnbatched=*/ true, accumulatorFactory).makeBatches(buffer);
+          new BatchMaker<>(/*noUnbatched=*/ true, accumulatorFactory).makeBatches(buffer);
 
       flushBatch(batchedElements, receiver, buffer, numElementsInBatch, bufferingTimer);
     }
@@ -228,18 +225,21 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
       private final boolean noUnbatched;
       private final BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory;
 
-      public BatchMaker(boolean noUnbatched, BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
+      public BatchMaker(
+          boolean noUnbatched, BatchAccumulatorFactory<InputT, OutputT> accumulatorFactory) {
         this.noUnbatched = noUnbatched;
         this.accumulatorFactory = accumulatorFactory;
       }
 
       public BatchedElements<InputT, OutputT> makeBatches(BagState<InputT> buffer) {
-        ImmutableList.Builder<BatchAccumulator.Batch<OutputT>> batchBuilder = ImmutableList.builder();
+        ImmutableList.Builder<BatchAccumulator.Batch<OutputT>> batchBuilder =
+            ImmutableList.builder();
 
         BatchAccumulator<InputT, OutputT> accumulator = accumulatorFactory.newAccumulator();
         Iterable<InputT> unBatchedElements = buffer.read();
 
-        while (!Iterables.isEmpty(unBatchedElements = accumulator.addAllElements(unBatchedElements))) {
+        while (!Iterables.isEmpty(
+            unBatchedElements = accumulator.addAllElements(unBatchedElements))) {
           batchBuilder.add(accumulator.makeBatch());
           accumulator = accumulatorFactory.newAccumulator();
         }
@@ -249,15 +249,14 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
         }
 
         return BatchedElements.<InputT, OutputT>builder()
-          .batches(batchBuilder.build())
-          .unBatchedElements(ImmutableList.copyOf(unBatchedElements))
-          .build();
+            .batches(batchBuilder.build())
+            .unBatchedElements(ImmutableList.copyOf(unBatchedElements))
+            .build();
       }
-
     }
 
     @AutoValue
-    static abstract class BatchedElements<InputT, OutputT> {
+    abstract static class BatchedElements<InputT, OutputT> {
 
       abstract ImmutableList<BatchAccumulator.Batch<OutputT>> batches();
 
@@ -268,33 +267,37 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
       }
 
       @AutoValue.Builder
-      static abstract class Builder<InputT, OutputT> {
-        public abstract Builder<InputT, OutputT> batches(ImmutableList<BatchAccumulator.Batch<OutputT>> batches);
+      abstract static class Builder<InputT, OutputT> {
+        public abstract Builder<InputT, OutputT> batches(
+            ImmutableList<BatchAccumulator.Batch<OutputT>> batches);
 
-        public abstract Builder<InputT, OutputT> unBatchedElements(ImmutableList<InputT> unBatchedElements);
+        public abstract Builder<InputT, OutputT> unBatchedElements(
+            ImmutableList<InputT> unBatchedElements);
 
         public abstract BatchedElements<InputT, OutputT> build();
       }
     }
 
-    //outputs the batch
+    // outputs the batch
     private void flushBatch(
-      BatchedElements<InputT, OutputT> batchedElements,
-      OutputReceiver<OutputT> receiver,
-      BagState<InputT> buffer,
-      CombiningState<Long, long[], Long> numElementsInBatch,
-      @Nullable Timer bufferingTimer) {
+        BatchedElements<InputT, OutputT> batchedElements,
+        OutputReceiver<OutputT> receiver,
+        BagState<InputT> buffer,
+        CombiningState<Long, long[], Long> numElementsInBatch,
+        @Nullable Timer bufferingTimer) {
 
       batchedElements.batches().forEach(batch -> sendBatchAndLog(batch, receiver));
 
       buffer.clear();
       logger.atFine().log("*** BATCH *** clear");
       batchedElements.unBatchedElements().forEach(buffer::add);
-      logger.atFine().log("*** ADDED unflushed elements: %s", batchedElements.unBatchedElements().size());
+      logger.atFine().log(
+          "*** ADDED unflushed elements: %s", batchedElements.unBatchedElements().size());
       numElementsInBatch.clear();
       numElementsInBatch.add((long) batchedElements.unBatchedElements().size());
       // We might reach here due to batch size being reached or window expiration. Reset the
-      // buffering timer (if not null) since the state is empty now. It'll be extended again if a
+      // buffering timer (if not null) since the state is empty now. It'll be extended again
+      // if a
       // new element arrives prior to the expiration time set here.
       // TODO(BEAM-10887): Use clear() when it's available.
       if (bufferingTimer != null && maxBufferingDuration != null) {
@@ -302,7 +305,8 @@ public abstract class GroupByBatchSize<K, InputT, OutputT> extends PTransform<PC
       }
     }
 
-    private static <OutputT> void sendBatchAndLog(BatchAccumulator.Batch<OutputT> batch, OutputReceiver<OutputT> receiver) {
+    private static <OutputT> void sendBatchAndLog(
+        BatchAccumulator.Batch<OutputT> batch, OutputReceiver<OutputT> receiver) {
       receiver.output(batch.get());
       logger.atFine().log("**** Batched Report:%n%s", batch.report());
     }

@@ -56,7 +56,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 @AutoValue
-public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<FlatRecord>, PCollection<FlatRecord>> {
+public abstract class BatchAndDlpDeIdRecords
+    extends PTransform<PCollection<FlatRecord>, PCollection<FlatRecord>> {
 
   public static final int DEFAULT_SHARDS_COUNT = 5;
 
@@ -86,8 +87,10 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
   abstract Builder toBuilder();
 
   public static BatchAndDlpDeIdRecords withEncryptConfig(DlpEncryptConfig dlpEncryptConfig) {
-    return new AutoValue_BatchAndDlpDeIdRecords.Builder().shardCount(DEFAULT_SHARDS_COUNT)
-      .encryptConfig(dlpEncryptConfig).build();
+    return new AutoValue_BatchAndDlpDeIdRecords.Builder()
+        .shardCount(DEFAULT_SHARDS_COUNT)
+        .encryptConfig(dlpEncryptConfig)
+        .build();
   }
 
   public BatchAndDlpDeIdRecords withShardsCount(int shardsCount) {
@@ -102,21 +105,25 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
     return toBuilder().dlpProjectId(dlpProjectId).build();
   }
 
-
   @Override
   public PCollection<FlatRecord> expand(PCollection<FlatRecord> input) {
     checkNotNull(dlpClientFactory(), "Provide Dlp client factory");
     checkArgument(isNotBlank(dlpProjectId()), "DLP ProjectId can't be empty.");
 
-    return
-      input
+    return input
         .apply("AddRecordId", MapElements.via(FlatRecordKeysFn.create()))
         .apply(MapElements.via(new ShardAssigner<>(shardCount())))
         .apply(
-          "BatchForDlp",
-          GroupByBatchSize.with(new PartialColumnBatchAccumulatorFactory(encryptConfig())))
+            "BatchForDlp",
+            GroupByBatchSize.with(new PartialColumnBatchAccumulatorFactory(encryptConfig())))
         .setCoder(ProtoCoder.of(PartialColumnDlpTable.class))
-        .apply(ParDo.of(DlpDeidentifyFn.builder().encryptConfig(encryptConfig()).dlpClientFactory(dlpClientFactory()).dlpProjectId(dlpProjectId()).build()))
+        .apply(
+            ParDo.of(
+                DlpDeidentifyFn.builder()
+                    .encryptConfig(encryptConfig())
+                    .dlpClientFactory(dlpClientFactory())
+                    .dlpProjectId(dlpProjectId())
+                    .build()))
         .apply(Flatten.iterables());
   }
 
@@ -135,7 +142,7 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
   }
 
   private static class PartialColumnBatchAccumulatorFactory
-    implements BatchAccumulatorFactory<FlatRecord, PartialColumnDlpTable>, Serializable {
+      implements BatchAccumulatorFactory<FlatRecord, PartialColumnDlpTable>, Serializable {
 
     private final DlpEncryptConfig encryptConfig;
 
@@ -168,7 +175,7 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
   }
 
   @AutoValue
-  static abstract class DlpDeidentifyFn extends DoFn<PartialColumnDlpTable, Iterable<FlatRecord>> {
+  abstract static class DlpDeidentifyFn extends DoFn<PartialColumnDlpTable, Iterable<FlatRecord>> {
 
     abstract String dlpProjectId();
 
@@ -189,27 +196,30 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
     }
 
     @ProcessElement
-    public void processBatch(@Element PartialColumnDlpTable batch, OutputReceiver<Iterable<FlatRecord>> receiver) {
+    public void processBatch(
+        @Element PartialColumnDlpTable batch, OutputReceiver<Iterable<FlatRecord>> receiver) {
 
       Table batchTable = batch.getTable();
 
       GoogleLogger.forEnclosingClass()
-        .atFine()
-        .log("Sending Batch:%nBytes:%s%nColumns:%s%nRowCount:%s",
-          batchTable.getSerializedSize(),
-          DeidentifyColumns.columnNamesFromHeaders(batchTable.getHeadersList()),
-          batchTable.getRowsCount());
+          .atFine()
+          .log(
+              "Sending Batch:%nBytes:%s%nColumns:%s%nRowCount:%s",
+              batchTable.getSerializedSize(),
+              DeidentifyColumns.columnNamesFromHeaders(batchTable.getHeadersList()),
+              batchTable.getRowsCount());
 
       DeidentifyContentResponse deidResponse =
-        dlpClient.deidentifyContent(
-          DeidentifyContentRequest.newBuilder()
-            .setParent(String.format("projects/%s", dlpProjectId()))
-            .setDeidentifyConfig(batch.getDeidentifyConfig())
-            .setItem(ContentItem.newBuilder().setTable(batchTable).build())
-            .build());
+          dlpClient.deidentifyContent(
+              DeidentifyContentRequest.newBuilder()
+                  .setParent(String.format("projects/%s", dlpProjectId()))
+                  .setDeidentifyConfig(batch.getDeidentifyConfig())
+                  .setItem(ContentItem.newBuilder().setTable(batchTable).build())
+                  .build());
 
-
-      receiver.output(TokenizedDataMerger.create(batch, deidResponse.getItem().getTable(), encryptConfig()).merge());
+      receiver.output(
+          TokenizedDataMerger.create(batch, deidResponse.getItem().getTable(), encryptConfig())
+              .merge());
     }
 
     public static Builder builder() {
@@ -229,7 +239,7 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
   }
 
   @AutoValue
-  static abstract class TokenizedDataMerger {
+  abstract static class TokenizedDataMerger {
 
     abstract PartialColumnDlpTable batch();
 
@@ -237,47 +247,52 @@ public abstract class BatchAndDlpDeIdRecords extends PTransform<PCollection<Flat
 
     abstract DlpEncryptConfig encryptConfig();
 
-    public static TokenizedDataMerger create(PartialColumnDlpTable batch, Table deidTable, DlpEncryptConfig encryptConfig) {
-      return new AutoValue_BatchAndDlpDeIdRecords_TokenizedDataMerger(batch, deidTable, encryptConfig);
+    public static TokenizedDataMerger create(
+        PartialColumnDlpTable batch, Table deidTable, DlpEncryptConfig encryptConfig) {
+      return new AutoValue_BatchAndDlpDeIdRecords_TokenizedDataMerger(
+          batch, deidTable, encryptConfig);
     }
 
     ImmutableList<FlatRecord> merge() {
 
-      TokenizeColumnNameUpdater columnNameUpdater = new TokenizeColumnNameUpdater(DeidentifyColumns.columnNamesIn(encryptConfig()));
+      TokenizeColumnNameUpdater columnNameUpdater =
+          new TokenizeColumnNameUpdater(DeidentifyColumns.columnNamesIn(encryptConfig()));
 
       ImmutableList<String> headers = DeidentifyColumns.columnNamesIn(deidTable());
 
       ImmutableMap<String, ImmutableMap<String, Value>> deidValues =
-        deidTable().getRowsList().stream()
-          .map(row -> {
+          deidTable().getRowsList().stream()
+              .map(
+                  row -> {
+                    @SuppressWarnings("UnstableApiUsage")
+                    ImmutableMap<String, Value> valueMap =
+                        Streams.zip(
+                                headers.stream(), row.getValuesList().stream(), ImmutablePair::of)
+                            .collect(
+                                toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
 
-            @SuppressWarnings("UnstableApiUsage")
-            ImmutableMap<String, Value> valueMap =
-              Streams.zip(headers.stream(), row.getValuesList().stream(), ImmutablePair::of)
-                .collect(toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
+                    String recordId =
+                        valueMap.get(batch().getRecordIdColumnName()).getStringValue();
 
-            String recordId = valueMap.get(batch().getRecordIdColumnName()).getStringValue();
+                    ImmutableMap<String, Value> valuesMapWithoutRecordId =
+                        valueMap.entrySet().stream()
+                            .filter(e -> !e.getKey().equals(batch().getRecordIdColumnName()))
+                            .filter(e -> !e.getValue().equals(Value.getDefaultInstance()))
+                            .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            ImmutableMap<String, Value> valuesMapWithoutRecordId =
-              valueMap.entrySet().stream()
-                .filter(e -> !e.getKey().equals(batch().getRecordIdColumnName()))
-                .filter(e -> !e.getValue().equals(Value.getDefaultInstance()))
-                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            return ImmutablePair.of(recordId, valuesMapWithoutRecordId);
-          })
-          .collect(toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
+                    return ImmutablePair.of(recordId, valuesMapWithoutRecordId);
+                  })
+              .collect(toImmutableMap(ImmutablePair::getLeft, ImmutablePair::getRight));
 
       return batch().getRecordsList().stream()
-        .map(record -> {
-          FlatRecord flatRecordUpdatedValues =
-            record.toBuilder()
-              .putAllValues(deidValues.get(record.getRecordId()))
-              .build();
+          .map(
+              record -> {
+                FlatRecord flatRecordUpdatedValues =
+                    record.toBuilder().putAllValues(deidValues.get(record.getRecordId())).build();
 
-          return columnNameUpdater.updateColumnNames(flatRecordUpdatedValues);
-        })
-        .collect(toImmutableList());
+                return columnNameUpdater.updateColumnNames(flatRecordUpdatedValues);
+              })
+          .collect(toImmutableList());
     }
   }
 }

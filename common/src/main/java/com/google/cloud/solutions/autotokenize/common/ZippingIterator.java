@@ -45,11 +45,11 @@ import java.util.stream.StreamSupport;
  * List<Optional<String>> element = zipIterator.next(); // element = ["a","1", "I"];
  * }</pre>
  *
- * <p>The resulting iterator  will only be as long as the longest of the input lists;
- * It will return {@code Optinal.empty()} for list-elements when index is not present in
- * corresponding list.
+ * <p>The resulting iterator will only be as long as the longest of the input lists; It will return
+ * {@code Optinal.empty()} for list-elements when index is not present in corresponding list.
  *
- * e.g.
+ * <p>e.g.
+ *
  * <pre>{@code
  * ZippingIterator<String> zipIterator =
  *   ZippingIterator.create(
@@ -64,8 +64,8 @@ import java.util.stream.StreamSupport;
  * List<Optional<String>> element = zipIterator.next(); // element = [Optional.of("d"),empty(), empty()];
  * }</pre>
  *
- * <p><b>Performance note:</b> The resulting Iterator is not efficiently splittable.
- * This may harm parallel performance.
+ * <p><b>Performance note:</b> The resulting Iterator is not efficiently splittable. This may harm
+ * parallel performance.
  *
  * @param <T> the type of input collections to zip
  */
@@ -76,9 +76,7 @@ public class ZippingIterator<T> implements Iterator<ImmutableList<Optional<T>>> 
 
   int iterIndex = 0;
 
-  /**
-   * Creates a zipping iterator for the given list of lists.
-   */
+  /** Creates a zipping iterator for the given list of lists. */
   public static <T> ZippingIterator<T> create(List<List<T>> inputLists) {
     return new ZippingIterator<>(inputLists);
   }
@@ -97,9 +95,8 @@ public class ZippingIterator<T> implements Iterator<ImmutableList<Optional<T>>> 
    * }</pre>
    */
   public static <T> Stream<List<Optional<T>>> createElementStream(List<List<T>> inputLists) {
-    return StreamSupport
-        .stream(Spliterators.spliteratorUnknownSize(create(inputLists), Spliterator.ORDERED),
-            false);
+    return StreamSupport.stream(
+        Spliterators.spliteratorUnknownSize(create(inputLists), Spliterator.ORDERED), false);
   }
 
   public ZippingIterator(List<List<T>> inputLists) {
@@ -119,7 +116,6 @@ public class ZippingIterator<T> implements Iterator<ImmutableList<Optional<T>>> 
 
     this.inputLists = listBuilder.build();
     this.maxSize = inputLists.stream().mapToInt(List::size).max().orElse(0);
-
   }
 
   @Override

@@ -49,6 +49,6 @@ export DLP_RUNNER_SERVICE_ACCOUNT_EMAIL="${DLP_RUNNER_SERVICE_ACCOUNT_NAME}@$(ec
 
 # Set an easy name to invoke the sampler module
 export AUTO_TOKENIZE_DIR="${PWD}"
-alias sample_and_identify_pipeline='java -jar ${AUTO_TOKENIZE_DIR}/sampler-pipeline/target/sampler-pipeline-bundled-0.1-SNAPSHOT.jar'
+alias sample_and_identify_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/sampler-pipeline/build/libs/sampler-pipeline-1.0.2-all.jar"
 
-alias tokenize_pipeline='java -jar ${AUTO_TOKENIZE_DIR}/encrypting-pipeline/target/encrypting-pipeline-bundled-0.1-SNAPSHOT.jar'
+alias tokenize_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/encrypting-pipeline/build/libs/encrypting-pipeline-1.0.2-all.jar"

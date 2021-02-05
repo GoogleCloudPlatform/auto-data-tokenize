@@ -74,14 +74,15 @@ import org.apache.parquet.io.SeekableInputStream;
 import org.apache.parquet.io.api.RecordMaterializer;
 import org.apache.parquet.schema.MessageType;
 
-
 /**
- * <b>Copied from <a href="https://beam.apache.org/releases/javadoc/2.25.0/org/apache/beam/sdk/io/parquet/ParquetIO.html">ParquetIO</a></b>
+ * <b>Copied from <a
+ * href="https://beam.apache.org/releases/javadoc/2.25.0/org/apache/beam/sdk/io/parquet/ParquetIO.html">ParquetIO</a></b>
  *
- * {@link TransformingParquetIO} returns a PCollection for Parquet files. The elements in the {@link
- * PCollection} are POJO objects derived by converting Avro {@link GenericRecord} using the provided
- * convert function through {@link TransformingParquetIO#parseFilesGenericRecords(SerializableFunction)}.
- * This IO has been created to provide parity with {@link AvroIO#parseFilesGenericRecords(SerializableFunction)}
+ * <p>{@link TransformingParquetIO} returns a PCollection for Parquet files. The elements in the
+ * {@link PCollection} are POJO objects derived by converting Avro {@link GenericRecord} using the
+ * provided convert function through {@link
+ * TransformingParquetIO#parseFilesGenericRecords(SerializableFunction)}. This IO has been created
+ * to provide parity with {@link AvroIO#parseFilesGenericRecords(SerializableFunction)}
  */
 public abstract class TransformingParquetIO {
 
@@ -93,14 +94,12 @@ public abstract class TransformingParquetIO {
         .build();
   }
 
-  public static <T> Read<T> parseGenericRecords(
-    SerializableFunction<GenericRecord, T> parseFn) {
+  public static <T> Read<T> parseGenericRecords(SerializableFunction<GenericRecord, T> parseFn) {
     return new AutoValue_TransformingParquetIO_Read.Builder<T>()
-      .setParseFn(parseFn)
-      .setSplittable(false)
-      .build();
+        .setParseFn(parseFn)
+        .setSplittable(false)
+        .build();
   }
-
 
   @AutoValue
   public abstract static class Read<T> extends PTransform<PBegin, PCollection<T>> {
@@ -110,7 +109,6 @@ public abstract class TransformingParquetIO {
     abstract boolean isSplittable();
 
     abstract @Nullable String getFilePattern();
-
 
     @AutoValue.Builder
     public abstract static class Builder<T> {
@@ -139,12 +137,12 @@ public abstract class TransformingParquetIO {
         readFiles = readFiles.withSplit();
       }
 
-      return input.apply(FileIO.match().filepattern(getFilePattern()))
-        .apply(FileIO.readMatches())
-        .apply(readFiles);
+      return input
+          .apply(FileIO.match().filepattern(getFilePattern()))
+          .apply(FileIO.readMatches())
+          .apply(readFiles);
     }
   }
-
 
   /**
    * Copied from the ParquetIO#readFiles with an additional transform using the provided Parse
@@ -153,26 +151,20 @@ public abstract class TransformingParquetIO {
    * @param <T> The type of POJO created by the Parsing function.
    */
   @AutoValue
-  public abstract static class ReadFiles<T> extends
-      PTransform<PCollection<FileIO.ReadableFile>, PCollection<T>> {
+  public abstract static class ReadFiles<T>
+      extends PTransform<PCollection<FileIO.ReadableFile>, PCollection<T>> {
 
-    abstract @Nullable
-    Schema getSchema();
+    abstract @Nullable Schema getSchema();
 
-    abstract @Nullable
-    GenericData getAvroDataModel();
+    abstract @Nullable GenericData getAvroDataModel();
 
-    abstract @Nullable
-    Schema getEncoderSchema();
+    abstract @Nullable Schema getEncoderSchema();
 
-    abstract @Nullable
-    Schema getProjectionSchema();
+    abstract @Nullable Schema getProjectionSchema();
 
-    abstract @Nullable
-    Coder<T> getCoder();
+    abstract @Nullable Coder<T> getCoder();
 
-    abstract @Nullable
-    SerializableFunction<GenericRecord, T> getParseFn();
+    abstract @Nullable SerializableFunction<GenericRecord, T> getParseFn();
 
     abstract boolean isSplittable();
 
@@ -217,29 +209,28 @@ public abstract class TransformingParquetIO {
       return toBuilder().setCoder(coder).build();
     }
 
-    /**
-     * Enable the Splittable reading.
-     */
+    /** Enable the Splittable reading. */
     public ReadFiles<T> withSplit() {
       return toBuilder().setSplittable(true).build();
     }
 
-    /**
-     * convert {@link GenericRecord} into other type using provided parsing Function.
-     */
+    /** convert {@link GenericRecord} into other type using provided parsing Function. */
     public ReadFiles<T> withParseFn(SerializableFunction<GenericRecord, T> parseFn) {
       return toBuilder().setParseFn(parseFn).build();
     }
 
     @Override
     public PCollection<T> expand(PCollection<FileIO.ReadableFile> input) {
-      checkState(!(getSchema() == null && getParseFn() == null),
+      checkState(
+          !(getSchema() == null && getParseFn() == null),
           "provide one of schema and parseFn, both are null.");
 
       if (isSplittable()) {
         return input
-            .apply(ParDo.of(new ReadFiles.SplitReadFn<>(getAvroDataModel(), getProjectionSchema(),
-                getParseFn())))
+            .apply(
+                ParDo.of(
+                    new ReadFiles.SplitReadFn<>(
+                        getAvroDataModel(), getProjectionSchema(), getParseFn())))
             .setCoder(inferCoder(getCoder(), getParseFn(), input.getPipeline().getCoderRegistry()));
       }
       return input
@@ -275,8 +266,8 @@ public abstract class TransformingParquetIO {
 
       private final SerializableFunction<GenericRecord, T> parseFn;
 
-      SplitReadFn(GenericData model, Schema requestSchema,
-          SerializableFunction<GenericRecord, T> parseFn) {
+      SplitReadFn(
+          GenericData model, Schema requestSchema, SerializableFunction<GenericRecord, T> parseFn) {
 
         this.modelClass = model != null ? model.getClass() : null;
         this.requestSchemaString = requestSchema != null ? requestSchema.toString() : null;
@@ -285,8 +276,8 @@ public abstract class TransformingParquetIO {
 
       ParquetFileReader getParquetFileReader(FileIO.ReadableFile file) throws Exception {
         ParquetReadOptions options = HadoopReadOptions.builder(getConfWithModelClass()).build();
-        return ParquetFileReader
-            .open(new ReadFiles.BeamParquetInputFile(file.openSeekable()), options);
+        return ParquetFileReader.open(
+            new ReadFiles.BeamParquetInputFile(file.openSeekable()), options);
       }
 
       @ProcessElement
@@ -296,8 +287,8 @@ public abstract class TransformingParquetIO {
           OutputReceiver<T> outputReceiver)
           throws Exception {
         LOG.atInfo().log(
-            "start %s to %s", tracker.currentRestriction().getFrom(),
-            tracker.currentRestriction().getTo());
+            "start %s to %s",
+            tracker.currentRestriction().getFrom(), tracker.currentRestriction().getTo());
         Configuration conf = getConfWithModelClass();
         GenericData model = null;
         if (modelClass != null) {
@@ -310,8 +301,8 @@ public abstract class TransformingParquetIO {
         }
         ParquetReadOptions options = HadoopReadOptions.builder(conf).build();
         ParquetFileReader reader =
-            ParquetFileReader
-                .open(new ReadFiles.BeamParquetInputFile(file.openSeekable()), options);
+            ParquetFileReader.open(
+                new ReadFiles.BeamParquetInputFile(file.openSeekable()), options);
         FilterCompat.Filter filter = checkNotNull(options.getRecordFilter(), "filter");
         Configuration hadoopConf = ((HadoopReadOptions) options).getConf();
         FileMetaData parquetFileMetadata = reader.getFooter().getFileMetaData();
@@ -334,8 +325,8 @@ public abstract class TransformingParquetIO {
         }
         while (tracker.tryClaim(currentBlock)) {
           PageReadStore pages = reader.readNextRowGroup();
-          LOG.atFine()
-              .log("block %s read in memory. row count = %s", currentBlock, pages.getRowCount());
+          LOG.atFine().log(
+              "block %s read in memory. row count = %s", currentBlock, pages.getRowCount());
           currentBlock += 1;
           RecordReader<GenericRecord> recordReader =
               columnIO.getRecordReader(
@@ -351,26 +342,21 @@ public abstract class TransformingParquetIO {
               } catch (RecordMaterializer.RecordMaterializationException e) {
                 LOG.atWarning().log(
                     "skipping a corrupt record at %s in block %s in file %s",
-                    currentRow,
-                    currentBlock,
-                    file.toString());
+                    currentRow, currentBlock, file.toString());
                 continue;
               }
               if (record == null) {
                 // only happens with FilteredRecordReader at end of block
                 LOG.atFine().log(
                     "filtered record reader reached end of block in block %s in file %s",
-                    currentBlock,
-                    file.toString());
+                    currentBlock, file.toString());
                 break;
               }
               if (recordReader.shouldSkipCurrentRecord()) {
                 // this record is being filtered via the filter2 package
                 LOG.atFine().log(
                     "skipping record at %s in block %s in file %s",
-                    currentRow,
-                    currentBlock,
-                    file.toString());
+                    currentRow, currentBlock, file.toString());
                 continue;
               }
               outputReceiver.output(parseFn.apply(record));
@@ -384,8 +370,8 @@ public abstract class TransformingParquetIO {
             }
           }
           LOG.atFine().log(
-              "Finish processing %s rows from block %s in file %s", currentRow, currentBlock - 1,
-              file.toString());
+              "Finish processing %s rows from block %s in file %s",
+              currentRow, currentBlock - 1, file.toString());
         }
       }
 
@@ -395,8 +381,11 @@ public abstract class TransformingParquetIO {
         if (modelClass != null) {
           model = (GenericData) modelClass.getMethod("get").invoke(null);
         }
-        conf.setBoolean(AvroReadSupport.AVRO_COMPATIBILITY, model != null
-            && (model.getClass() == GenericData.class || model.getClass() == SpecificData.class));
+        conf.setBoolean(
+            AvroReadSupport.AVRO_COMPATIBILITY,
+            model != null
+                && (model.getClass() == GenericData.class
+                    || model.getClass() == SpecificData.class));
         return conf;
       }
 
@@ -444,8 +433,8 @@ public abstract class TransformingParquetIO {
       public RestrictionTracker<OffsetRange, Long> newTracker(
           @Restriction OffsetRange restriction, @Element FileIO.ReadableFile file)
           throws Exception {
-        ReadFiles.SplitReadFn.CountAndSize recordCountAndSize = getRecordCountAndSize(file,
-            restriction);
+        ReadFiles.SplitReadFn.CountAndSize recordCountAndSize =
+            getRecordCountAndSize(file, restriction);
         return new ReadFiles.BlockTracker(
             restriction,
             Math.round(recordCountAndSize.getSize()),
@@ -463,9 +452,8 @@ public abstract class TransformingParquetIO {
         return getRecordCountAndSize(file, restriction).getSize();
       }
 
-      private ReadFiles.SplitReadFn.CountAndSize getRecordCountAndSize(FileIO.ReadableFile file,
-          OffsetRange restriction)
-          throws Exception {
+      private ReadFiles.SplitReadFn.CountAndSize getRecordCountAndSize(
+          FileIO.ReadableFile file, OffsetRange restriction) throws Exception {
         ParquetFileReader reader = getParquetFileReader(file);
         double size = 0;
         double recordCount = 0;
@@ -481,8 +469,8 @@ public abstract class TransformingParquetIO {
       abstract static class CountAndSize {
 
         public static CountAndSize create(double newCount, double newSize) {
-          return new AutoValue_TransformingParquetIO_ReadFiles_SplitReadFn_CountAndSize(newCount,
-              newSize);
+          return new AutoValue_TransformingParquetIO_ReadFiles_SplitReadFn_CountAndSize(
+              newCount, newSize);
         }
 
         abstract double getCount();

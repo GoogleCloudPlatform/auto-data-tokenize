@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,32 +54,32 @@ public final class RecordUnFlattenerTest {
   public static ImmutableList<Object[]> testingParameters() {
     return ImmutableList.<Object[]>builder()
         .add(
-            new Object[]{
-                "nonComplexFields",
-                "avro_records/simple_field_avro_schema.json",
-                "avro_records/simple_field_avro_record.json",
-                "flat_records/simple_field_flat_record.textpb"
+            new Object[] {
+              "nonComplexFields",
+              "avro_records/simple_field_avro_schema.json",
+              "avro_records/simple_field_avro_record.json",
+              "flat_records/simple_field_flat_record.textpb"
             })
         .add(
-            new Object[]{
-                "simpleArrayField",
-                "avro_records/array_with_null_union_long_avro_schema.json",
-                "avro_records/array_with_null_union_long_avro_record.json",
-                "flat_records/array_with_null_union_long_flat_record.textpb"
+            new Object[] {
+              "simpleArrayField",
+              "avro_records/array_with_null_union_long_avro_schema.json",
+              "avro_records/array_with_null_union_long_avro_record.json",
+              "flat_records/array_with_null_union_long_flat_record.textpb"
             })
         .add(
-            new Object[]{
-                "recordArrayField",
-                "avro_records/array_with_null_union_record_avro_schema.json",
-                "avro_records/array_with_null_union_record_avro_record.json",
-                "flat_records/array_with_null_union_record_flat_record.textpb"
+            new Object[] {
+              "recordArrayField",
+              "avro_records/array_with_null_union_record_avro_schema.json",
+              "avro_records/array_with_null_union_record_avro_record.json",
+              "flat_records/array_with_null_union_record_flat_record.textpb"
             })
         .add(
-            new Object[]{
-                "unionWithArrayField",
-                "avro_records/union_with_array_schema.json",
-                "avro_records/union_with_array_record.json",
-                "flat_records/union_with_array_flat_record.textpb"
+            new Object[] {
+              "unionWithArrayField",
+              "avro_records/union_with_array_schema.json",
+              "avro_records/union_with_array_record.json",
+              "flat_records/union_with_array_flat_record.textpb"
             })
         .build();
   }

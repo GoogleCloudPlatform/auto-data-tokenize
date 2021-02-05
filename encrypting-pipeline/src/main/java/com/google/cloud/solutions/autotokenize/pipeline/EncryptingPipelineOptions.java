@@ -16,14 +16,13 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
 import java.util.List;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.Validation.Required;
 
-/**
- * Defines all the required inputs for the Encrypting pipeline.
- */
+/** Defines all the required inputs for the Encrypting pipeline. */
 public interface EncryptingPipelineOptions extends GcpOptions {
 
   @Required

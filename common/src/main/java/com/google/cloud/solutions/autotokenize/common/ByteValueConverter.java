@@ -16,22 +16,18 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
+
 import com.google.privacy.dlp.v2.Value;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-/**
- * Utility to manipulate {@link Value} objects representing raw bytes.
- */
+/** Utility to manipulate {@link Value} objects representing raw bytes. */
 public final class ByteValueConverter {
 
-  private ByteValueConverter() {
-  }
+  private ByteValueConverter() {}
 
-  /**
-   * Factory to create instance of the Value decorator.
-   */
+  /** Factory to create instance of the Value decorator. */
   public static ByteValueDecorator of(Value value) {
     return new ByteValueDecorator(value);
   }
@@ -45,9 +41,7 @@ public final class ByteValueConverter {
     return Value.newBuilder().setStringValue(Base64.getEncoder().encodeToString(rawBytes)).build();
   }
 
-  /**
-   * Decorator class providing operations on {@link Value} object to bytes.
-   */
+  /** Decorator class providing operations on {@link Value} object to bytes. */
   public static final class ByteValueDecorator {
 
     private final Value value;
@@ -56,9 +50,7 @@ public final class ByteValueConverter {
       this.value = value;
     }
 
-    /**
-     * Returns string for putting the bytes as JSON field.
-     */
+    /** Returns string for putting the bytes as JSON field. */
     public String asJsonString() {
       return new String(forBytes().array(), StandardCharsets.ISO_8859_1);
     }
@@ -68,7 +60,8 @@ public final class ByteValueConverter {
     }
 
     /**
-     * Returns the decoded bytes as a reversal function. {@link ByteValueConverter#convertBytesToValue(byte[])}.
+     * Returns the decoded bytes as a reversal function. {@link
+     * ByteValueConverter#convertBytesToValue(byte[])}.
      */
     private byte[] extractValueBytes() {
       return Base64.getDecoder().decode(value.getStringValue());

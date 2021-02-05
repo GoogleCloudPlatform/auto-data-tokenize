@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2021 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,7 @@ public final class ValueEncryptionTransformTest {
   private final Schema inputSchema;
   private final ImmutableList<GenericRecord> testRecords;
   private final ImmutableList<FlatRecord> expectedRecords;
-  @Rule
-  public TestPipeline p = TestPipeline.create();
+  @Rule public TestPipeline p = TestPipeline.create();
 
   public ValueEncryptionTransformTest(
       String testConditionName,
@@ -94,46 +93,46 @@ public final class ValueEncryptionTransformTest {
   public static ImmutableList<Object[]> testingParameters() {
     return ImmutableList.<Object[]>builder()
         .add(
-            new Object[]{
-                "contacts schema valid",
-                ImmutableSet.of("$.contact_records.contacts.contact.number"),
-                "avro_records/contacts_schema/person_name_union_null_long_contact_schema.json",
-                ImmutableList.of(
-                    "avro_records/contacts_schema/john_doe_contact_plain_avro_record.json",
-                    "avro_records/contacts_schema/jane_doe_contact_plain_avro_record.json"),
-                ImmutableList.of(
-                    "avro_records/contacts_schema/john_doe_contact_encrypted_avro_record.json",
-                    "avro_records/contacts_schema/jane_doe_contact_encrypted_avro_record.json"),
+            new Object[] {
+              "contacts schema valid",
+              ImmutableSet.of("$.contact_records.contacts.contact.number"),
+              "avro_records/contacts_schema/person_name_union_null_long_contact_schema.json",
+              ImmutableList.of(
+                  "avro_records/contacts_schema/john_doe_contact_plain_avro_record.json",
+                  "avro_records/contacts_schema/jane_doe_contact_plain_avro_record.json"),
+              ImmutableList.of(
+                  "avro_records/contacts_schema/john_doe_contact_encrypted_avro_record.json",
+                  "avro_records/contacts_schema/jane_doe_contact_encrypted_avro_record.json"),
             })
         .add(
-            new Object[]{
-                "records with namespace schema valid",
-                ImmutableSet.of("$.Root.contact.root.Contact.nums.root.contact.Nums.number"),
-                "avro_records/contact_records_with_namespace/bq_contacts_schema.json",
-                ImmutableList.of(
-                    "avro_records/contact_records_with_namespace/white_revolution_contact.json"),
-                ImmutableList.of(
-                    "avro_records/contact_records_with_namespace/white_revolution_contact_encrypted.json"),
+            new Object[] {
+              "records with namespace schema valid",
+              ImmutableSet.of("$.Root.contact.root.Contact.nums.root.contact.Nums.number"),
+              "avro_records/contact_records_with_namespace/bq_contacts_schema.json",
+              ImmutableList.of(
+                  "avro_records/contact_records_with_namespace/white_revolution_contact.json"),
+              ImmutableList.of(
+                  "avro_records/contact_records_with_namespace/white_revolution_contact_encrypted.json"),
             })
         .add(
-            new Object[]{
-                "user data with long -> string transform",
-                ImmutableSet.of("$.kylosample.cc", "$.kylosample.email", "$.kylosample.ip_address"),
-                "avro_records/userdata_records/schema.json",
-                ImmutableList.of(
-                    "avro_records/userdata_records/record-1.json",
-                    "avro_records/userdata_records/record-2.json"),
-                ImmutableList.of(
-                    "avro_records/userdata_records/encrypted/record-1.json",
-                    "avro_records/userdata_records/encrypted/record-2.json"),
+            new Object[] {
+              "user data with long -> string transform",
+              ImmutableSet.of("$.kylosample.cc", "$.kylosample.email", "$.kylosample.ip_address"),
+              "avro_records/userdata_records/schema.json",
+              ImmutableList.of(
+                  "avro_records/userdata_records/record-1.json",
+                  "avro_records/userdata_records/record-2.json"),
+              ImmutableList.of(
+                  "avro_records/userdata_records/encrypted/record-1.json",
+                  "avro_records/userdata_records/encrypted/record-2.json"),
             })
         .add(
-            new Object[]{
-                "null in encrypted field",
-                ImmutableSet.of("$.kylosample.cc"),
-                "avro_records/userdata_records/schema.json",
-                ImmutableList.of("avro_records/userdata_records/record-null-cc.json"),
-                ImmutableList.of("avro_records/userdata_records/encrypted/record-null-cc.json"),
+            new Object[] {
+              "null in encrypted field",
+              ImmutableSet.of("$.kylosample.cc"),
+              "avro_records/userdata_records/schema.json",
+              ImmutableList.of("avro_records/userdata_records/record-null-cc.json"),
+              ImmutableList.of("avro_records/userdata_records/encrypted/record-null-cc.json"),
             })
         .build();
   }
@@ -143,9 +142,9 @@ public final class ValueEncryptionTransformTest {
     PCollection<FlatRecord> transformedRecords =
         p.apply("load test avro data", Create.of(testRecords).withCoder(AvroCoder.of(inputSchema)))
             .apply(
-                MapElements
-                    .into(TypeDescriptors
-                        .kvs(TypeDescriptor.of(FlatRecord.class), TypeDescriptor.of(String.class)))
+                MapElements.into(
+                        TypeDescriptors.kvs(
+                            TypeDescriptor.of(FlatRecord.class), TypeDescriptor.of(String.class)))
                     .via(FlatRecordConvertFn.forGenericRecord()))
             .apply(Keys.create())
             .apply(
@@ -157,7 +156,8 @@ public final class ValueEncryptionTransformTest {
                     .build());
 
     PAssert.that(transformedRecords)
-      .satisfies(FlatRecordsCheckerFn.withExpectedRecords(expectedRecords).withoutFlatKeySchema());
+        .satisfies(
+            FlatRecordsCheckerFn.withExpectedRecords(expectedRecords).withoutFlatKeySchema());
 
     p.run();
   }

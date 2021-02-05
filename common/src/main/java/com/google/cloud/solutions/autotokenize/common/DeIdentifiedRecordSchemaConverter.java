@@ -92,13 +92,12 @@ public final class DeIdentifiedRecordSchemaConverter {
     return toBuilder().setClock(clock).build();
   }
 
-  /**
-   * Returns the updated schema with de-identified fields converted to string.
-   */
+  /** Returns the updated schema with de-identified fields converted to string. */
   public Schema updatedSchema() {
     checkState(
-        originalSchema != null && encryptColumnSchemaKeys != null && !encryptColumnSchemaKeys
-            .isEmpty(),
+        originalSchema != null
+            && encryptColumnSchemaKeys != null
+            && !encryptColumnSchemaKeys.isEmpty(),
         "schema and encrypt columns can't be null or empty");
 
     String updatedRecordDoc =
@@ -141,9 +140,7 @@ public final class DeIdentifiedRecordSchemaConverter {
     return arrayBuilder.items(makeType(elementType, parentKey, encrypted));
   }
 
-  /**
-   * Helper build class for FieldMaker class that creates a Field.
-   */
+  /** Helper build class for FieldMaker class that creates a Field. */
   private class FieldMakerBuilder<T> {
 
     private final FieldAssembler<T> fieldAssembler;
@@ -171,9 +168,7 @@ public final class DeIdentifiedRecordSchemaConverter {
     }
   }
 
-  /**
-   * Helper class to create a field of an AVRO Record type.
-   */
+  /** Helper class to create a field of an AVRO Record type. */
   private class FieldMaker<T> {
 
     private final FieldAssembler<T> parentFieldAssembler;
@@ -354,23 +349,18 @@ public final class DeIdentifiedRecordSchemaConverter {
         .doc(type.getDoc());
   }
 
-
   private Builder toBuilder() {
     return new Builder(originalSchema, encryptColumnSchemaKeys, clock);
   }
 
-
-  /**
-   * Builder for the DeIdentifiedRecordSchemaCreator.
-   */
+  /** Builder for the DeIdentifiedRecordSchemaCreator. */
   public static class Builder {
 
     private Schema originalSchema;
     private ImmutableSet<String> encryptColumns;
     private Clock clock;
 
-    Builder() {
-    }
+    Builder() {}
 
     Builder(Schema originalSchema, ImmutableSet<String> encryptColumns, Clock clock) {
       this.originalSchema = originalSchema;
@@ -399,9 +389,7 @@ public final class DeIdentifiedRecordSchemaConverter {
     }
   }
 
-  /**
-   * Uses the clock to append the updated timestamp in the output schema.
-   */
+  /** Uses the clock to append the updated timestamp in the output schema. */
   @VisibleForTesting
   Clock getClock() {
     return clock;

@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.encryptors;
 
+
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.DeterministicAead;
 import com.google.crypto.tink.JsonKeysetReader;
@@ -36,7 +37,7 @@ public class DaeadEncryptingValueTokenizerFactory implements ValueTokenizerFacto
    * Instantiates the ValueTokenizerFactory with the clearText Data encryption key.
    *
    * @param cleartextKeysetJson the clear-text data encryption key derived by unwrapping the
-   * provided key using GCP KMS.
+   *     provided key using GCP KMS.
    */
   public DaeadEncryptingValueTokenizerFactory(String cleartextKeysetJson) {
     this.cleartextKeysetJson = cleartextKeysetJson;
@@ -53,10 +54,8 @@ public class DaeadEncryptingValueTokenizerFactory implements ValueTokenizerFacto
   }
 
   private DeterministicAead buildCrypto() throws IOException, GeneralSecurityException {
-    return
-        CleartextKeysetHandle
-            .read(JsonKeysetReader.withString(cleartextKeysetJson))
-            .getPrimitive(DeterministicAead.class);
+    return CleartextKeysetHandle.read(JsonKeysetReader.withString(cleartextKeysetJson))
+        .getPrimitive(DeterministicAead.class);
   }
 
   public static class TinkInitException extends RuntimeException {

@@ -34,19 +34,16 @@ import org.apache.avro.generic.GenericRecord;
  * Flattens an AVRO {@link GenericRecord} into a map of flattened JSONPath key and value pairs.
  * Supports record and array type fields, does not support Map field.
  *
- * <p>example:
- * <code>
+ * <p>example: <code>
  * { "name": "John Doe", "contacts": [ { "contact": { "type": "home", "number": "123-456-789" } }, {
  * "contact": { "type": "work", "number": "987-654-321" } }, { "null": null } ] }
- * </code>
- * is converted as
- * <code>
+ * </code> is converted as <code>
  * { $.name -> {string_value: "John Doe"}, $.contacts[0].contact.type -> {string_value: "home"},
  * $.contacts[0].contact.number -> {string_value: "123-456-789"}, $.contacts[1].contact.type ->
  * {string_value: "work"}, $.contacts[1].contact.number -> {string_value: "987-654-321"} }
  * </code>
  */
-public final class GenericRecordFlattener implements RecordFlattener<GenericRecord>{
+public final class GenericRecordFlattener implements RecordFlattener<GenericRecord> {
 
   public static final String RECORD_ROOT_SYMBOL = "$";
 
@@ -60,9 +57,7 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
     return new TypeFlattener(record).convert();
   }
 
-  /**
-   * Helper class to actually flatten an AVRO Record.
-   */
+  /** Helper class to actually flatten an AVRO Record. */
   private static final class TypeFlattener {
 
     private final Schema schema;
@@ -106,16 +101,14 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
      * @param fieldName the name of the field to be flattened.
      * @param schemaKey the flat-key of the schema field.
      */
-    private void processType(Object value, Schema fieldSchema, String parentKey, String fieldName,
-        String schemaKey) {
+    private void processType(
+        Object value, Schema fieldSchema, String parentKey, String fieldName, String schemaKey) {
       String fieldKey = Joiner.on(".").skipNulls().join(parentKey, fieldName);
 
       switch (fieldSchema.getType()) {
         case RECORD:
-
           String recordFieldKey =
-              isBlank(fieldName) ? parentKey :
-                  String.format("%s.[\"%s\"]", parentKey, fieldName);
+              isBlank(fieldName) ? parentKey : String.format("%s.[\"%s\"]", parentKey, fieldName);
           convertRecord((GenericRecord) value, fieldSchema, recordFieldKey, schemaKey);
           break;
 
@@ -191,15 +184,17 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
       List<?> array = (List<?>) value;
       Schema arrayType = fieldSchema.getElementType();
       for (int index = 0; index < array.size(); index++) {
-        processType(array.get(index), arrayType, String.format("%s[%s]", fieldKey, index), null,
-            schemaKey);
+        processType(
+            array.get(index), arrayType, String.format("%s[%s]", fieldKey, index), null, schemaKey);
       }
     }
 
-    private void processUnion(Object value, Schema fieldSchema, String parentKey, String fieldKey,
-        String schemaKey) {
+    private void processUnion(
+        Object value, Schema fieldSchema, String parentKey, String fieldKey, String schemaKey) {
       if (value == null) {
-        putValue(Joiner.on(".").skipNulls().join(parentKey, fieldKey), schemaKey,
+        putValue(
+            Joiner.on(".").skipNulls().join(parentKey, fieldKey),
+            schemaKey,
             Value.getDefaultInstance());
         return;
       }
@@ -211,8 +206,12 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
       }
 
       Schema nonNullType = unionTypes.get(1);
-      processType(value, nonNullType, Joiner.on(".").skipNulls().join(parentKey, fieldKey),
-          nonNullType.getFullName(), schemaKey);
+      processType(
+          value,
+          nonNullType,
+          Joiner.on(".").skipNulls().join(parentKey, fieldKey),
+          nonNullType.getFullName(),
+          schemaKey);
     }
 
     private void putValue(String fieldKey, String schemaKey, Value value) {

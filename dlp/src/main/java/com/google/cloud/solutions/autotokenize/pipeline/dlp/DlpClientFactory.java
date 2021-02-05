@@ -16,18 +16,16 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline.dlp;
 
+
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.dlp.v2.stub.DlpServiceStub;
 import java.io.IOException;
 import java.io.Serializable;
 
-/**
- * Client factory to be used in
- */
+/** Client factory to be used in */
 public interface DlpClientFactory extends Serializable {
 
   DlpServiceClient newClient() throws IOException;
-
 
   static DefaultClientFactory defaultFactory() {
     return new DefaultClientFactory();
@@ -58,5 +56,4 @@ public interface DlpClientFactory extends Serializable {
       return DlpServiceClient.create(stub);
     }
   }
-
 }

@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
+
 import com.google.common.truth.Fact;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
