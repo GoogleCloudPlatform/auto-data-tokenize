@@ -12,6 +12,10 @@ This document demonstrates a reference implementation of tokenizing structured d
 
 This document is intended for a technical audience whose responsibilities include data security, data processing, or data analytics. This guide assumes that you're familiar with data processing and data privacy, without the need to be an expert.
 
+Watch the video to learn how the tool works:
+
+[![Understand code Youtube video](https://img.youtube.com/vi/S6fYkWvUBDo/default.jpg)](https://www.youtube.com/watch?v=S6fYkWvUBDo)
+
 ## Architecture
 
 ![Auto tokenizing pipelines](Auto_Tokenizing_Pipelines_Arch.svg)
