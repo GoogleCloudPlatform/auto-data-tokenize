@@ -275,7 +275,7 @@ gsutil cp userdata.avro gs://${TEMP_GCS_BUCKET}
 You need to compile all the modules to build executables for deploying the _sample & identify_ and _bulk tokenize_ pipelines.
 
 ```shell script
-gradle clean buildNeeded shadowJar
+./gradlew clean buildNeeded shadowJar
 ```
 
 > Add `-x test` flag to skip running tests.
