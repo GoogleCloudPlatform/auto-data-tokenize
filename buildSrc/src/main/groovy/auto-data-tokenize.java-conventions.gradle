@@ -47,6 +47,9 @@ dependencies {
     implementation "org.apache.beam:beam-sdks-java-core:${beamVersion}"
     implementation "org.apache.beam:beam-runners-google-cloud-dataflow-java:${beamVersion}"
     implementation "org.apache.beam:beam-sdks-java-io-google-cloud-platform:${beamVersion}"
+    implementation "org.apache.beam:beam-sdks-java-io-parquet:${beamVersion}"
+    runtimeOnly "org.apache.hadoop:hadoop-mapreduce-client-core:2.10.1"
+    testRuntimeOnly "org.apache.hadoop:hadoop-mapreduce-client-core:2.10.1"
 
     runtimeOnly "org.slf4j:slf4j-api:1.7.25"
     runtimeOnly "org.slf4j:slf4j-jdk14:1.7.25"

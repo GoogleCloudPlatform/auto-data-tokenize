@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
-import com.google.cloud.solutions.autotokenize.common.io.TransformingParquetIO;
 import com.google.common.flogger.GoogleLogger;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -32,6 +31,7 @@ import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.parquet.ParquetIO;
 import org.apache.beam.sdk.transforms.Distinct;
 import org.apache.beam.sdk.transforms.Keys;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -163,7 +163,7 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
             .from(inputPattern());
 
       case PARQUET:
-        return TransformingParquetIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord())
+        return ParquetIO.parseGenericRecords(FlatRecordConvertFn.forGenericRecord())
             .from(inputPattern());
 
       case BIGQUERY_TABLE:

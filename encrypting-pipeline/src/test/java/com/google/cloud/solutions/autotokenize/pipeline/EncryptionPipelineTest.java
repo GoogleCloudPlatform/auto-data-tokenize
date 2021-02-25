@@ -16,8 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
@@ -27,6 +25,7 @@ import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
 import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.PartialColumnBatchAccumulator;
+import com.google.cloud.solutions.autotokenize.testing.MatchRecordsCountFn;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.common.collect.ImmutableList;
@@ -40,7 +39,6 @@ import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.junit.Before;
 import org.junit.Rule;
@@ -114,21 +112,6 @@ public final class EncryptionPipelineTest implements Serializable {
     PAssert.that(encryptedRecords).satisfies(new MatchRecordsCountFn<>(TEST_RECORDS.size()));
 
     readPipeline.run();
-  }
-
-  private static class MatchRecordsCountFn<T> implements SerializableFunction<Iterable<T>, Void> {
-
-    private final int expectedRecordCount;
-
-    public MatchRecordsCountFn(int expectedRecordCount) {
-      this.expectedRecordCount = expectedRecordCount;
-    }
-
-    @Override
-    public Void apply(Iterable<T> input) {
-      assertThat(input).hasSize(expectedRecordCount);
-      return null;
-    }
   }
 
   private static Base64EncodingDlpStub makeDlpStub() {
