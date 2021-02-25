@@ -20,7 +20,7 @@ allprojects {
     ext {
       autoValueVersion = "1.7.4"
       protoVersion = "3.14.0"
-      beamVersion = "2.27.0"
+      beamVersion = "2.28.0"
       autoTokenizeVersion = "1.0.2"
       floggerVersion = "0.5.1"
       dlpClientVersion = "2.1.0"
@@ -37,6 +37,18 @@ allprojects {
       classpath "com.diffplug.spotless:spotless-plugin-gradle:5.9.0"
       classpath "com.google.googlejavaformat:google-java-format:1.9"
       classpath "com.github.jengelman.gradle.plugins:shadow:6.1.0"
+    }
+  }
+}
+
+subprojects {
+  afterEvaluate { project ->
+      tasks.withType(Test) {
+        afterSuite { desc, result ->
+          if (!desc.parent) { // will match the outermost suite
+            println "${desc.name} > ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+          }
+        }
     }
   }
 }
