@@ -20,12 +20,13 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
 import java.util.List;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
+import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Validation;
 
-/** */
+/** Defines the sampling pipeline parameters. */
 public interface DlpSamplerIdentifyOptions extends GcpOptions {
 
-  @Validation.Required
+  @Default.Integer(0)
   int getSampleSize();
 
   void setSampleSize(int sampleSize);

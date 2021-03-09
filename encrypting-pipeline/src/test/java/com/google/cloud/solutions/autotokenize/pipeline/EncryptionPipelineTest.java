@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;

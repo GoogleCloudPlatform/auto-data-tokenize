@@ -307,6 +307,8 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 --reportLocation="gs://${TEMP_GCS_BUCKET}/dlp_report/"
 ```
 
+> **Note:** Use `sampleSize=0` to process all records.
+
 The pipeline supports multiple **Source Types**, use the following table to use the right combination of `sourceType` and `inputPattern` arguments.
 
 | Data source | sourceType | inputPattern |
