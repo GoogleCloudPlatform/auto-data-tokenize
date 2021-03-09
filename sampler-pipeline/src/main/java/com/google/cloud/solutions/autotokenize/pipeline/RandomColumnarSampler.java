@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.GroupIntoBatches;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.Sample;
@@ -40,6 +42,10 @@ public abstract class RandomColumnarSampler
   abstract int sampleSize();
 
   public static RandomColumnarSampler any(int sampleSize) {
+    checkArgument(
+        sampleSize >= 0,
+        "provide a positive number for sampleSize or 0 for no-sampling. Found %s",
+        sampleSize);
     return new AutoValue_RandomColumnarSampler(sampleSize);
   }
 
@@ -50,7 +56,10 @@ public abstract class RandomColumnarSampler
         .apply("SplitIntoSchemaColumns", MapElements.via(new SplitRecordByKeys()))
         .apply(Flatten.iterables())
         .apply(Filter.by(kv -> !kv.getValue().equals(Value.getDefaultInstance())))
-        .apply(Sample.fixedSizePerKey(sampleSize()));
+        .apply(
+            (sampleSize() == 0)
+                ? GroupIntoBatches.ofSize(300)
+                : Sample.fixedSizePerKey(sampleSize()));
   }
 
   private static class SplitRecordByKeys
