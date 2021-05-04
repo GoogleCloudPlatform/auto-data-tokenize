@@ -1,0 +1,73 @@
+# proto-file: protos/src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto
+# proto-message: FlatRecord
+
+flat_key_schema {
+  key: "$.contacts[0].[\"contact\"].number"
+  value: "$.contact_records.contacts.contact.number"
+}
+flat_key_schema {
+  key: "$.contacts[0].[\"contact\"].type"
+  value: "$.contact_records.contacts.contact.type"
+}
+flat_key_schema {
+  key: "$.contacts[1].[\"contact\"].number"
+  value: "$.contact_records.contacts.contact.number"
+}
+flat_key_schema {
+  key: "$.contacts[1].[\"contact\"].type"
+  value: "$.contact_records.contacts.contact.type"
+}
+flat_key_schema {
+  key: "$.contacts[2].[\"contact\"].number"
+  value: "$.contact_records.contacts.contact.number"
+}
+flat_key_schema {
+  key: "$.contacts[2].[\"contact\"].type"
+  value: "$.contact_records.contacts.contact.type"
+}
+flat_key_schema {
+  key: "$.name"
+  value: "$.contact_records.name"
+}
+values {
+  key: "$.contacts[0].[\"contact\"].encrypted_number"
+  value {
+    string_value: "AAAAAVA+dYI="
+  }
+}
+values {
+  key: "$.contacts[0].[\"contact\"].type"
+  value {
+    string_value: "WORK"
+  }
+}
+values {
+  key: "$.contacts[1].[\"contact\"].encrypted_number"
+  value {
+    string_value: "AAAAAEmWAtI="
+  }
+}
+values {
+  key: "$.contacts[1].[\"contact\"].type"
+  value {
+    string_value: "HOME"
+  }
+}
+values {
+  key: "$.contacts[2].[\"contact\"].encrypted_number"
+  value {
+    string_value: "AAAAAkywFuo="
+  }
+}
+values {
+  key: "$.contacts[2].[\"contact\"].type"
+  value {
+    string_value: "MOBILE"
+  }
+}
+values {
+  key: "$.name"
+  value {
+    string_value: "John Doe"
+  }
+}

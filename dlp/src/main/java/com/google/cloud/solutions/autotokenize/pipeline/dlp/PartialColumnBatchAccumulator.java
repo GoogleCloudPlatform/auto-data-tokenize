@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @AutoValue
@@ -53,6 +54,8 @@ public abstract class PartialColumnBatchAccumulator
   public static final String RECORD_ID_COLUMN_NAME = "__AUTOTOKENIZE__RECORD_ID__";
   public static final int MAX_DLP_PAYLOAD_SIZE_BYTES = 500000; // 500kB
   public static final int MAX_DLP_PAYLOAD_CELLS = 50000; // 50K
+
+  private static final Pattern ARRAY_INDEX_PATTERN = Pattern.compile("\\[\\d+\\]");
 
   abstract int maxPayloadSize();
 
@@ -86,6 +89,7 @@ public abstract class PartialColumnBatchAccumulator
 
   @AutoValue.Builder
   public abstract static class Builder {
+
     public abstract Builder maxPayloadSize(int maxPayloadSize);
 
     public abstract Builder maxCellCount(int maxCellCount);
@@ -156,7 +160,12 @@ public abstract class PartialColumnBatchAccumulator
                     FieldTransformation.newBuilder()
                         .addAllFields(
                             DeidentifyColumns.fieldIdsFor(
-                                columnSchemaKeyMap.get(colEncryptConfig.getColumnId())))
+                                columnSchemaKeyMap.get(colEncryptConfig.getColumnId()).stream()
+                                    .map(
+                                        colName ->
+                                            ARRAY_INDEX_PATTERN.matcher(colName).replaceAll(""))
+                                    .distinct()
+                                    .collect(toImmutableList())))
                         .setPrimitiveTransformation(colEncryptConfig.getTransform())
                         .build())
             .collect(toImmutableList());
@@ -276,5 +285,7 @@ public abstract class PartialColumnBatchAccumulator
       return new AutoValue_PartialColumnBatchAccumulator_BatchPartialColumnDlpTable(
           partialColumnDlpTable, rows, serializedSize, report);
     }
+
+    protected BatchPartialColumnDlpTable() {}
   }
 }

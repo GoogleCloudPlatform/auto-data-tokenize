@@ -26,11 +26,11 @@ import com.google.cloud.dlp.v2.stub.DlpServiceStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.BaseUnaryApiFuture;
 import com.google.cloud.solutions.autotokenize.testing.stubs.TestingBackgroundResource;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.privacy.dlp.v2.ContentItem;
 import com.google.privacy.dlp.v2.DeidentifyContentRequest;
 import com.google.privacy.dlp.v2.DeidentifyContentResponse;
 import com.google.privacy.dlp.v2.FieldId;
-import com.google.privacy.dlp.v2.FieldTransformation;
 import com.google.privacy.dlp.v2.Table;
 import com.google.privacy.dlp.v2.Table.Row;
 import com.google.privacy.dlp.v2.Value;
@@ -70,12 +70,6 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
             assertThat(deidentifyContentRequest.getParent())
                 .isEqualTo(String.format("projects/%s", projectId));
 
-            List<FieldTransformation> fieldTransformations =
-                deidentifyContentRequest
-                    .getDeidentifyConfig()
-                    .getRecordTransformations()
-                    .getFieldTransformationsList();
-
             List<FieldId> headers = deidentifyContentRequest.getItem().getTable().getHeadersList();
 
             assertThat(headers)
@@ -85,31 +79,33 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
                         .addAll(expectedHeaders)
                         .build());
 
-            int recordIdColumnIndex =
-                deidentifyContentRequest
-                    .getItem()
-                    .getTable()
-                    .getHeadersList()
-                    .indexOf(FieldId.newBuilder().setName(recordIdColumnName).build());
+            TokenizingColPatternChecker headerChecker =
+                TokenizingColPatternChecker.forTransforms(
+                    deidentifyContentRequest
+                        .getDeidentifyConfig()
+                        .getRecordTransformations()
+                        .getFieldTransformationsList());
 
             List<Row> updatedRows =
                 deidentifyContentRequest.getItem().getTable().getRowsList().stream()
                     .map(
                         row -> {
-                          List<Value> valuesList = row.getValuesList();
-                          ImmutableList.Builder<Value> outputValueBuilder = ImmutableList.builder();
+                          ImmutableList<Value> updatedValues =
+                              Streams.zip(
+                                      headers.stream(),
+                                      row.getValuesList().stream(),
+                                      (header, value) -> {
+                                        if (header.getName().equals(recordIdColumnName)
+                                            || !headerChecker.isTokenizeColumn(header)) {
+                                          // do not encode if RecordId column or non-tokenizing
+                                          // column.
+                                          return value;
+                                        }
+                                        return encodeBase64Value(value);
+                                      })
+                                  .collect(toImmutableList());
 
-                          for (int i = 0; i < valuesList.size(); i++) {
-
-                            Value value = valuesList.get(i);
-                            outputValueBuilder.add(
-                                (i == recordIdColumnIndex) ? value : encodeBase64Value(value));
-                          }
-
-                          return row.toBuilder()
-                              .clearValues()
-                              .addAllValues(outputValueBuilder.build())
-                              .build();
+                          return row.toBuilder().clearValues().addAllValues(updatedValues).build();
                         })
                     .collect(toImmutableList());
 

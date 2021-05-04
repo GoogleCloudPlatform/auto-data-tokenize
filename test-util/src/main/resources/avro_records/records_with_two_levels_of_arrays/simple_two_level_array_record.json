@@ -1,0 +1,35 @@
+{
+  "simple_field1": "my simple field1",
+  "level1_array": [
+    {
+      "level1_array_record": {
+        "level2_simple_field": {
+          "string": "WORK"
+        },
+        "level2_array": [
+          {
+            "string": "element1"
+          },
+          {
+            "string": "element2"
+          }
+        ]
+      }
+    },
+    {
+      "level1_array_record": {
+        "level2_simple_field": {
+          "string": "HOME"
+        },
+        "level2_array": [
+          {
+            "string": "element3"
+          },
+          {
+            "string": "element4"
+          }
+        ]
+      }
+    }
+  ]
+}

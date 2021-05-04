@@ -1,0 +1,37 @@
+{
+  "type": "record",
+  "name": "multi_level_arrays",
+  "doc": "Multilevel Arrays for testing",
+  "fields": [
+    {
+      "name": "simple_field1",
+      "type": "string"
+    },
+    {
+      "name": "level1_array",
+      "type": {
+        "type": "array",
+        "items": [
+          "null",
+          {
+            "type": "record",
+            "name": "level1_array_record",
+            "fields": [
+              {
+                "name": "level2_simple_field",
+                "type": ["null", "string"]
+              },
+              {
+                "name": "level2_array",
+                "type" : {
+                  "type" : "array",
+                  "items" : ["null", "string"]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
