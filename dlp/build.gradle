@@ -23,6 +23,7 @@ dependencies {
     implementation project(":common")
     implementation "com.google.cloud:google-cloud-dlp:${dlpClientVersion}"
 
+    testImplementation project(":common-util")
     testImplementation project(":test-util")
 }
 

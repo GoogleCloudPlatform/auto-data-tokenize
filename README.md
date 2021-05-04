@@ -425,7 +425,7 @@ The encryption pipeline supports two encryption modes:
     <tr>
       <td>DLP De-identify</td>
 <td><code>--dlpEncryptConfigJson</code></td>
-<td><a href="proto-messages/src/main/resources/proto/google/cloud/autodlp/auto_tokenize_messages.proto">DlpEncryptConfig</a>
+<td><a href="protos/src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto">DlpEncryptConfig</a>
 JSON to provide <a href="https://cloud.google.com/dlp/docs/reference/rest/v2/projects.deidentifyTemplates#DeidentifyTemplate.PrimitiveTransformation">PrimitiveTransformation</a>
 for each <code>tokenizedColumn</code>.
 <br>
