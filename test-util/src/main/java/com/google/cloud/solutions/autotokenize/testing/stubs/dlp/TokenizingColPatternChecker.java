@@ -28,8 +28,7 @@ import java.util.stream.Collectors;
 
 class TokenizingColPatternChecker {
   private static final Pattern REGEX_SPECIAL_CHARS =
-      Pattern.compile(
-          "([\\<\\(\\[\\{\\\\\\^\\-\\=\\$\\!\\|\\]\\}\\)\\?\\*\\+\\.\\>\\\"\\']+)");
+      Pattern.compile("([\\<\\(\\[\\{\\\\\\^\\-\\=\\$\\!\\|\\]\\}\\)\\?\\*\\+\\.\\>\\\"\\']+)");
 
   private final ImmutableSet<String> tokenizingPatterns;
 
