@@ -1,0 +1,38 @@
+{
+  "type": "record",
+  "name": "topLevelRecord",
+  "fields": [
+    {
+      "name": "row_id",
+      "type": [
+        "null",
+        "int"
+      ],
+      "doc": "row_id field documentation"
+    },
+    {
+      "name": "person_name",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "person_name field documentation"
+    },
+    {
+      "name": "contact_type",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "contact_type field documentation"
+    },
+    {
+      "name": "contact_number",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "contact_number field documentation"
+    }
+  ]
+}

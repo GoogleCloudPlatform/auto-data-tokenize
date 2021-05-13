@@ -1,0 +1,119 @@
+# proto-file: google/cloud/datacatalog/v1/schema.proto
+# proto-message: Schema
+
+columns {
+  type: "STRING"
+  description: "Type inferred from \'2016-02-03T07:55:29Z\'"
+  mode: "REQUIRED"
+  column: "registration_dttm"
+}
+columns {
+  type: "FIXED"
+  description: "Fixed bytes size: 12"
+  mode: "REQUIRED"
+  column: "int96_date"
+}
+columns {
+  type: "LONG"
+  description: "Type inferred from \'1\'"
+  mode: "REQUIRED"
+  column: "id"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'Amanda\'"
+  mode: "REQUIRED"
+  column: "first_name"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'Jordan\'"
+  mode: "REQUIRED"
+  column: "last_name"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'ajordan0@com.com\'"
+  mode: "REQUIRED"
+  column: "email"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'Female\'"
+  mode: "REQUIRED"
+  column: "gender"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'1.197.201.2\'"
+  mode: "REQUIRED"
+  column: "ip_address"
+}
+columns {
+  type: "LONG"
+  description: "Type inferred from \'6759521864920116\' Default Value: NULL"
+  mode: "NULLABLE"
+  column: "cc"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'Indonesia\'"
+  mode: "REQUIRED"
+  column: "country"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'3/8/1971\'"
+  mode: "REQUIRED"
+  column: "birthdate"
+}
+columns {
+  type: "DOUBLE"
+  description: "Type inferred from \'49756.53\' Default Value: NULL"
+  mode: "NULLABLE"
+  column: "salary"
+}
+columns {
+  type: "FLOAT"
+  mode: "REQUIRED"
+  column: "singlePrecisionNumber"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'Internal Auditor\'"
+  mode: "REQUIRED"
+  column: "title"
+}
+columns {
+  type: "STRING"
+  description: "Type inferred from \'1E+02\'"
+  mode: "REQUIRED"
+  column: "comments"
+}
+columns {
+  type: "BOOLEAN"
+  mode: "REQUIRED"
+  column: "active_employee"
+}
+columns {
+  type: "FIXED"
+  description: "Fixed bytes size: 16"
+  mode: "REQUIRED"
+  column: "signature"
+}
+columns {
+  type: "BYTES"
+  mode: "REQUIRED"
+  column: "identifier"
+}
+columns {
+  type: "INT"
+  mode: "REQUIRED"
+  column: "countriesVisited"
+}
+columns {
+  type: "ENUM"
+  description: "Permitted Values: [FULL_TIME, INTERN, VENDOR]"
+  mode: "REQUIRED"
+  column: "employeeType"
+}

@@ -1,0 +1,63 @@
+{
+  "sourceType": "JDBC_TABLE",
+  "inputPattern":"SimpleFlatRecords",
+  "entry": {
+    "description": "SQL Database details:\n JDBC Connection URL:  jdbc:mysql:///dlp_test_database?cloudSqlInstance=auto-dlp%3Aasia-southeast1%3Adlp-test-instance&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=root%401234 \n Entry created by Auto Data identification pipeline. Original Avro Schema: {\"type\":\"record\",\"name\":\"topLevelRecord\",\"fields\":[{\"name\":\"row_id\",\"type\":[\"null\",\"int\"],\"doc\":\"row_id field documentation\"},{\"name\":\"person_name\",\"type\":[\"null\",\"string\"],\"doc\":\"person_name field documentation\"},{\"name\":\"contact_type\",\"type\":[\"null\",\"string\"],\"doc\":\"contact_type field documentation\"},{\"name\":\"contact_number\",\"type\":[\"null\",\"string\"],\"doc\":\"contact_number field documentation\"}]}",
+    "schema": {
+      "columns": [
+        {
+          "type": "INT",
+          "mode": "NULLABLE",
+          "column": "row_id",
+          "description": "row_id field documentation"
+        },
+        {
+          "type": "STRING",
+          "mode": "NULLABLE",
+          "column": "person_name",
+          "description": "person_name field documentation"
+        },
+        {
+          "type": "STRING",
+          "mode": "NULLABLE",
+          "column": "contact_type",
+          "description": "contact_type field documentation"
+        },
+        {
+          "type": "STRING",
+          "mode": "NULLABLE",
+          "column": "contact_number",
+          "description": "contact_number field documentation"
+        }
+      ]
+    },
+    "userSpecifiedType": "Database",
+    "userSpecifiedSystem": "com_google_databaseType_Driver"
+  },
+  "tags": [
+    {
+      "fields": {
+        "infoTypes": {
+          "stringValue": "[PHONE_NUMBER]"
+        },
+        "inspectTimestamp": {
+          "timestampValue": "2021-05-18T12:16:51.767Z"
+        }
+      },
+      "template": "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template",
+      "column": "contact_number"
+    },
+    {
+      "fields": {
+        "infoTypes": {
+          "stringValue": "[DATE]"
+        },
+        "inspectTimestamp": {
+          "timestampValue": "2021-05-18T12:16:51.767Z"
+        }
+      },
+      "template": "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template",
+      "column": "person_name"
+    }
+  ]
+}

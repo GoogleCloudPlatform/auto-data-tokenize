@@ -1,0 +1,7 @@
+{
+  "columnName": "$.topLevelRecord.person_name",
+  "infoTypes": [{
+    "infoType": "DATE",
+    "count": "1"
+  }]
+}

@@ -28,7 +28,7 @@ import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaCo
 import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
 import com.google.cloud.solutions.autotokenize.common.RecordNester;
 import com.google.cloud.solutions.autotokenize.common.SourceNames;
-import com.google.cloud.solutions.autotokenize.common.TransformingFileReader;
+import com.google.cloud.solutions.autotokenize.common.TransformingReader;
 import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.BatchAndDlpDeIdRecords;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.DlpClientFactory;
@@ -63,7 +63,7 @@ public class EncryptionPipeline {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws GeneralSecurityException, IOException {
 
     EncryptingPipelineOptions options =
         PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
@@ -155,7 +155,7 @@ public class EncryptionPipeline {
       return options;
     }
 
-    Pipeline buildPipeline() throws Exception {
+    Pipeline buildPipeline() throws GeneralSecurityException, IOException {
 
       TupleTag<FlatRecord> flatRecordsTag = new TupleTag<>();
 
@@ -163,7 +163,7 @@ public class EncryptionPipeline {
           pipeline
               .apply(
                   "Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
-                  TransformingFileReader.forSourceType(options.getSourceType())
+                  TransformingReader.forSourceType(options.getSourceType())
                       .from(options.getInputPattern())
                       .withRecordsTag(flatRecordsTag))
               .get(flatRecordsTag)
@@ -198,7 +198,7 @@ public class EncryptionPipeline {
           .withDlpProjectId(options.getProject());
     }
 
-    private ValueEncryptionTransform tinkEncryption() throws Exception {
+    private ValueEncryptionTransform tinkEncryption() throws GeneralSecurityException, IOException {
       return ValueEncryptionTransform.builder()
           .encryptColumnNames(options.getTokenizeColumns())
           .valueTokenizerFactory(

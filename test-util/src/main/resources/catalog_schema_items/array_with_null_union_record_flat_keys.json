@@ -1,0 +1,5 @@
+{
+  "$.kylosample.name": "name",
+  "$.kylosample.contacts.contact.type" : "contacts.type",
+  "$.kylosample.contacts.contact.number": "contacts.number"
+}

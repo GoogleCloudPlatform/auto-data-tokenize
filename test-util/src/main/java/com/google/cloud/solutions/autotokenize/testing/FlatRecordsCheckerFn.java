@@ -18,7 +18,7 @@ package com.google.cloud.solutions.autotokenize.testing;
 
 
 import com.google.auto.value.AutoValue;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.truth.extensions.proto.IterableOfProtosFluentAssertion;
 import com.google.common.truth.extensions.proto.ProtoTruth;
@@ -26,14 +26,14 @@ import org.apache.beam.sdk.transforms.SerializableFunction;
 
 @AutoValue
 public abstract class FlatRecordsCheckerFn
-    implements SerializableFunction<Iterable<AutoTokenizeMessages.FlatRecord>, Void> {
+    implements SerializableFunction<Iterable<FlatRecord>, Void> {
 
   abstract boolean isFlatKeySchemaPresent();
 
-  abstract ImmutableCollection<AutoTokenizeMessages.FlatRecord> expectedRecords();
+  abstract ImmutableCollection<FlatRecord> expectedRecords();
 
   public static FlatRecordsCheckerFn withExpectedRecords(
-      ImmutableCollection<AutoTokenizeMessages.FlatRecord> expectedRecords) {
+      ImmutableCollection<FlatRecord> expectedRecords) {
     return create(true, expectedRecords);
   }
 
@@ -42,19 +42,17 @@ public abstract class FlatRecordsCheckerFn
   }
 
   private static FlatRecordsCheckerFn create(
-      boolean isFlatKeySchemaPresent,
-      ImmutableCollection<AutoTokenizeMessages.FlatRecord> expectedRecords) {
+      boolean isFlatKeySchemaPresent, ImmutableCollection<FlatRecord> expectedRecords) {
     return new AutoValue_FlatRecordsCheckerFn(isFlatKeySchemaPresent, expectedRecords);
   }
 
   @Override
-  public Void apply(Iterable<AutoTokenizeMessages.FlatRecord> input) {
-    IterableOfProtosFluentAssertion<AutoTokenizeMessages.FlatRecord> assertion =
+  public Void apply(Iterable<FlatRecord> input) {
+    IterableOfProtosFluentAssertion<FlatRecord> assertion =
         ProtoTruth.assertThat(input).ignoringRepeatedFieldOrder();
 
     if (!isFlatKeySchemaPresent()) {
-      assertion =
-          assertion.ignoringFields(AutoTokenizeMessages.FlatRecord.FLAT_KEY_SCHEMA_FIELD_NUMBER);
+      assertion = assertion.ignoringFields(FlatRecord.FLAT_KEY_SCHEMA_FIELD_NUMBER);
     }
 
     assertion.containsExactlyElementsIn(expectedRecords());

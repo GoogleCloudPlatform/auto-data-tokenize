@@ -28,6 +28,12 @@ export TEMP_GCS_BUCKET="<name-of-the-bucket>"
 # Name of the service account to use (not the email address)
 export DLP_RUNNER_SERVICE_ACCOUNT_NAME="<service-account-name-for-runner>"
 
+# Fully Qualified Entry Group Id to use for creating/searching for Entries in Data Catalog for non-BigQuery entries.
+export DATA_CATALOG_ENTRY_GROUP_ID="<non-bigquery-data-catalog-entry-group>"
+
+# The fully qualified Data Catalog Tag Template Id to use for creating sensitivity tags in Data Catalog.
+export INSPECTION_TAG_TEMPLATE_ID="<data-catalog-tag-template-name>"
+
 # Name of the GCP KMS key ring name
 export KMS_KEYRING_ID="<key-ring-name>"
 
@@ -49,6 +55,6 @@ export DLP_RUNNER_SERVICE_ACCOUNT_EMAIL="${DLP_RUNNER_SERVICE_ACCOUNT_NAME}@$(ec
 
 # Set an easy name to invoke the sampler module
 export AUTO_TOKENIZE_DIR="${PWD}"
-alias sample_and_identify_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/sampler-pipeline/build/libs/sampler-pipeline-1.0.2-all.jar"
+alias sample_and_identify_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/sampler-pipeline/build/libs/sampler-pipeline-1.1.0-all.jar"
 
-alias tokenize_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/encrypting-pipeline/build/libs/encrypting-pipeline-1.0.2-all.jar"
+alias tokenize_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/encrypting-pipeline/build/libs/encrypting-pipeline-1.1.0-all.jar"

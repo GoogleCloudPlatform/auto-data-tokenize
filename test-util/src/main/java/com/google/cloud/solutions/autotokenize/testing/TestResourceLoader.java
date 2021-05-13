@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -45,23 +47,21 @@ import org.apache.avro.generic.GenericRecord;
  * Supports loading testing files and decoding into formats like String, Proto and AVRO for ease in
  * writing unit tests.
  */
-public abstract class TestResourceLoader {
+public interface TestResourceLoader {
 
-  private static final String TEST_RESOURCE_FOLDER = "test";
+  String loadResourceAsString(String resourcePath) throws IOException;
 
-  public abstract String loadResourceAsString(String resourcePath) throws IOException;
+  InputStream loadResourceInputStream(String resourcePath) throws IOException;
 
-  public abstract InputStream loadResourceInputStream(String resourcePath) throws IOException;
-
-  public static ResourceActions classPath() {
+  static ResourceActions classPath() {
     return new ResourceActions(new ClassPathTestResourceLoader());
   }
 
-  public static ResourceActions classPathWithContext(Class<?> contextClass) {
+  static ResourceActions classPathWithContext(Class<?> contextClass) {
     return new ResourceActions(new ClassPathTestResourceLoader(contextClass));
   }
 
-  public final String loadAsString(String resourcePath) {
+  default String loadAsString(String resourcePath) {
     try {
       return loadResourceAsString(resourcePath);
     } catch (IOException ioException) {
@@ -69,7 +69,7 @@ public abstract class TestResourceLoader {
     }
   }
 
-  public static final class ClassPathTestResourceLoader extends TestResourceLoader {
+  final class ClassPathTestResourceLoader implements TestResourceLoader {
 
     private final Class<?> contextClass;
 
@@ -84,7 +84,7 @@ public abstract class TestResourceLoader {
     @Override
     public String loadResourceAsString(String resourcePath) throws IOException {
 
-      try (BufferedReader reader =
+      try (var reader =
           new BufferedReader(
               new InputStreamReader(
                   loadResource(resourcePath).openStream(), StandardCharsets.UTF_8))) {
@@ -105,18 +105,18 @@ public abstract class TestResourceLoader {
     }
   }
 
-  public interface CopyActions {
+  interface CopyActions {
     File createFileTestCopy(String resourcePath) throws IOException;
   }
 
-  public static class ResourceLoadException extends RuntimeException {
+  class ResourceLoadException extends RuntimeException {
 
     public ResourceLoadException(String fileName, Throwable cause) {
       super("Error reading test resource: " + fileName, cause);
     }
   }
 
-  public static class ResourceActions {
+  class ResourceActions {
 
     private final TestResourceLoader resourceLoader;
 
@@ -128,9 +128,13 @@ public abstract class TestResourceLoader {
       return resourceLoader.loadAsString(resourceUri);
     }
 
+    public <T> T loadAsJson(String resourceUri, Type jsonClass) {
+      return new Gson().fromJson(loadAsString(resourceUri), jsonClass);
+    }
+
     public CopyActions copyTo(File folder) {
       return resourcePath -> {
-        File outputFile = File.createTempFile("temp_", "", folder);
+        var outputFile = File.createTempFile("temp_", "", folder);
 
         long copiedBytes =
             Files.asByteSink(outputFile)
@@ -147,7 +151,7 @@ public abstract class TestResourceLoader {
     }
 
     public <T extends Message> ProtoActions<T> forProto(Class<T> protoClazz) {
-      return new ProtoActions<T>() {
+      return new ProtoActions<>() {
         @Override
         public T loadJson(String jsonProtoFile) {
           return JsonConvertor.parseJson(resourceLoader.loadAsString(jsonProtoFile), protoClazz);
@@ -168,8 +172,18 @@ public abstract class TestResourceLoader {
         }
 
         @Override
+        public ImmutableList<T> loadAllTextFiles(String... textPbFiles) {
+          return loadAllTextFiles(ImmutableList.copyOf(textPbFiles));
+        }
+
+        @Override
         public ImmutableList<T> loadAllJsonFiles(List<String> jsonPbFiles) {
           return jsonPbFiles.stream().map(this::loadJson).collect(toImmutableList());
+        }
+
+        @Override
+        public ImmutableList<T> loadAllJsonFiles(String... jsonPbFiles) {
+          return loadAllJsonFiles(ImmutableList.copyOf(jsonPbFiles));
         }
       };
     }
@@ -186,7 +200,11 @@ public abstract class TestResourceLoader {
 
       ImmutableList<P> loadAllTextFiles(List<String> textPbFiles);
 
+      ImmutableList<P> loadAllTextFiles(String... textPbFiles);
+
       ImmutableList<P> loadAllJsonFiles(List<String> jsonPbFiles);
+
+      ImmutableList<P> loadAllJsonFiles(String... jsonPbFiles);
     }
 
     public class AvroActionsBuilder {

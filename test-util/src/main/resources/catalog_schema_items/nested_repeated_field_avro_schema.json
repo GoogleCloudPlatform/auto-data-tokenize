@@ -1,0 +1,58 @@
+{
+  "type": "record",
+  "name": "__root__",
+  "fields": [
+    {
+      "name": "index",
+      "type": [
+        "null",
+        "long"
+      ]
+    },
+    {
+      "name": "contact",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "__s_0",
+          "fields": [
+            {
+              "name": "name",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "nums",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "__s_1",
+                  "fields": [
+                    {
+                      "name": "type",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    {
+                      "name": "number",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

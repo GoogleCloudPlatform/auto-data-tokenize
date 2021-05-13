@@ -21,8 +21,21 @@ plugins {
 dependencies {
     implementation project(":common-util")
     implementation project(":protos")
-    testImplementation project(":test-util")
+    implementation project(":third_party")
     implementation "com.github.wnameless.json:json-flattener:0.11.0"
+
+    implementation "org.apache.beam:beam-sdks-java-io-jdbc:${beamVersion}"
+
+    implementation "com.google.api.grpc:proto-google-cloud-dlp-v2:${dlpClientVersion}"
+    implementation "com.google.api.grpc:proto-google-cloud-datacatalog-v1:1.3.3"
+
+    // MySQL JDBC driver
+    testRuntimeOnly("mysql:mysql-connector-java:8.0.24") {
+        exclude group: "com.google.protobuf", module: "protobuf-java"
+    }
+
+    testImplementation project(":test-util")
+    testImplementation "ch.vorburger.mariaDB4j:mariaDB4j:2.4.0"
 }
 
 description = "common"

@@ -131,7 +131,7 @@ public final class GenericRecordFlattenerTest {
                 "union3types",
                 "avro_records/array_with_union_3types_avro_schema.json",
                 "avro_records/array_with_union_3types_avro_record.json",
-                UnsupportedOperationException.class,
+                IllegalArgumentException.class,
                 "Only nullable union with one type is supported. found [\"null\", \"long\","
                     + " \"string\"]"
               })
@@ -140,7 +140,7 @@ public final class GenericRecordFlattenerTest {
                 "unionFirstNonNullType",
                 "avro_records/array_with_union_long_string_avro_schema.json",
                 "avro_records/array_with_union_3types_avro_record.json",
-                UnsupportedOperationException.class,
+                IllegalArgumentException.class,
                 "Only nullable union with one type is supported. found [\"long\", \"string\"]"
               })
           .add(
@@ -148,7 +148,7 @@ public final class GenericRecordFlattenerTest {
                 "mapTypeField_",
                 "avro_records/simple_map_field_avro_schema.json",
                 "avro_records/simple_map_field_avro_record.json",
-                UnsupportedOperationException.class,
+                IllegalArgumentException.class,
                 "Unsupported Type MAP at $.mapValue"
               })
           .build();

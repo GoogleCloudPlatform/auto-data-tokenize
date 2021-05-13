@@ -1,0 +1,48 @@
+{
+  "type": "record",
+  "name": "topLevelRecord",
+  "fields": [
+    {
+      "name": "row_id",
+      "type": [
+        "null",
+        "int"
+      ],
+      "doc": "row_id field documentation"
+    },
+    {
+      "name": "person_name",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "person_name field documentation"
+    },
+    {
+      "name": "contacts",
+      "type": {
+        "type": "array",
+        "items": [
+          "null",
+          {
+            "name": "contact",
+            "type": "record",
+            "doc": "contact record field documentation",
+            "fields": [
+              {
+                "name": "contact_type",
+                "type": "string",
+                "doc": "contact.contact_type field documentation"
+              },
+              {
+                "name": "contact_number",
+                "type": "string",
+                "doc": "contact.contact_number field documentation"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -22,8 +22,8 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
-import com.google.common.flogger.GoogleLogger;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -31,10 +31,13 @@ import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.jdbc.JdbcIO;
+import org.apache.beam.sdk.io.jdbc.JdbcIO.DataSourceConfiguration;
 import org.apache.beam.sdk.io.parquet.ParquetIO;
-import org.apache.beam.sdk.transforms.Distinct;
 import org.apache.beam.sdk.transforms.Keys;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.Sample;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
@@ -68,22 +71,24 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * }</pre>
  */
 @AutoValue
-public abstract class TransformingFileReader extends PTransform<PBegin, PCollectionTuple> {
-
-  private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+public abstract class TransformingReader extends PTransform<PBegin, PCollectionTuple> {
 
   abstract @Nullable String inputPattern();
 
   abstract SourceType sourceType();
 
+  abstract @Nullable JdbcConfiguration jdbcConfiguration();
+
   abstract @Nullable TupleTag<FlatRecord> recordsTag();
 
   abstract @Nullable TupleTag<String> avroSchemaTag();
 
+  abstract @Nullable Integer sampleSize();
+
   abstract Builder toBuilder();
 
   static Builder builder() {
-    return new AutoValue_TransformingFileReader.Builder();
+    return new AutoValue_TransformingReader.Builder();
   }
 
   @AutoValue.Builder
@@ -93,31 +98,49 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
 
     abstract Builder sourceType(SourceType fileType);
 
+    abstract Builder jdbcConfiguration(JdbcConfiguration jdbcConfiguration);
+
     abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
 
     abstract Builder avroSchemaTag(TupleTag<String> avroSchemaTag);
 
-    abstract TransformingFileReader build();
+    public abstract Builder sampleSize(Integer value);
+
+    abstract TransformingReader build();
   }
 
   /** Specify the file type of the input file collection. */
-  public static TransformingFileReader forSourceType(SourceType sourceType) {
+  public static TransformingReader forSourceType(SourceType sourceType) {
     return builder().sourceType(sourceType).build();
   }
 
   /** Specify the input file pattern to read for sampling. */
-  public TransformingFileReader from(String inputFilePattern) {
+  public TransformingReader from(String inputFilePattern) {
     return toBuilder().inputPattern(inputFilePattern).build();
   }
 
   /** Provides the {@link TupleTag} to use for outputting the converted records. */
-  public TransformingFileReader withRecordsTag(TupleTag<FlatRecord> recordsTag) {
+  public TransformingReader withRecordsTag(TupleTag<FlatRecord> recordsTag) {
     return toBuilder().recordsTag(recordsTag).build();
   }
 
   /** Provides the {@link TupleTag} to use for outputting the Avro Schema. */
-  public TransformingFileReader withAvroSchemaTag(TupleTag<String> avroSchemaTag) {
+  public TransformingReader withAvroSchemaTag(TupleTag<String> avroSchemaTag) {
     return toBuilder().avroSchemaTag(avroSchemaTag).build();
+  }
+
+  /** Provide a JdbcConfiguration for JDBC Connections. */
+  public TransformingReader withJdbcConfiguration(JdbcConfiguration jdbcConfiguration) {
+    return toBuilder().jdbcConfiguration(jdbcConfiguration).build();
+  }
+
+  /** Provide a sampling signal for JDBC Connections. */
+  public TransformingReader withSampleSize(Integer sampleSize) {
+    checkArgument(
+        sampleSize != null && sampleSize > 0,
+        "Provide a valid sampleSize (>0), found: %s",
+        sampleSize);
+    return toBuilder().sampleSize(sampleSize).build();
   }
 
   @Override
@@ -135,14 +158,14 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
             .apply("ExtractRecords", Keys.create())
             .setCoder(ProtoCoder.of(FlatRecord.class));
 
-    PCollectionTuple recordTuple = PCollectionTuple.of(recordsTag(), flatRecords);
+    var recordTuple = PCollectionTuple.of(recordsTag(), flatRecords);
 
     if (avroSchemaTag() != null) {
       PCollection<String> schema =
           recordsWithSchema
               .apply("ExtractSchema", Values.create())
               .setCoder(StringUtf8Coder.of())
-              .apply(Distinct.create());
+              .apply(Sample.any(1));
 
       return recordTuple.and(avroSchemaTag(), schema);
     }
@@ -174,11 +197,57 @@ public abstract class TransformingFileReader extends PTransform<PBegin, PCollect
       case BIGQUERY_QUERY:
         return bigQueryReader().fromQuery(inputPattern()).usingStandardSql();
 
+      case JDBC_TABLE:
+        return TransformingJdbcIO.create(jdbcConfiguration(), inputPattern(), sampleSize());
+
       default:
         throw new IllegalArgumentException(
             String.format(
                 "Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\" or \"BIGQUERY\"",
                 sourceType()));
+    }
+  }
+
+  /**
+   * Custom database IO to extract upto first 1000 rows from the provided table from a JDBC
+   * database.
+   */
+  @AutoValue
+  abstract static class TransformingJdbcIO
+      extends PTransform<PBegin, PCollection<KV<FlatRecord, String>>> {
+
+    public static TransformingJdbcIO create(
+        JdbcConfiguration jdbcConfiguration, String tableName, Integer sampleSize) {
+      return new AutoValue_TransformingReader_TransformingJdbcIO(
+          jdbcConfiguration, tableName, sampleSize);
+    }
+
+    abstract JdbcConfiguration jdbcConfiguration();
+
+    abstract String tableName();
+
+    abstract @Nullable Integer sampleSize();
+
+    @Override
+    public PCollection<KV<FlatRecord, String>> expand(PBegin pBegin) {
+      return pBegin
+          .apply(
+              JdbcIO.readRows()
+                  .withDataSourceConfiguration(
+                      DataSourceConfiguration.create(
+                          jdbcConfiguration().getDriverClassName(),
+                          jdbcConfiguration().getConnectionUrl()))
+                  .withQuery(makeSamplingQuery()))
+          .apply(MapElements.via(FlatRecordConvertFn.forBeamRow()));
+    }
+
+    private String makeSamplingQuery() {
+      return String.format(
+          "SELECT * FROM %s%s;", tableName(), isSampling() ? " LIMIT " + sampleSize() : "");
+    }
+
+    private boolean isSampling() {
+      return sampleSize() != null && sampleSize() > 0;
     }
   }
 

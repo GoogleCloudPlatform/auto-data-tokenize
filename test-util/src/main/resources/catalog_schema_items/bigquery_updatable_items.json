@@ -1,0 +1,30 @@
+{
+  "sourceType": "BIGQUERY_TABLE",
+  "inputPattern":"gcpProject:dataset.BigquerySimpleFlatRecords",
+  "tags": [
+    {
+      "fields": {
+        "infoTypes": {
+          "stringValue": "[PHONE_NUMBER]"
+        },
+        "inspectTimestamp": {
+          "timestampValue": "2021-05-18T12:16:51.767Z"
+        }
+      },
+      "template": "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template",
+      "column": "contacts.contact.contact_number"
+    },
+    {
+      "fields": {
+        "infoTypes": {
+          "stringValue": "[DATE]"
+        },
+        "inspectTimestamp": {
+          "timestampValue": "2021-05-18T12:16:51.767Z"
+        }
+      },
+      "template": "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template",
+      "column": "person_name"
+    }
+  ]
+}

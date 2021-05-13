@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.testing;
-
-import static com.google.common.truth.Truth.assertThat;
-
-import org.apache.beam.sdk.transforms.SerializableFunction;
-
-public class MatchRecordsCountFn<T> implements SerializableFunction<Iterable<T>, Void> {
-
-  private final int expectedRecordCount;
-
-  public MatchRecordsCountFn(int expectedRecordCount) {
-    this.expectedRecordCount = expectedRecordCount;
-  }
-
-  @Override
-  public Void apply(Iterable<T> input) {
-    assertThat(input).hasSize(expectedRecordCount);
-    return null;
-  }
-}
+CREATE TABLE SimpleContacts
+(
+    row_id         INTEGER,
+    person_name    TEXT,
+    contact_type   TEXT,
+    contact_number TEXT
+);
+INSERT INTO SimpleContacts (row_id, person_name, contact_type, contact_number)
+VALUES (1, 'sunny meet', 'WORK', '(559)458-7172'),
+       (2, 'baggy direction', 'WORK', '(322)466-8413'),
+       (3, 'vast influence', 'WORK', '(571)861-3996'),
+       (4, 'proper method', 'WORK', '(937)372-5515'),
+       (5, 'damaged drink', 'WORK', '(291)529-9401')

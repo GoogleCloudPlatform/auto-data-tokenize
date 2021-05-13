@@ -17,14 +17,14 @@
 package com.google.cloud.solutions.autotokenize.pipeline;
 
 
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import java.util.List;
-import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
+import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Validation;
 
 /** Defines the sampling pipeline parameters. */
-public interface DlpSamplerIdentifyOptions extends GcpOptions {
+public interface DlpSamplerIdentifyOptions extends DataflowPipelineOptions {
 
   @Default.Integer(0)
   int getSampleSize();
@@ -32,9 +32,9 @@ public interface DlpSamplerIdentifyOptions extends GcpOptions {
   void setSampleSize(int sampleSize);
 
   @Validation.Required
-  AutoTokenizeMessages.SourceType getSourceType();
+  SourceType getSourceType();
 
-  void setSourceType(AutoTokenizeMessages.SourceType fileType);
+  void setSourceType(SourceType fileType);
 
   @Validation.Required
   String getInputPattern();
@@ -49,4 +49,25 @@ public interface DlpSamplerIdentifyOptions extends GcpOptions {
   List<String> getObservableInfoTypes();
 
   void setObservableInfoTypes(List<String> infoTypes);
+
+  String getJdbcConnectionUrl();
+
+  void setJdbcConnectionUrl(String jdbcConnectionUrl);
+
+  String getJdbcDriverClass();
+
+  void setJdbcDriverClass(String jdbcDriverClass);
+
+  String getDataCatalogEntryGroupId();
+
+  void setDataCatalogEntryGroupId(String dataCatalogEntryGroupId);
+
+  String getDataCatalogInspectionTagTemplateId();
+
+  void setDataCatalogInspectionTagTemplateId(String dataCatalogInspectionTagTemplateId);
+
+  @Default.Boolean(false)
+  boolean getDataCatalogForcedUpdate();
+
+  void setDataCatalogForcedUpdate(boolean dataCatalogForcedUpdate);
 }

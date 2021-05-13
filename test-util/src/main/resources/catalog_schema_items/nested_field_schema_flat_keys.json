@@ -1,0 +1,7 @@
+{
+  "$.top_level_record.top_level_string": "top_level_string",
+  "$.top_level_record.nullable_nested_record_field.nested_record_type.nested_string": "nullable_nested_record_field.nested_string",
+  "$.top_level_record.nullable_nested_record_field.nested_record_type.nested_int": "nullable_nested_record_field.nested_int",
+  "$.top_level_record.required_nested_record_field.nested_record_type.nested_string": "required_nested_record_field.nested_record_type.nested_string",
+  "$.top_level_record.required_nested_record_field.nested_record_type.nested_int": "required_nested_record_field.nested_record_type.nested_int"
+}

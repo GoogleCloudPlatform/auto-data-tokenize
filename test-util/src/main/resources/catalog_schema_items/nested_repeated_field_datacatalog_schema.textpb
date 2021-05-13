@@ -1,0 +1,33 @@
+# proto-file: google/cloud/datacatalog/v1/schema.proto
+# proto-message: Schema
+
+columns {
+  type: "LONG"
+  mode: "NULLABLE"
+  column: "index"
+}
+columns {
+  type: "RECORD"
+  mode: "NULLABLE"
+  column: "contact"
+  subcolumns {
+    type: "STRING"
+    mode: "NULLABLE"
+    column: "name"
+  }
+  subcolumns {
+    type: "RECORD"
+    mode: "REPEATED"
+    column: "nums"
+    subcolumns {
+      type: "STRING"
+      mode: "NULLABLE"
+      column: "type"
+    }
+    subcolumns {
+      type: "STRING"
+      mode: "NULLABLE"
+      column: "number"
+    }
+  }
+}
