@@ -1,0 +1,7 @@
+{
+  "columnName": "$.topLevelRecord.contacts.contact.contact_number",
+  "infoTypes": [{
+    "infoType": "PHONE_NUMBER",
+    "count": "510"
+  }]
+}

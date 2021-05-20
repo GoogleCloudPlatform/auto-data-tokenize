@@ -36,8 +36,6 @@ import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.Keys;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
-import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -141,11 +139,7 @@ public final class ValueEncryptionTransformTest {
   public void expand_valid() {
     PCollection<FlatRecord> transformedRecords =
         p.apply("load test avro data", Create.of(testRecords).withCoder(AvroCoder.of(inputSchema)))
-            .apply(
-                MapElements.into(
-                        TypeDescriptors.kvs(
-                            TypeDescriptor.of(FlatRecord.class), TypeDescriptor.of(String.class)))
-                    .via(FlatRecordConvertFn.forGenericRecord()))
+            .apply(MapElements.via(FlatRecordConvertFn.forGenericRecord()))
             .apply(Keys.create())
             .apply(
                 "test_encrypt_transform",

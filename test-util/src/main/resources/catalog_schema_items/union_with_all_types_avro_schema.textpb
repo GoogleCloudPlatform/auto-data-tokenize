@@ -1,0 +1,139 @@
+# proto-file: google/cloud/datacatalog/v1/schema.proto
+# proto-message: Schema
+
+columns {
+  type: "ENUM"
+  description: "Permitted Values: [CONNECTED, DISCONNECTED, NOT_INIT]"
+  mode: "NULLABLE"
+  column: "union_with_enum"
+}
+columns {
+  type: "ENUM"
+  description: "Permitted Values: [CONNECTED2, DISCONNECTED2, NOT_INIT2]"
+  mode: "NULLABLE"
+  column: "union_with_enum2"
+}
+columns {
+  type: "BOOLEAN"
+  mode: "NULLABLE"
+  column: "union_with_boolean"
+}
+columns {
+  type: "BOOLEAN"
+  mode: "NULLABLE"
+  column: "union_with_boolean2"
+}
+columns {
+  type: "LONG"
+  mode: "NULLABLE"
+  column: "union_with_long"
+}
+columns {
+  type: "LONG"
+  mode: "NULLABLE"
+  column: "union_with_long2"
+}
+columns {
+  type: "INT"
+  mode: "NULLABLE"
+  column: "union_with_int"
+}
+columns {
+  type: "INT"
+  mode: "NULLABLE"
+  column: "union_with_int2"
+}
+columns {
+  type: "STRING"
+  mode: "NULLABLE"
+  column: "union_with_string"
+}
+columns {
+  type: "STRING"
+  mode: "NULLABLE"
+  column: "union_with_string2"
+}
+columns {
+  type: "FLOAT"
+  mode: "NULLABLE"
+  column: "union_with_float"
+}
+columns {
+  type: "FLOAT"
+  mode: "NULLABLE"
+  column: "union_with_float2"
+}
+columns {
+  type: "DOUBLE"
+  mode: "NULLABLE"
+  column: "union_with_double"
+}
+columns {
+  type: "DOUBLE"
+  mode: "NULLABLE"
+  column: "union_with_double2"
+}
+columns {
+  type: "FIXED"
+  description: "Fixed bytes size: 10"
+  mode: "NULLABLE"
+  column: "union_with_fixed"
+}
+columns {
+  type: "FIXED"
+  description: "Fixed bytes size: 12"
+  mode: "NULLABLE"
+  column: "union_with_fixed2"
+}
+columns {
+  type: "BYTES"
+  mode: "NULLABLE"
+  column: "union_with_bytes"
+}
+columns {
+  type: "BYTES"
+  mode: "NULLABLE"
+  column: "union_with_bytes2"
+}
+columns {
+  type: "RECORD"
+  mode: "NULLABLE"
+  column: "union_with_simple_record"
+  subcolumns {
+    type: "INT"
+    description: "Default Value: 500"
+    mode: "REQUIRED"
+    column: "simple_record_int"
+  }
+  subcolumns {
+    type: "STRING"
+    description: "Default Value: my_default_string"
+    mode: "REQUIRED"
+    column: "simple_record_string"
+  }
+}
+columns {
+  type: "RECORD"
+  mode: "NULLABLE"
+  column: "union_with_record"
+  subcolumns {
+    type: "RECORD"
+    mode: "REQUIRED"
+    column: "custom_field"
+    subcolumns {
+      type: "LONG"
+      mode: "REQUIRED"
+      column: "second_level_field_long"
+    }
+    subcolumns {
+      type: "STRING"
+      mode: "REQUIRED"
+      column: "encrypted_second_level_field_string"
+    }
+  }
+  subcolumns {
+    type: "BOOLEAN"
+    mode: "REQUIRED"
+    column: "first_level_boolean"
+  }
+}

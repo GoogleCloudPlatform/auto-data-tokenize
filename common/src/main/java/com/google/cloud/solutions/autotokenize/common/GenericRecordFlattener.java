@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
@@ -50,30 +51,30 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
   /**
    * Convenience static factory to instantiate a converter for a Generic Record.
    *
-   * @param record the AVRO record to flatten.
+   * @param genericRecord the AVRO record to flatten.
    */
   @Override
-  public FlatRecord flatten(GenericRecord record) {
-    return new TypeFlattener(record).convert();
+  public FlatRecord flatten(GenericRecord genericRecord) {
+    return new TypeFlattener(genericRecord).convert();
   }
 
   /** Helper class to actually flatten an AVRO Record. */
   private static final class TypeFlattener {
 
     private final Schema schema;
-    private final GenericRecord record;
+    private final GenericRecord genericRecord;
     private final Map<String, Value> valueMap;
     private final Map<String, String> flatKeySchemaMap;
 
-    private TypeFlattener(Schema schema, GenericRecord record) {
+    private TypeFlattener(Schema schema, GenericRecord genericRecord) {
       this.schema = schema;
-      this.record = record;
+      this.genericRecord = genericRecord;
       this.valueMap = Maps.newHashMap();
       this.flatKeySchemaMap = Maps.newHashMap();
     }
 
-    private TypeFlattener(GenericRecord record) {
-      this(record.getSchema(), record);
+    private TypeFlattener(GenericRecord genericRecord) {
+      this(genericRecord.getSchema(), genericRecord);
     }
 
     /**
@@ -85,7 +86,7 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
     }
 
     private FlatRecord convert() {
-      convertRecord(record, schema, RECORD_ROOT_SYMBOL, RECORD_ROOT_SYMBOL);
+      convertRecord(genericRecord, schema, RECORD_ROOT_SYMBOL, RECORD_ROOT_SYMBOL);
       return FlatRecord.newBuilder()
           .putAllValues(valueMap)
           .putAllFlatKeySchema(flatKeySchemaMap)
@@ -162,19 +163,18 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
         case NULL:
           break;
         case MAP:
-          throw new UnsupportedOperationException(
-              String.format("Unsupported Type MAP at %s", fieldKey));
+          throw new IllegalArgumentException(String.format("Unsupported Type MAP at %s", fieldKey));
       }
     }
 
     private void convertRecord(
-        GenericRecord record, Schema fieldSchema, String parentKey, String parentSchemaKey) {
+        GenericRecord genericRecord, Schema fieldSchema, String parentKey, String parentSchemaKey) {
 
       String recordName = fieldSchema.getFullName();
 
       for (Field field : fieldSchema.getFields()) {
         String fieldName = field.name();
-        Object value = record.get(fieldName);
+        Object value = genericRecord.get(fieldName);
         String fieldSchemaKey = Joiner.on(".").join(parentSchemaKey, recordName, fieldName);
         processType(value, field.schema(), parentKey, fieldName, fieldSchemaKey);
       }
@@ -182,8 +182,8 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
 
     private void processArray(Object value, Schema fieldSchema, String fieldKey, String schemaKey) {
       List<?> array = (List<?>) value;
-      Schema arrayType = fieldSchema.getElementType();
-      for (int index = 0; index < array.size(); index++) {
+      var arrayType = fieldSchema.getElementType();
+      for (var index = 0; index < array.size(); index++) {
         processType(
             array.get(index), arrayType, String.format("%s[%s]", fieldKey, index), null, schemaKey);
       }
@@ -200,10 +200,10 @@ public final class GenericRecordFlattener implements RecordFlattener<GenericReco
       }
 
       List<Schema> unionTypes = fieldSchema.getTypes();
-      if (unionTypes.size() != 2 || !unionTypes.get(0).getType().equals(Schema.Type.NULL)) {
-        throw new UnsupportedOperationException(
-            "Only nullable union with one type is supported. found " + unionTypes);
-      }
+
+      checkArgument(
+          unionTypes.size() == 2 && unionTypes.get(0).getType().equals(Schema.Type.NULL),
+          "Only nullable union with one type is supported. found " + unionTypes);
 
       Schema nonNullType = unionTypes.get(1);
       processType(

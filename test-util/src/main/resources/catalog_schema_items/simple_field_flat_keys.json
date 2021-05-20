@@ -1,0 +1,22 @@
+{
+  "$.kylosample.registration_dttm": "registration_dttm",
+  "$.kylosample.int96_date": "int96_date",
+  "$.kylosample.id": "id",
+  "$.kylosample.first_name": "first_name",
+  "$.kylosample.last_name": "last_name",
+  "$.kylosample.email": "email",
+  "$.kylosample.gender": "gender",
+  "$.kylosample.ip_address": "ip_address",
+  "$.kylosample.cc": "cc",
+  "$.kylosample.country": "country",
+  "$.kylosample.birthdate": "birthdate",
+  "$.kylosample.salary": "salary",
+  "$.kylosample.singlePrecisionNumber": "singlePrecisionNumber",
+  "$.kylosample.title": "title",
+  "$.kylosample.comments": "comments",
+  "$.kylosample.active_employee": "active_employee",
+  "$.kylosample.signature": "signature",
+  "$.kylosample.identifier": "identifier",
+  "$.kylosample.countriesVisited": "countriesVisited",
+  "$.kylosample.employeeType": "employeeType"
+}

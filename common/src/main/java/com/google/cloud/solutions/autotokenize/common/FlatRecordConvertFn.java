@@ -18,29 +18,33 @@ package com.google.cloud.solutions.autotokenize.common;
 
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
-import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.sdk.schemas.utils.AvroUtils;
+import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.Row;
 
 /** Flattens a GenericRecord and separates the Avro schema as a KV. */
-public interface FlatRecordConvertFn<T> extends SerializableFunction<T, KV<FlatRecord, String>> {
+public abstract class FlatRecordConvertFn<T> extends SimpleFunction<T, KV<FlatRecord, String>> {
 
-  final class GenericRecordFlatteningFn implements FlatRecordConvertFn<GenericRecord> {
+  static final class GenericRecordFlatteningFn extends FlatRecordConvertFn<GenericRecord> {
 
     private static GenericRecordFlatteningFn genericRecordFlatteningFn =
         new GenericRecordFlatteningFn();
 
     @Override
-    public KV<FlatRecord, String> apply(GenericRecord record) {
+    public KV<FlatRecord, String> apply(GenericRecord genericRecord) {
       return KV.of(
-          RecordFlattener.forGenericRecord().flatten(record), record.getSchema().toString());
+          RecordFlattener.forGenericRecord().flatten(genericRecord),
+          genericRecord.getSchema().toString());
     }
 
     private GenericRecordFlatteningFn() {}
   }
 
-  final class TableRowFlatteningFn implements FlatRecordConvertFn<SchemaAndRecord> {
+  static final class TableRowFlatteningFn extends FlatRecordConvertFn<SchemaAndRecord> {
 
     private static TableRowFlatteningFn tableRowFlatteningFn = new TableRowFlatteningFn();
 
@@ -54,11 +58,34 @@ public interface FlatRecordConvertFn<T> extends SerializableFunction<T, KV<FlatR
     private TableRowFlatteningFn() {}
   }
 
-  static GenericRecordFlatteningFn forGenericRecord() {
+  /**
+   * Converts {@link org.apache.beam.sdk.values.Row} object to AVRO {@link
+   * org.apache.avro.generic.GenericRecord}.
+   */
+  static final class BeamRowFlatteningFn extends FlatRecordConvertFn<Row> {
+
+    private static BeamRowFlatteningFn beamRowFlatteningFn = new BeamRowFlatteningFn();
+
+    @Override
+    public KV<FlatRecord, String> apply(Row input) {
+
+      Schema avroSchema = AvroUtils.toAvroSchema(input.getSchema());
+
+      return KV.of(
+          RecordFlattener.forGenericRecord().flatten(AvroUtils.toGenericRecord(input, avroSchema)),
+          avroSchema.toString());
+    }
+  }
+
+  public static GenericRecordFlatteningFn forGenericRecord() {
     return GenericRecordFlatteningFn.genericRecordFlatteningFn;
   }
 
-  static TableRowFlatteningFn forBigQueryTableRow() {
+  public static TableRowFlatteningFn forBigQueryTableRow() {
     return TableRowFlatteningFn.tableRowFlatteningFn;
+  }
+
+  public static BeamRowFlatteningFn forBeamRow() {
+    return BeamRowFlatteningFn.beamRowFlatteningFn;
   }
 }

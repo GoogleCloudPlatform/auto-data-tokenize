@@ -1,0 +1,39 @@
+# proto-file: google/cloud/datacatalog/v1/schema.proto
+# proto-message: Schema
+
+columns {
+  type: "STRING"
+  mode: "REQUIRED"
+  column: "top_level_string"
+}
+columns {
+  type: "RECORD"
+  mode: "NULLABLE"
+  column: "nullable_nested_record_field"
+  description: ""
+  subcolumns {
+    type: "STRING"
+    mode: "REQUIRED"
+    column: "nested_string"
+  }
+  subcolumns {
+    type: "INT"
+    mode: "REQUIRED"
+    column: "nested_int"
+  }
+}
+columns {
+  type: "RECORD"
+  mode: "REQUIRED"
+  column: "required_nested_record_field"
+  subcolumns {
+    type: "STRING"
+    mode: "REQUIRED"
+    column: "nested_string"
+  }
+  subcolumns {
+    type: "INT"
+    mode: "REQUIRED"
+    column: "nested_int"
+  }
+}

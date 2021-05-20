@@ -1,0 +1,74 @@
+{
+  "sourceType": "AVRO",
+  "inputPattern": "gs://bucket-id/path/to/files/file-prefix-*.avro",
+  "entry": {
+    "description": "Entry created by Auto Data identification pipeline. Original Avro Schema: {\"type\":\"record\",\"name\":\"topLevelRecord\",\"fields\":[{\"name\":\"row_id\",\"type\":[\"null\",\"int\"],\"doc\":\"row_id field documentation\"},{\"name\":\"person_name\",\"type\":[\"null\",\"string\"],\"doc\":\"person_name field documentation\"},{\"name\":\"contacts\",\"type\":{\"type\":\"array\",\"items\":[\"null\",{\"type\":\"record\",\"name\":\"contact\",\"doc\":\"contact record field documentation\",\"fields\":[{\"name\":\"contact_type\",\"type\":\"string\",\"doc\":\"contact.contact_type field documentation\"},{\"name\":\"contact_number\",\"type\":\"string\",\"doc\":\"contact.contact_number field documentation\"}]}]}}]}",
+    "schema": {
+      "columns": [
+        {
+          "type": "INT",
+          "mode": "NULLABLE",
+          "column": "row_id",
+          "description": "row_id field documentation"
+        },
+        {
+          "type": "STRING",
+          "mode": "NULLABLE",
+          "column": "person_name",
+          "description": "person_name field documentation"
+        },
+        {
+          "type": "RECORD",
+          "mode": "REPEATED",
+          "column": "contacts",
+          "subcolumns": [
+            {
+              "type": "STRING",
+              "mode": "REQUIRED",
+              "column": "contact_type",
+              "description": "contact.contact_type field documentation"
+            },
+            {
+              "type": "STRING",
+              "mode": "REQUIRED",
+              "column": "contact_number",
+              "description": "contact.contact_number field documentation"
+            }
+          ]
+        }
+      ]
+    },
+    "type": "FILESET",
+    "gcsFilesetSpec": {
+      "filePatterns": [
+        "gs://bucket-id/path/to/files/file-prefix-*.avro"
+      ]
+    }
+  },
+  "tags": [
+    {
+      "fields": {
+        "infoTypes": {
+          "stringValue": "[PHONE_NUMBER]"
+        },
+        "inspectTimestamp": {
+          "timestampValue": "2021-05-18T12:16:51.767Z"
+        }
+      },
+      "template": "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template",
+      "column": "contacts.contact_number"
+    },
+    {
+      "fields": {
+        "infoTypes": {
+          "stringValue": "[DATE]"
+        },
+        "inspectTimestamp": {
+          "timestampValue": "2021-05-18T12:16:51.767Z"
+        }
+      },
+      "template": "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template",
+      "column": "person_name"
+    }
+  ]
+}

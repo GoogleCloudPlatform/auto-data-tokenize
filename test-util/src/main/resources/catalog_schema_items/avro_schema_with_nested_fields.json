@@ -1,0 +1,36 @@
+{
+  "name": "top_level_record",
+  "type": "record",
+  "fields": [
+    {
+      "name": "top_level_string",
+      "type": "string"
+    },
+    {
+      "name": "nullable_nested_record_field",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "nested_record_type",
+          "fields": [
+            {
+              "name": "nested_string",
+              "type": "string"
+            },
+            {
+              "name": "nested_int",
+              "type": "int"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "required_nested_record_field",
+      "type": {
+        "type": "nested_record_type"
+      }
+    }
+  ]
+}

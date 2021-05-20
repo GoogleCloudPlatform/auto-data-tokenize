@@ -24,11 +24,19 @@ dependencies {
     implementation project(":common-util")
     implementation project(":common")
     implementation project(":dlp")
+
     implementation "com.google.cloud:google-cloud-dlp:${dlpClientVersion}"
+    implementation "com.google.cloud:google-cloud-datacatalog:1.3.3"
 
     runtimeOnly "io.grpc:grpc-netty:1.34.0"
+    runtimeOnly "com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.2.3"
+    // MySQL JDBC driver
+    runtimeOnly("mysql:mysql-connector-java:8.0.24") {
+        exclude group: "com.google.protobuf", module: "protobuf-java"
+    }
 
     testImplementation project(":test-util")
+    testImplementation "ch.vorburger.mariaDB4j:mariaDB4j:2.4.0"
 }
 
 description = "sampler-pipeline"
@@ -36,7 +44,7 @@ description = "sampler-pipeline"
 jar {
     manifest {
         attributes "Main-Class": "com.google.cloud.solutions.autotokenize.pipeline.DlpSamplerIdentifyPipeline"
-        attributes "Implementation-Title" : "auto-encryption-sampler-tool"
-        attributes "Implementation-Version" : "${autoTokenizeVersion}"
+        attributes "Implementation-Title": "auto-encryption-sampler-tool"
+        attributes "Implementation-Version": "${autoTokenizeVersion}"
     }
 }

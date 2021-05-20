@@ -1,0 +1,10 @@
+{
+  "columnName": "$.__root__.contact.__s_0.name",
+  "infoTypes": [{
+    "infoType": "PERSON_NAME",
+    "count": "22"
+  }, {
+    "infoType": "DATE",
+    "count": "9"
+  }]
+}

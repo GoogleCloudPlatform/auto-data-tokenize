@@ -26,12 +26,13 @@ import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
 import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.pipeline.dlp.PartialColumnBatchAccumulator;
-import com.google.cloud.solutions.autotokenize.testing.MatchRecordsCountFn;
+import com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.Serializable;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.Set;
 import org.apache.avro.Schema;
@@ -82,7 +83,7 @@ public final class EncryptionPipelineTest implements Serializable {
   }
 
   @Test
-  public void expand() throws Exception {
+  public void expand() throws IOException, GeneralSecurityException {
     EncryptingPipelineOptions options = PipelineOptionsFactory.as(EncryptingPipelineOptions.class);
     options.setDlpEncryptConfigJson(TEST_DLP_ENCRYPT_CONFIG_JSON);
     options.setInputPattern(tempAvroFile);
@@ -110,7 +111,7 @@ public final class EncryptionPipelineTest implements Serializable {
         readPipeline.apply(
             AvroIO.readGenericRecords(encryptedSchema).from(options.getOutputDirectory() + "/*"));
 
-    PAssert.that(encryptedRecords).satisfies(new MatchRecordsCountFn<>(TEST_RECORDS.size()));
+    PAssert.that(encryptedRecords).satisfies(new RecordsCountMatcher<>(TEST_RECORDS.size()));
 
     readPipeline.run();
   }

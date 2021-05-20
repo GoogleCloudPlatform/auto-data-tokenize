@@ -1,0 +1,23 @@
+# proto-file: google/cloud/datacatalog/v1/schema.proto
+# proto-message: Schema
+
+columns {
+  type: "STRING"
+  mode: "REQUIRED"
+  column: "name"
+}
+columns {
+  type: "RECORD"
+  mode: "REPEATED"
+  column: "contacts"
+  subcolumns {
+    type: "STRING"
+    mode: "REQUIRED"
+    column: "type"
+  }
+  subcolumns {
+    type: "STRING"
+    mode: "REQUIRED"
+    column: "number"
+  }
+}

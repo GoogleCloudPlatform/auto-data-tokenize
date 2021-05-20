@@ -20,22 +20,26 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
     gradlePluginPortal()
-    jcenter()
 }
 
 dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core:2.11.3"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.11.3"
-    implementation "org.apache.avro:avro:1.10.1"
-    implementation "org.apache.parquet:parquet-avro:1.11.1"
-    implementation "org.apache.hadoop:hadoop-common:3.2.1"
+    implementation "org.apache.avro:avro:1.10.2"
+    implementation "org.apache.parquet:parquet-avro:1.12.0"
+
+    implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+    runtimeOnly "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
+    testRuntimeOnly "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}"
+
     implementation "com.google.protobuf:protobuf-java:${protoVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protoVersion}"
 
-    implementation "com.google.api.grpc:proto-google-cloud-dlp-v2:2.1.0"
+    implementation "com.google.guava:guava:30.1.1-jre"
+
+    compileOnly "org.checkerframework:checker-qual:${checkerFrameworkVersion}"
 
     compileOnly "com.google.auto.value:auto-value-annotations:${autoValueVersion}"
     annotationProcessor "com.google.auto.value:auto-value:${autoValueVersion}"
@@ -48,8 +52,8 @@ dependencies {
     implementation "org.apache.beam:beam-runners-google-cloud-dataflow-java:${beamVersion}"
     implementation "org.apache.beam:beam-sdks-java-io-google-cloud-platform:${beamVersion}"
     implementation "org.apache.beam:beam-sdks-java-io-parquet:${beamVersion}"
-    runtimeOnly "org.apache.hadoop:hadoop-mapreduce-client-core:2.10.1"
-    testRuntimeOnly "org.apache.hadoop:hadoop-mapreduce-client-core:2.10.1"
+    testImplementation "org.apache.beam:beam-runners-direct-java:${beamVersion}"
+
 
     runtimeOnly "org.slf4j:slf4j-api:1.7.25"
     runtimeOnly "org.slf4j:slf4j-jdk14:1.7.25"
@@ -59,13 +63,12 @@ dependencies {
     testImplementation "com.google.truth:truth:1.1"
     testImplementation "com.google.truth.extensions:truth-java8-extension:1.1"
     testImplementation "com.google.truth.extensions:truth-proto-extension:1.1"
-    testImplementation "org.apache.beam:beam-runners-direct-java:${beamVersion}"
 }
 
 group = "com.google.cloud.solutions.autotokenize"
-version = "1.0.2"
+version = "${autoTokenizeVersion}"
 
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.sourceCompatibility = JavaVersion.VERSION_11
 
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
