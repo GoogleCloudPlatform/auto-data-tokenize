@@ -1,0 +1,63 @@
+# proto-file: src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto
+# proto-message: FlatRecord
+
+flat_key_schema {
+  key: "$.birth_date.int"
+  value: "$.topLevelRecord.birth_date"
+}
+flat_key_schema {
+  key: "$.id"
+  value: "$.topLevelRecord.id"
+}
+flat_key_schema {
+  key: "$.last_signin_timestamp"
+  value: "$.topLevelRecord.last_signin_timestamp"
+}
+flat_key_schema {
+  key: "$.name.string"
+  value: "$.topLevelRecord.name"
+}
+flat_key_schema {
+  key: "$.regional_name.string"
+  value: "$.topLevelRecord.regional_name"
+}
+flat_key_schema {
+  key: "$.salary.double"
+  value: "$.topLevelRecord.salary"
+}
+values {
+  key: "$.birth_date.int"
+  value {
+    integer_value: 11485
+  }
+}
+values {
+  key: "$.id"
+  value {
+    integer_value: 2
+  }
+}
+values {
+  key: "$.last_signin_timestamp"
+  value {
+    integer_value: 1589205300000
+  }
+}
+values {
+  key: "$.name.string"
+  value {
+    string_value: "Test User2"
+  }
+}
+values {
+  key: "$.regional_name.string"
+  value {
+    string_value: "\346\265\213\350\257\225\347\224\250\346\210\2672"
+  }
+}
+values {
+  key: "$.salary.double"
+  value {
+    float_value: 456.7896
+  }
+}

@@ -14,5 +14,14 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+package com.google.cloud.solutions.autotokenize.encryptors;
+
+
+import java.io.Serializable;
+
+/** Factory interface to create new instances of a {@link ValueTokenizer}. */
+public interface ValueTokenizerFactory extends Serializable {
+
+  /** Returns a new instance. */
+  ValueTokenizer makeValueTokenizer();
+}

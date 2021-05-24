@@ -1,0 +1,132 @@
+# proto-file: src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto
+# proto-message: FlatRecord
+
+flat_key_schema {
+  key: "$.country"
+  value: "$.kylosample.country"
+}
+flat_key_schema {
+  key: "$.gender"
+  value: "$.kylosample.gender"
+}
+flat_key_schema {
+  key: "$.salary.double"
+  value: "$.kylosample.salary"
+}
+flat_key_schema {
+  key: "$.birthdate"
+  value: "$.kylosample.birthdate"
+}
+flat_key_schema {
+  key: "$.comments"
+  value: "$.kylosample.comments"
+}
+flat_key_schema {
+  key: "$.ip_address"
+  value: "$.kylosample.ip_address"
+}
+flat_key_schema {
+  key: "$.last_name"
+  value: "$.kylosample.last_name"
+}
+flat_key_schema {
+  key: "$.email"
+  value: "$.kylosample.email"
+}
+flat_key_schema {
+  key: "$.id"
+  value: "$.kylosample.id"
+}
+flat_key_schema {
+  key: "$.registration_dttm"
+  value: "$.kylosample.registration_dttm"
+}
+flat_key_schema {
+  key: "$.cc"
+  value: "$.kylosample.cc"
+}
+flat_key_schema {
+  key: "$.title"
+  value: "$.kylosample.title"
+}
+flat_key_schema {
+  key: "$.first_name"
+  value: "$.kylosample.first_name"
+}
+values {
+  key: "$.country"
+  value {
+    string_value: "Canada"
+  }
+}
+values {
+  key: "$.gender"
+  value {
+    string_value: "Male"
+  }
+}
+values {
+  key: "$.salary.double"
+  value {
+    float_value: 150280.17
+  }
+}
+values {
+  key: "$.birthdate"
+  value {
+    string_value: "1/16/1968"
+  }
+}
+values {
+  key: "$.comments"
+  value {
+    string_value: ""
+  }
+}
+values {
+  key: "$.ip_address"
+  value {
+    string_value: "218.111.175.34"
+  }
+}
+values {
+  key: "$.last_name"
+  value {
+    string_value: "Freeman"
+  }
+}
+values {
+  key: "$.email"
+  value {
+    string_value: "afreeman1@is.gd"
+  }
+}
+values {
+  key: "$.id"
+  value {
+    integer_value: 2
+  }
+}
+values {
+  key: "$.registration_dttm"
+  value {
+    string_value: "2016-02-03T17:04:03Z"
+  }
+}
+values {
+  key: "$.cc"
+  value {
+  }
+}
+values {
+  key: "$.title"
+  value {
+    string_value: "Accountant IV"
+  }
+}
+values {
+  key: "$.first_name"
+  value {
+    string_value: "Albert"
+  }
+}

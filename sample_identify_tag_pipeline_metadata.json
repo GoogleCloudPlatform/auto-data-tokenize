@@ -1,0 +1,62 @@
+{
+  "name": "Inspect and Tag Data sources in Data Catalog",
+  "description": "A pipeline that reads the data source, randomly samples the input rows to identify sensitive items using DLP content inspection. The aggregated results are then written to Data Catalog tags. ",
+  "parameters": [{
+    "name": "sampleSize",
+    "label": "Sample Size",
+    "helpText": "The number of samples to extract for each column. (Default: 1000)",
+    "isOptional": true
+  },
+    {
+      "name": "sourceType",
+      "label": "Data source type",
+      "helpText": "The data source to analyse/inspect. One of: [AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE]"
+    },
+    {
+      "name": "inputPattern",
+      "label": "Date Source",
+      "helpText": "The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input, for BIGQUERY_TABLE: a Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table."
+    },
+    {
+      "name": "reportLocation",
+      "label": "GCS Location for writing output",
+      "helpText": "The GCS location to write the aggregated inspection results and the datasource's AVRO Schema"
+    },
+    {
+      "name": "observableInfoTypes",
+      "label": "DLP Observable InfoTypes",
+      "helpText": "Provide a list of info-types to inspect the data with. Keeping EMPTY uses all DLP supported info-types.",
+      "isOptional": true
+    },
+    {
+      "name": "jdbcConnectionUrl",
+      "label": "JDBC Connection URL",
+      "helpText": "The Connection URL used for connecting to a SQL datasource using JDBC. (Required when sourceType=JDBC_TABLE)",
+      "isOptional": true
+    },
+    {
+      "name": "jdbcDriverClass",
+      "label": "JDBC Driver class name",
+      "helpText": "The JDBC driver to use for reading from SQL datasource. (Required when sourceType=JDBC_TABLE)",
+      "isOptional": true
+    },
+    {
+      "name": "dataCatalogEntryGroupId",
+      "label": "Cloud Data Catalog Entry Group",
+      "helpText": "The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for sourceType=BIGQUERY_TABLE)",
+      "isOptional": true
+    },
+    {
+      "name": "dataCatalogInspectionTagTemplateId",
+      "label": "Data Catalog Tag Template Id",
+      "helpText": "The Datacatalog TempalteId to use for creating the sensitivity tags.",
+      "isOptional": true
+    },
+    {
+      "name": "dataCatalogForcedUpdate",
+      "label": "Force update Data Catalog",
+      "helpText": "Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: false)",
+      "isOptional": true
+    }
+  ]
+}

@@ -25,8 +25,8 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.checkerframework:checker-qual:${checkerFrameworkVersion}"
-    implementation "org.apache.beam:beam-sdks-java-core:${beamVersion}"
+    compileOnly "org.checkerframework:checker-qual:3.13.0"
+    implementation "org.apache.beam:beam-sdks-java-core:2.29.0"
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_1_8

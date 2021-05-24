@@ -14,5 +14,15 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+CREATE TABLE TableWithTimeFields
+(
+    date_field      DATE,
+    time_field      TIME,
+    datetime_field  DATETIME,
+    timestamp_field TIMESTAMP,
+    year_field      YEAR
+);
+INSERT INTO TableWithTimeFields(date_field, time_field, datetime_field,
+                                timestamp_field, year_field)
+VALUES ('2021-12-12', '10:11:30', '2021-12-12 10:11:30', '2021-12-12 10:11:30',
+        2021);

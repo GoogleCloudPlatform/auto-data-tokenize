@@ -1,0 +1,53 @@
+# proto-file: src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto
+# proto-message: FlatRecord
+
+flat_key_schema {
+  key: "$.last_name"
+  value: "$.kylosample.last_name"
+}
+flat_key_schema {
+  key: "$.id"
+  value: "$.kylosample.id"
+}
+flat_key_schema {
+  key: "$.first_name"
+  value: "$.kylosample.first_name"
+}
+flat_key_schema {
+  key: "$.cc.array[0].string"
+  value: "$.kylosample.cc"
+}
+flat_key_schema {
+  key: "$.cc.array[1].string"
+  value: "$.kylosample.cc"
+}
+values {
+  key: "$.last_name"
+  value {
+    string_value: "White"
+  }
+}
+values {
+  key: "$.id"
+  value {
+    integer_value: 6
+  }
+}
+values {
+  key: "$.first_name"
+  value {
+    string_value: "Kathryn"
+  }
+}
+values {
+  key: "$.cc.array[0].string"
+  value {
+    string_value: "string element of array inside union field"
+  }
+}
+values {
+  key: "$.cc.array[1].string"
+  value {
+    string_value: "element 2"
+  }
+}

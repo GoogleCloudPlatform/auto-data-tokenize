@@ -14,5 +14,11 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+package com.google.cloud.solutions.autotokenize.dlp;
+
+
+import java.io.Serializable;
+
+public interface BatchAccumulatorFactory<InputT, OutputT> extends Serializable {
+  BatchAccumulator<InputT, OutputT> newAccumulator();
+}

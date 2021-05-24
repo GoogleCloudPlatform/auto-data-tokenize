@@ -14,5 +14,13 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+package com.google.cloud.solutions.autotokenize.encryptors;
+
+
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+
+/** A Record processor that can tokenize specific or all values of a {@link FlatRecord} */
+public interface FlatRecordTokenizer {
+
+  FlatRecord encrypt(FlatRecord plainTextRecord);
+}

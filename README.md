@@ -1,12 +1,16 @@
 # Automatic data tokenizing pipelines
 
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=GoogleCloudPlatform_auto-data-tokenize&metric=ncloc)](https://sonarcloud.io/dashboard?id=GoogleCloudPlatform_auto-data-tokenize)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=GoogleCloudPlatform_auto-data-tokenize&metric=coverage)](https://sonarcloud.io/dashboard?id=GoogleCloudPlatform_auto-data-tokenize)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=GoogleCloudPlatform_auto-data-tokenize&metric=code_smells)](https://sonarcloud.io/dashboard?id=GoogleCloudPlatform_auto-data-tokenize)
+
 This document discusses how to identify and tokenize data with an automated data transformation pipeline to detect sensitive data like personally identifiable information (PII), using Cloud Data Loss Prevention [(Cloud DLP)](https://cloud.google.com/dlp) and [Cloud KMS](https://cloud.google.com/kms). De-identification techniques like encryption lets you preserve the utility of your data for joining or analytics while reducing the risk of handling the data by obfuscating the raw sensitive identifiers.
 
-To minimize the risk of handling large volumes of sensitive data, you can use an automated data transformation pipeline to create de-identified datasets that can be used for migrating from on-premise to cloud or keep a de-identified replica for Analytics. Cloud DLP can inspect the data for sensitive information when the dataset has not been characterized, by using [more than 100 built-in classifiers](https://cloud.google.com/dlp/docs/infotypes-reference). 
+To minimize the risk of handling large volumes of sensitive data, you can use an automated data transformation pipeline to create de-identified datasets that can be used for migrating from on-premise to cloud or keep a de-identified replica for Analytics. Cloud DLP can inspect the data for sensitive information when the dataset has not been characterized, by using [more than 100 built-in classifiers](https://cloud.google.com/dlp/docs/infotypes-reference).
 
 One of the daunting challenges during data migration to cloud is to manage sensitive data. The sensitive data can be in structured forms like analytics tables or unstructured like chat history or transcription records. One needs to use Cloud DLP to identify sensitive data from both of these kinds of sources, followed by tokenizing the sensitive parts.
 
-Tokenizing structured data can be optimized for cost and speed by using representative samples for each of the columns to categorize the kind of information, followed by bulk encryption of sensitive columns. This approach reduces cost of using Cloud DLP, by limiting the use to classification of a small representative sample, instead of all the records. The throughput and cost of tokenization can be optimized by using envelope encryption for columns classified as sensitive. 
+Tokenizing structured data can be optimized for cost and speed by using representative samples for each of the columns to categorize the kind of information, followed by bulk encryption of sensitive columns. This approach reduces cost of using Cloud DLP, by limiting the use to classification of a small representative sample, instead of all the records. The throughput and cost of tokenization can be optimized by using envelope encryption for columns classified as sensitive.
 
 This document demonstrates a reference implementation of tokenizing structured data through two tasks: _sample and identify_, followed by _bulk tokenization_ using encryption.
 
@@ -58,7 +62,7 @@ The __tokenize pipeline__ then encrypts the user-specified source columns using 
       "contacts": [
       {
          "type": "WORK",
-         "number": 2124567890  
+         "number": 2124567890
       },
       {
          "type": "HOME",
@@ -67,10 +71,10 @@ The __tokenize pipeline__ then encrypts the user-specified source columns using 
       ]
    }
    ```
-   
+
    Flattening this record yields a [FlatRecord](https://github.com/GoogleCloudPlatform/auto-data-tokenize/blob/master/proto-messages/src/main/resources/proto/google/cloud/autodlp/auto_tokenize_messages.proto#L103) with following data. Notice the `values` map, which demonstrates that each leaf node of the contact record is mapped using a [JsonPath](https://goessner.net/articles/JsonPath/) notation.
    The `keySchema` shows a mapping between the leaf value's key's to a schema key to demonstrate that leaf-nodes of same type share the same key-schema, for example: `$.contacts[0].contact.number` is logically same as `$.contacts[1].contact.number` as both of them have the same key-schema `$.contacts.contact.number`.
-   
+
    ```json
    {
       "values": {
@@ -78,15 +82,15 @@ The __tokenize pipeline__ then encrypts the user-specified source columns using 
        "$.contacts[0].contact.type": "WORK",
        "$.contacts[0].contact.number": 2124567890,
        "$.contacts[1].contact.type": "WORK",
-       "$.contacts[1].contact.number": 5304321234   
+       "$.contacts[1].contact.number": 5304321234
       },
-   
+
       "keySchema": {
        "$.name": "$.name",
        "$.contacts[0].contact.type": "$.contacts.contact.type",
        "$.contacts[0].contact.number": "$.contacts.contact.number",
        "$.contacts[1].contact.type": "$.contacts.contact.type",
-       "$.contacts[1].contact.number": "$.contacts.contact.number"   
+       "$.contacts[1].contact.number": "$.contacts.contact.number"
       }
    }
    ```
@@ -147,11 +151,11 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
    ```
 
 1. Use a text editor of your choice to modify the `set_variables.sh` file to set required environment variables.
-   ```shell script   
+   ```shell script
    # The Google Cloud project to use for this tutorial
    export PROJECT_ID="<your-project-id>"
 
-   # The Compute Engine region to use for running Dataflow jobs and create a 
+   # The Compute Engine region to use for running Dataflow jobs and create a
    # temporary storage bucket
    export REGION_ID="<compute-engine-region>"
 
@@ -168,7 +172,7 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
    export KMS_KEY_ID="<key-id>"
 
    # The JSON file containing the TINK Wrapped data-key to use for encryption
-   export WRAPPED_KEY_FILE="<path-to-the-data-encryption-key-file>"   
+   export WRAPPED_KEY_FILE="<path-to-the-data-encryption-key-file>"
    ````
 
 1. Run the script to set the environment variables:
@@ -249,7 +253,7 @@ it.
    ```shell script
    tinkey create-keyset \
    --master-key-uri="${MAIN_KMS_KEY_URI}" \
-   --key-template=AES256_SIV \   
+   --key-template=AES256_SIV \
    --out="${WRAPPED_KEY_FILE}" \
    --out-format=json
    ```
@@ -279,7 +283,7 @@ You need to compile all the modules to build executables for deploying the _samp
 ```
 
 > Add `-x test` flag to skip running tests.
-> Add `--parallel` to allow gradle to use multiple threads. 
+> Add `--parallel` to allow gradle to use multiple threads.
 
 ## Run Sample and Identify pipeline
 
@@ -426,7 +430,7 @@ The encryption pipeline supports two encryption modes:
     <tr>
       <td>DLP De-identify</td>
 <td><code>--dlpEncryptConfigJson</code></td>
-<td><a href="protos/src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto">DlpEncryptConfig</a>
+<td><a href="src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto">DlpEncryptConfig</a>
 JSON to provide <a href="https://cloud.google.com/dlp/docs/reference/rest/v2/projects.deidentifyTemplates#DeidentifyTemplate.PrimitiveTransformation">PrimitiveTransformation</a>
 for each <code>tokenizedColumn</code>.
 <br>

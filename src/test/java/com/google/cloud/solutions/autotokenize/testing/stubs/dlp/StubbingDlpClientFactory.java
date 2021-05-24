@@ -14,5 +14,23 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+package com.google.cloud.solutions.autotokenize.testing.stubs.dlp;
+
+
+import com.google.cloud.dlp.v2.DlpServiceClient;
+import com.google.cloud.dlp.v2.stub.DlpServiceStub;
+import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
+
+public final class StubbingDlpClientFactory implements DlpClientFactory {
+
+  private final DlpServiceStub stub;
+
+  public StubbingDlpClientFactory(DlpServiceStub stub) {
+    this.stub = stub;
+  }
+
+  @Override
+  public DlpServiceClient newClient() {
+    return DlpServiceClient.create(stub);
+  }
+}
