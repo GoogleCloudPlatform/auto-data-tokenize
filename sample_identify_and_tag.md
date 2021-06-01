@@ -254,10 +254,10 @@ Create a new Entry Group to create entry for your MySQL Database.
 REST API calls to set up your pipelines on Google Cloud and run them. Classic templates are staged as execution graphs on Cloud Storage; Flex Templates bundle
 the pipeline as a container image in your project’s registry in Container Registry. This allows you to decouple building and running pipelines, as well as
 integrate with orchestration systems for daily execution. For more information, see
-[Evaluating which template type to use](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#comparing-templated-jobs) in the Dataflow 
+[Evaluating which template type to use](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#comparing-templated-jobs) in the Dataflow
 documentation.
 
-[Dataflow Flex templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#templated-dataflow-jobs) 
+[Dataflow Flex templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#templated-dataflow-jobs)
 make it possible to launch a Dataflow pipeline without having to compile code or access to development environment.
 Dataflow pipelines based on Flex templates can be started from Cloud Composer using [DataflowStartFlexTemplateOperator](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/_api/airflow/providers/google/cloud/operators/dataflow/index.html#airflow.providers.google.cloud.operators.dataflow.DataflowStartFlexTemplateOperator).
 
