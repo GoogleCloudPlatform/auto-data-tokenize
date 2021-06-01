@@ -11,11 +11,11 @@ Anant Damle | Solutions Architect | Google
 
 This tutorial demonstrates how to identify and apply data sensitivity tags for your data in Cloud Storage files, relational databases (like MySQL, PostgreSQL, etc.) and BigQuery using [Data Catalog](https://cloud.google.com/data-catalog) with an automated Dataflow pipeline.
 
-This pipeline uses [Cloud Data Loss Prevention (Cloud DLP)](https://cloud.google.com/dlp) to detect sensitive data like personally identifiable information 
+This pipeline uses [Cloud Data Loss Prevention (Cloud DLP)](https://cloud.google.com/dlp) to detect sensitive data like personally identifiable information
 (PII), followed by tagging the findings in Data Catalog.
 
 The solution described in this document builds on the architecture of the file-based tokenizing solution described in
-the [companion document](https://cloud.google.com/community/tutorials/auto-data-tokenize). The primary difference is that the current document describes a 
+the [companion document](https://cloud.google.com/community/tutorials/auto-data-tokenize). The primary difference is that the current document describes a
 solution that additionally creates Data Catalog entry and tags for DLP findings, and adds the capability to inspect relational databases using JDBC connections.
 
 This document is intended for a technical audience whose responsibilities include data security, data governancve, data processing, or data analytics. This document assumes that you're familiar with data processing and data privacy, without the need to be an expert. This document assumes some familiarity with shell scripts and basic knowledge of Google Cloud.
@@ -39,7 +39,7 @@ The solution described in this tutorial comprises a pipeline that extracts the d
 
 ![sampling dlp and data catalog architecture](sampling_dlp_identify_catalog_architecture.svg)
 
-The solution uses JDBC connection to access relational databases, when using BigQuery tables as a data source, the solution uses the [BigQuery Storage API](https://cloud.google.com/bigquery/docs/reference/storage) to improve 
+The solution uses JDBC connection to access relational databases, when using BigQuery tables as a data source, the solution uses the [BigQuery Storage API](https://cloud.google.com/bigquery/docs/reference/storage) to improve
 load times.
 
 The *sample-and-identify* pipeline outputs the following files to Cloud Storage:
@@ -47,7 +47,7 @@ The *sample-and-identify* pipeline outputs the following files to Cloud Storage:
   * Avro schema (equivalent) of the source's schema
   * Detected [InfoTypes](https://cloud.google.com/dlp/docs/infotypes-reference) for each of the input columns
 
-This solution uses [record flattening](https://cloud.google.com/community/tutorials/auto-data-tokenize#concepts) to handle nested and repeated fields in records. 
+This solution uses [record flattening](https://cloud.google.com/community/tutorials/auto-data-tokenize#concepts) to handle nested and repeated fields in records.
 
 ## Before you begin
 
@@ -87,7 +87,7 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
         # The Google Cloud project to use for this tutorial
         export PROJECT_ID="[YOUR_PROJECT_ID]"
 
-        # The Compute Engine region to use for running Dataflow jobs and create a 
+        # The Compute Engine region to use for running Dataflow jobs and create a
         # temporary storage bucket
         export REGION_ID="[YOUR_COMPUTE_ENGINE_REGION]"
 
@@ -97,11 +97,11 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
         # Name of the service account to use (not the email address)
         export DLP_RUNNER_SERVICE_ACCOUNT_NAME="[SERVICE_ACCOUNT_NAME_FOR_RUNNER]"
 
-        # Fully Qualified Entry Group Id to use for creating/searching for Entries 
+        # Fully Qualified Entry Group Id to use for creating/searching for Entries
         # in Data Catalog for non-BigQuery entries.
         export DATA_CATALOG_ENTRY_GROUP_ID="[NON_BIGQUERY_DATA_CATALOG_ENTRY_GROUP]"
 
-        # The fully qualified Data Catalog Tag Template Id to use 
+        # The fully qualified Data Catalog Tag Template Id to use
         # for creating sensitivity tags in Data Catalog.
         export INSPECTION_TAG_TEMPLATE_ID="[DATA_CATALOG_TAG_TEMPLATE_NAME]"
 
@@ -114,7 +114,7 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
 
 The tutorial uses following resources:
 
- * A service account to run Dataflow pipelines, enabling fine-grained access control 
+ * A service account to run Dataflow pipelines, enabling fine-grained access control
  * A Cloud Storage bucket for temporary data storage and test data
  * A Data Catalog Tag Template to attach sensitivity tags to entries
  * A MySQL on Cloud SQL instance as JDBC source
@@ -195,9 +195,9 @@ You can use your own file datasets or copy the included demonstration dataset (`
         gsutil cp contacts5k.sql.gz gs://${TEMP_GCS_BUCKET}
 
 1.  Create a new Database in the Cloud SQL instance:
-        
+
         export DATABASE_ID="auto_dlp_test"
-    
+
         gcloud sql databases create "${DATABASE_ID}" \
         --project="${PROJECT_ID}" \
         --instance="${SQL_INSTANCE}"
@@ -216,17 +216,9 @@ You can use your own file datasets or copy the included demonstration dataset (`
         --project="${PROJECT_ID}" \
         --database="${DATABASE_ID}"
 
-1.  Load data into a BigQuery table:
-
-        bq load \
-        --source_format=AVRO \
-        --project_id="${PROJECT_ID}" \
-        "data.RawContacts" \
-        "gs://${TEMP_GCS_BUCKET}/contacts5k.avro"
-
 ## Compile modules
 
-You need to compile all of the modules to build executables for deploying the sample-and-identify and tokenize pipelines.
+Build the executables for deploying the sample-and-identify and tokenize pipelines.
 
      ./gradlew clean buildNeeded shadowJar
 
@@ -248,13 +240,42 @@ The Data Catalog maintains a list of Entries that represent Google Cloud or othe
 Create a new Entry Group to create entry for your MySQL Database.
 
     export DATA_CATALOG_ENTRY_GROUP_ID="sql_databases"
-    
+
     gcloud data-catalog entry-groups create \
     "${DATA_CATALOG_ENTRY_GROUP_ID}" \
     --project="${PROJECT_ID}" \
     --location="${REGION_ID}"
 
 **Note:** Ensure that location is one of the [Data Catalog regions](https://cloud.google.com/data-catalog/docs/concepts/regions).
+
+### Create Dataflow Flex template
+
+[Dataflow templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates) allow you to use the Cloud Console, the `gcloud` command-line tool, or
+REST API calls to set up your pipelines on Google Cloud and run them. Classic templates are staged as execution graphs on Cloud Storage; Flex Templates bundle
+the pipeline as a container image in your project’s registry in Container Registry. This allows you to decouple building and running pipelines, as well as
+integrate with orchestration systems for daily execution. For more information, see
+[Evaluating which template type to use](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#comparing-templated-jobs) in the Dataflow 
+documentation.
+
+[Dataflow Flex templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#templated-dataflow-jobs) 
+make it possible to launch a Dataflow pipeline without having to compile code or access to development environment.
+Dataflow pipelines based on Flex templates can be started from Cloud Composer using [DataflowStartFlexTemplateOperator](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/_api/airflow/providers/google/cloud/operators/dataflow/index.html#airflow.providers.google.cloud.operators.dataflow.DataflowStartFlexTemplateOperator).
+
+1.  Define the location to store the template spec file containing all of the necessary information to run the job:
+
+        export FLEX_TEMPLATE_PATH="gs://${TEMP_GCS_BUCKET}/dataflow/templates/sample-inspect-tag-pipeline.json"
+        export FLEX_TEMPLATE_IMAGE="us.gcr.io/${PROJECT_ID}/dataflow/sample-inspect-tag-pipeline:latest"
+
+1.  Build the Dataflow Flex template:
+
+        gcloud dataflow flex-template build "${FLEX_TEMPLATE_PATH}" \
+        --image-gcr-path="${FLEX_TEMPLATE_IMAGE}" \
+        --service-account-email="${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL}" \
+        --sdk-language="JAVA" \
+        --flex-template-base-image=JAVA11 \
+        --metadata-file="sample_identify_tag_pipeline_metadata.json" \
+        --jar="build/libs/autotokenize-all.jar" \
+        --env="FLEX_TEMPLATE_JAVA_MAIN_CLASS=\"com.google.cloud.solutions.autotokenize.pipeline.DlpSamplerIdentifyPipeline\""
 
 ### Run the sample-and-identify pipeline
 
@@ -269,28 +290,25 @@ The sampling and DLP identification pipeline will:
 
 
 Launch the sampling and DLP identification pipeline:
-    
+
     export CLOUD_SQL_JDBC_CONNECTION_URL="jdbc:mysql:///${DATABASE_ID}?cloudSqlInstance=${PROJECT_ID}%3A${REGION_ID}%3A${SQL_INSTANCE}&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=root1234"
 
-    sample_and_identify_pipeline --project="${PROJECT_ID}" \
-    --region="${REGION_ID}" \
-    --runner="DataflowRunner" \
-    --serviceAccount=${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL} \
-    --gcpTempLocation="gs://${TEMP_GCS_BUCKET}/temp" \
-    --stagingLocation="gs://${TEMP_GCS_BUCKET}/staging" \
-    --tempLocation="gs://${TEMP_GCS_BUCKET}/temp" \
-    --workerMachineType="n1-standard-1" \
-    --sampleSize=1000 \
-    --sourceType="JDBC_TABLE" \
-    --inputPattern="Contacts" \
-    --reportLocation="gs://${TEMP_GCS_BUCKET}/auto_dlp_report/" \
-    --jdbcConnectionUrl="${CLOUD_SQL_JDBC_CONNECTION_URL}" \
-    --jdbcDriverClass="com.mysql.cj.jdbc.Driver" \
-    --dataCatalogEntryGroupId="projects/${PROJECT_ID}/locations/${REGION_ID}/entryGroups/${DATA_CATALOG_ENTRY_GROUP_ID}" \
-    --dataCatalogInspectionTagTemplateId="projects/${PROJECT_ID}/locations/${REGION_ID}/tagTemplates/${INSPECTION_TAG_TEMPLATE_ID}"
-    
+    gcloud dataflow flex-template run "sample-inspect-tag-`date +%Y%m%d-%H%M%S`" \
+    --template-file-gcs-location "${FLEX_TEMPLATE_PATH}" \
+    --region "${REGION_ID}" \
+    --service-account-email "${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL}" \
+    --staging-location "gs://${TEMP_GCS_BUCKET}/staging" \
+    --worker-machine-type "n1-standard-1" \
+    --parameters sampleSize=1000 \
+    --parameters sourceType="JDBC_TABLE" \
+    --parameters inputPattern="Contacts" \
+    --parameters reportLocation="gs://${TEMP_GCS_BUCKET}/auto_dlp_report/" \
+    --parameters jdbcConnectionUrl="${CLOUD_SQL_JDBC_CONNECTION_URL}" \
+    --parameters jdbcDriverClass="com.mysql.cj.jdbc.Driver" \
+    --parameters dataCatalogEntryGroupId="projects/${PROJECT_ID}/locations/${REGION_ID}/entryGroups/${DATA_CATALOG_ENTRY_GROUP_ID}" \
+    --parameters dataCatalogInspectionTagTemplateId="projects/${PROJECT_ID}/locations/${REGION_ID}/tagTemplates/${INSPECTION_TAG_TEMPLATE_ID}"
 
-The `jdbcConnectionUrl` specifies a JDBC database connection url with user and password details. The details of building the exact connection url would depend on your database vendor and hosting partner. 
+The `jdbcConnectionUrl` specifies a JDBC database connection url with user and password details. The details of building the exact connection url would depend on your database vendor and hosting partner.
 Learn more about [connecting using Cloud SQL connectors](https://cloud.google.com/sql/docs/mysql/connect-connectors) to understand details for connecting to Cloud SQL based relational databases.
 
 The pipeline supports multiple source types. Use the following table to determine the right combination of `sourceType` and `inputPattern` arguments.
@@ -314,8 +332,8 @@ The Dataflow execution DAG (directed acyclic graph) looks like the following:
 
 ### Retrieve the report
 
-The sample-and-identify pipeline outputs the Avro schema (or converted for Parquet) of the files and one file for each of the columns determined to contain 
-sensitive information. 
+The sample-and-identify pipeline outputs the Avro schema (or converted for Parquet) of the files and one file for each of the columns determined to contain
+sensitive information.
 
 1.  Retrieve the report to your local machine:
 
@@ -345,9 +363,8 @@ sensitive information.
          }]
        }
 
-    Don't be alarmed by the unusual `columnName` value. That's due to implict conversion of a database row to an Avro record.
-    
-    The `"count"` value varies based on the randomly selected samples during execution.
+    * Don't be alarmed by the unusual `columnName` value. That's due to implict conversion of a database row to an Avro record.
+    * The `"count"` value varies based on the randomly selected samples during execution.
 
 ### Verify tags in Data Catalog
 
@@ -374,7 +391,7 @@ Verify that sensitivity tags are present on following columns:
   * person_name
 
 The tag details look as below:
-    
+
     ---
     column: contact_number
     fields:
@@ -416,5 +433,4 @@ To avoid incurring charges to your Google Cloud account for the resources used i
 * Learn about handling
   [de-identification and re-identification of PII in large-scale datasets using Cloud DLP](https://cloud.google.com/solutions/de-identification-re-identification-pii-using-cloud-dlp).
 * Learn more about [Cloud DLP](https://cloud.google.com/dlp).
-* Learn more about [Cloud KMS](https://cloud.google.com/kms).
 * Learn more about [BigQuery](https://cloud.google.com/bigquery).

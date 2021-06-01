@@ -14,5 +14,27 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+package com.google.cloud.solutions.autotokenize.dlp;
+
+
+import com.google.cloud.dlp.v2.DlpServiceClient;
+import java.io.IOException;
+import java.io.Serializable;
+
+/** Client factory to be used in */
+public interface DlpClientFactory extends Serializable {
+
+  DlpServiceClient newClient() throws IOException;
+
+  static DefaultClientFactory defaultFactory() {
+    return new DefaultClientFactory();
+  }
+
+  final class DefaultClientFactory implements DlpClientFactory {
+
+    @Override
+    public DlpServiceClient newClient() throws IOException {
+      return DlpServiceClient.create();
+    }
+  }
+}

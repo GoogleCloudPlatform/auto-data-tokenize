@@ -95,6 +95,11 @@ import org.joda.time.Duration;
 import org.joda.time.Instant;
 import org.joda.time.ReadableInstant;
 
+// Patched version from https://github.com/apache/beam.
+// This patch has been proposed upstream:
+// https://issues.apache.org/jira/browse/BEAM-12385
+// Pull Request: https://github.com/apache/beam/pull/14858
+
 /** Utils to convert AVRO records to Beam rows. */
 @Experimental(Kind.SCHEMAS)
 @SuppressWarnings({
@@ -918,6 +923,11 @@ public class AvroUtils {
             baseType = LogicalTypes.date().addToSchema(org.apache.avro.Schema.create(Type.INT));
             break;
 
+          case "TIME":
+            baseType =
+                LogicalTypes.timeMillis().addToSchema(org.apache.avro.Schema.create(Type.INT));
+            break;
+
           default:
             throw new RuntimeException(
                 "Unhandled logical type " + fieldType.getLogicalType().getIdentifier());
@@ -1038,6 +1048,9 @@ public class AvroUtils {
 
           case "DATE":
             return Days.daysBetween(Instant.EPOCH, (Instant) value).getDays();
+
+          case "TIME":
+            return (int)((ReadableInstant) value).getMillis();
 
           default:
             throw new RuntimeException(

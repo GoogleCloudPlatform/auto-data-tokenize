@@ -16,32 +16,32 @@
 #
 
 # The Google Cloud project to use for this tutorial
-export PROJECT_ID="<your-project-id>"
+export PROJECT_ID="auto-dlp"
 
 # The Compute Engine region to use for running Dataflow jobs and create a
 # temporary storage bucket
-export REGION_ID="<compute-engine-region>"
+export REGION_ID="asia-southeast1"
 
 # define the GCS bucket to use as temporary bucket for Dataflow
-export TEMP_GCS_BUCKET="<name-of-the-bucket>"
+export TEMP_GCS_BUCKET="auto-dlp-temp"
 
 # Name of the service account to use (not the email address)
-export DLP_RUNNER_SERVICE_ACCOUNT_NAME="<service-account-name-for-runner>"
+export DLP_RUNNER_SERVICE_ACCOUNT_NAME="[service-account-name-for-runner]"
 
 # Fully Qualified Entry Group Id to use for creating/searching for Entries in Data Catalog for non-BigQuery entries.
-export DATA_CATALOG_ENTRY_GROUP_ID="<non-bigquery-data-catalog-entry-group>"
+export DATA_CATALOG_ENTRY_GROUP_ID="[non-bigquery-data-catalog-entry-group]"
 
 # The fully qualified Data Catalog Tag Template Id to use for creating sensitivity tags in Data Catalog.
-export INSPECTION_TAG_TEMPLATE_ID="<data-catalog-tag-template-name>"
+export INSPECTION_TAG_TEMPLATE_ID="auto_dlp_inspection"
 
 # Name of the GCP KMS key ring name
-export KMS_KEYRING_ID="<key-ring-name>"
+export KMS_KEYRING_ID="[key-ring-name]"
 
 # name of the symmetric Key encryption kms-key-id
-export KMS_KEY_ID="<key-id>"
+export KMS_KEY_ID="[key-id]"
 
 # The JSON file containing the TINK Wrapped data-key to use for encryption
-export WRAPPED_KEY_FILE="<path-to-the-data-encryption-key-file>"
+export WRAPPED_KEY_FILE="[path-to-the-data-encryption-key-file]"
 
 ######################################
 #      DON'T MODIFY LINES BELOW      #
@@ -51,10 +51,16 @@ export WRAPPED_KEY_FILE="<path-to-the-data-encryption-key-file>"
 export MAIN_KMS_KEY_URI="gcp-kms://projects/${PROJECT_ID}/locations/${REGION_ID}/keyRings/${KMS_KEYRING_ID}/cryptoKeys/${KMS_KEY_ID}"
 
 # The DLP Runner Service account email
-export DLP_RUNNER_SERVICE_ACCOUNT_EMAIL="${DLP_RUNNER_SERVICE_ACCOUNT_NAME}@$(echo $PROJECT_ID | awk -F':' '{print $2"."$1}' | sed 's/^\.//').iam.gserviceaccount.com"
+DLP_RUNNER_SERVICE_ACCOUNT_EMAIL="${DLP_RUNNER_SERVICE_ACCOUNT_NAME}@$(echo $PROJECT_ID | awk -F':' '{print $2"."$1}' | sed 's/^\.//').iam.gserviceaccount.com"
+export DLP_RUNNER_SERVICE_ACCOUNT_EMAIL
 
 # Set an easy name to invoke the sampler module
-export AUTO_TOKENIZE_DIR="${PWD}"
-alias sample_and_identify_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/sampler-pipeline/build/libs/sampler-pipeline-1.1.0-all.jar"
+AUTO_TOKENIZE_JAR="${PWD}/build/libs/autotokenize-all.jar"
 
-alias tokenize_pipeline="java -jar ${AUTO_TOKENIZE_DIR}/encrypting-pipeline/build/libs/encrypting-pipeline-1.1.0-all.jar"
+# Fix the execution directory to present the JARs in this folder
+# shellcheck disable=SC2139
+alias sample_and_identify_pipeline="java -cp ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.DlpSamplerIdentifyPipeline"
+
+# Fix the execution directory to present the JARs in this folder
+# shellcheck disable=SC2139
+alias tokenize_pipeline="java -jar ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.EncryptionPipeline"

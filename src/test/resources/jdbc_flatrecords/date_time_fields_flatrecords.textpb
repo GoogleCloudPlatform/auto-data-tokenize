@@ -1,0 +1,53 @@
+# proto-file: src/main/proto/google/cloud/autodlp/auto_tokenize_messages.proto
+# proto-message: FlatRecord
+
+flat_key_schema {
+  key: "$.date_field.int"
+  value: "$.topLevelRecord.date_field"
+}
+flat_key_schema {
+  key: "$.datetime_field.long"
+  value: "$.topLevelRecord.datetime_field"
+}
+flat_key_schema {
+  key: "$.time_field.int"
+  value: "$.topLevelRecord.time_field"
+}
+flat_key_schema {
+  key: "$.timestamp_field"
+  value: "$.topLevelRecord.timestamp_field"
+}
+flat_key_schema {
+  key: "$.year_field.int"
+  value: "$.topLevelRecord.year_field"
+}
+values {
+  key: "$.date_field.int"
+  value {
+    integer_value: 18973
+  }
+}
+values {
+  key: "$.datetime_field.long"
+  value {
+    integer_value: 1639303890000
+  }
+}
+values {
+  key: "$.time_field.int"
+  value {
+    integer_value: 36690000
+  }
+}
+values {
+  key: "$.timestamp_field"
+  value {
+    integer_value: 1639303890000
+  }
+}
+values {
+  key: "$.year_field.int"
+  value {
+    integer_value: 18628
+  }
+}
