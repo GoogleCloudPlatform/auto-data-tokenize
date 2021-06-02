@@ -18,22 +18,23 @@ package com.google.cloud.solutions.autotokenize.datacatalog;
 
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.UpdatableDataCatalogItems;
 import com.google.cloud.solutions.autotokenize.testing.CompareProtoIgnoringRepeatedFieldOrder;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.util.Timestamps;
+import java.text.ParseException;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import org.apache.avro.Schema;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
-import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.values.PCollection;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.Rule;
@@ -44,13 +45,13 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Enclosed.class)
-public final class ExtractDataCatalogItemsTest {
+public final class MakeDataCatalogItemsTest {
 
   private static final Clock FIXED_TEST_CLOCK =
       Clock.fixed(ZonedDateTime.parse("2021-05-18T12:16:51.767Z").toInstant(), ZoneOffset.UTC);
 
   @RunWith(Parameterized.class)
-  public static final class ParameterizedExtractDataCatalogItemsTest {
+  public static final class ParameterizedMakeDataCatalogItemsTest {
 
     @Rule public TestPipeline testPipeline = TestPipeline.create();
 
@@ -63,7 +64,7 @@ public final class ExtractDataCatalogItemsTest {
     private final String inputPattern;
     private final JdbcConfiguration jdbcConfiguration;
 
-    public ParameterizedExtractDataCatalogItemsTest(
+    public ParameterizedMakeDataCatalogItemsTest(
         String testConditionName,
         String inputAvroSchemaFile,
         String expectedUpdateItemsFile,
@@ -91,30 +92,27 @@ public final class ExtractDataCatalogItemsTest {
     }
 
     @Test
-    public void expand_valid() {
+    public void expand_valid() throws ParseException {
+      var report =
+          InspectionReport.newBuilder()
+              .setTimestamp(Timestamps.parse("2021-05-18T12:16:51.767Z"))
+              .setSourceType(sourceType)
+              .setInputPattern(inputPattern)
+              .setAvroSchema(inputAvroSchema.toString())
+              .addAllColumnReport(sensitiveColumnsInfo);
 
-      var avroSchemaSingletonView =
-          testPipeline
-              .apply(
-                  "CreateSchemaSideInput",
-                  Create.of(inputAvroSchema.toString()).withCoder(StringUtf8Coder.of()))
-              .apply(View.asSingleton());
+      if (jdbcConfiguration != null) {
+        report.setJdbcConfiguration(jdbcConfiguration);
+      }
 
       var items =
           testPipeline
               .apply(
                   "CreateSampleDlpFindings",
-                  Create.of(sensitiveColumnsInfo).withCoder(ProtoCoder.of(ColumnInformation.class)))
+                  Create.of(report.build()).withCoder(ProtoCoder.of(InspectionReport.class)))
               .apply(
-                  ExtractDataCatalogItems.builder()
-                      .setClock(FIXED_TEST_CLOCK)
-                      .setSourceType(sourceType)
-                      .setInputPattern(inputPattern)
-                      .setJdbcConfiguration(jdbcConfiguration)
-                      .setSchema(avroSchemaSingletonView)
-                      .setInspectionTagTemplateId(
-                          "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template")
-                      .build());
+                  MakeDataCatalogItems.create(
+                      "projects/my-project-id/locations/asia-singapore1/tagTemplates/my_test_template"));
 
       if (expectedUpdateItems == null) {
         PAssert.that(items).empty();

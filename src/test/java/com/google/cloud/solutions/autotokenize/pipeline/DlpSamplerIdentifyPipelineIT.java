@@ -39,6 +39,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.avro.Schema;
@@ -69,6 +73,7 @@ public final class DlpSamplerIdentifyPipelineIT {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final String TEST_DB_NAME = "test_contacts_db";
+  private static final String TEST_TIMESTAMP = "2021-06-02T14:32:00Z";
 
   @Rule public transient TestPipeline testPipeline = TestPipeline.create();
   @Rule public transient TestPipeline sampleRecordWritePipeline = TestPipeline.create();
@@ -81,18 +86,19 @@ public final class DlpSamplerIdentifyPipelineIT {
   private final String expectedSchema;
   private final ImmutableList<ColumnInformation> expectedColumnInformation;
   private final ImmutableMap<String, String> schemaKeyInfoTypeMap;
+  private final Clock fixedClock;
 
   private transient String outputFolder;
   public transient DB testDatabase;
   public transient DlpSamplerIdentifyOptions pipelineOptions;
 
   @Test
-  public void makePipeline_valid() throws IOException {
+  public void makePipeline_valid() {
     var dlpStub =
         new ItemShapeValidatingDlpStub(pipelineOptions.getProject(), schemaKeyInfoTypeMap);
 
     new DlpSamplerIdentifyPipeline(
-            pipelineOptions, testPipeline, new StubbingDlpClientFactory(dlpStub))
+            pipelineOptions, testPipeline, new StubbingDlpClientFactory(dlpStub), fixedClock)
         .makePipeline()
         .run()
         .waitUntilFinish();
@@ -225,6 +231,8 @@ public final class DlpSamplerIdentifyPipelineIT {
     this.expectedSchema = expectedSchema;
     this.expectedColumnInformation = expectedColumnInformation;
     this.schemaKeyInfoTypeMap = schemaKeyInfoTypeMap;
+    this.fixedClock =
+        Clock.fixed(Instant.from(ZonedDateTime.parse(TEST_TIMESTAMP)), ZoneOffset.UTC);
   }
 
   @Before
