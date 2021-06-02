@@ -20,7 +20,14 @@
     {
       "name": "reportLocation",
       "label": "GCS Location for writing output",
-      "helpText": "The GCS location to write the aggregated inspection results and the datasource's AVRO Schema"
+      "helpText": "The GCS location to write the aggregated inspection results and the datasource's AVRO Schema. Atleast one of reportLocation or reportBigQueryTable must be specified.",
+      "isOptional": true
+    },
+    {
+      "name": "reportBigQueryTable",
+      "label": "Report BigQuery Table",
+      "helpText": "The BigQuery table ({projectId}:{datasetId}.{tableId}) to write the aggregated inspection results, the table must exist. Atleast one of reportLocation or reportBigQueryTable must be specified.",
+      "isOptional": true
     },
     {
       "name": "observableInfoTypes",

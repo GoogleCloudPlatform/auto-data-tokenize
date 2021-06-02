@@ -277,6 +277,21 @@ Dataflow pipelines based on Flex templates can be started from Cloud Composer us
         --jar="build/libs/autotokenize-all.jar" \
         --env="FLEX_TEMPLATE_JAVA_MAIN_CLASS=\"com.google.cloud.solutions.autotokenize.pipeline.DlpSamplerIdentifyPipeline\""
 
+#### Inspection results to BigQuery table
+
+Create a  BigQuery table to store the inspection results:
+
+    bq mk --dataset \
+    --location="${REGION_ID}" \
+    --project_id="${PROJECT_ID}" \
+    inspection_results
+
+    bq mk --table \
+    --project_id="${PROJECT_ID}" \
+    inspection_results.SensitivityInspectionResults  \
+    inspection_results_bigquery_schema.json
+
+
 ### Run the sample-and-identify pipeline
 
 The sampling and DLP identification pipeline will:
@@ -303,6 +318,7 @@ Launch the sampling and DLP identification pipeline:
     --parameters sourceType="JDBC_TABLE" \
     --parameters inputPattern="Contacts" \
     --parameters reportLocation="gs://${TEMP_GCS_BUCKET}/auto_dlp_report/" \
+    --parameters reportBigQueryTable="${PROJECT_ID}:inspection_results.SensitivityInspectionResults" \
     --parameters jdbcConnectionUrl="${CLOUD_SQL_JDBC_CONNECTION_URL}" \
     --parameters jdbcDriverClass="com.mysql.cj.jdbc.Driver" \
     --parameters dataCatalogEntryGroupId="projects/${PROJECT_ID}/locations/${REGION_ID}/entryGroups/${DATA_CATALOG_ENTRY_GROUP_ID}" \
@@ -311,7 +327,15 @@ Launch the sampling and DLP identification pipeline:
 The `jdbcConnectionUrl` specifies a JDBC database connection url with user and password details. The details of building the exact connection url would depend on your database vendor and hosting partner.
 Learn more about [connecting using Cloud SQL connectors](https://cloud.google.com/sql/docs/mysql/connect-connectors) to understand details for connecting to Cloud SQL based relational databases.
 
-The pipeline supports multiple source types. Use the following table to determine the right combination of `sourceType` and `inputPattern` arguments.
+**Note:**
+  *  You can choose one or more of the following reporting sinks:
+     *  `reportLocation` to store the report in GCS bucket
+     *  `reportBigQueryTable` to store the report in a BigQuery table
+     *  `dataCatalogEntryGroupId` to create and tag the Entry in Data Catalog.
+         Omit this parameter if the `sourceType` is `BIGQUERY_TABLE`.
+
+The pipeline supports following source types.
+Use the table to determine the right combination of `sourceType` and `inputPattern` arguments.
 
 | Data source                       | sourceType       | inputPattern                                    |
 | --------------------------------- | ---------------- | ----------------------------------------------- |
@@ -416,6 +440,32 @@ The tag details look as below:
     name: projects/auto-dlp/locations/asia-southeast1/entryGroups/sql_databases/entries/Contacts/tags/Cds1aiO8R0pT
     template: projects/auto-dlp/locations/asia-southeast1/tagTemplates/auto_dlp_inspection
     templateDisplayName: Auto DLP sensitive categories
+
+### Verify in BigQuery
+
+The pipeline appends the aggregated findings to the provided BigQuery table.
+Run the following query to check the results:
+
+    bq query \
+    --location="${REGION_ID}" \
+    --project_id="${PROJECT_ID}" \
+    --use_legacy_sql=false \
+    'SELECT
+       input_pattern AS table_name,
+       ColumnReport.column_name AS column_name,
+       ColumnReport.info_types AS info_types
+     FROM
+       `inspection_results.SensitivityInspectionResults`,
+       UNNEST(column_report) ColumnReport;'
+
+This prints the results of inspection retrieved from the BigQuery table:
+
+    +------------+---------------------------------+----------------------------------------------+
+    | table_name |           column_name           |                  info_types                  |
+    +------------+---------------------------------+----------------------------------------------+
+    | Contacts   | $.topLevelRecord.person_name    |           [{"info_type":"DATE","count":"1"}] |
+    | Contacts   | $.topLevelRecord.contact_number | [{"info_type":"PHONE_NUMBER","count":"990"}] |
+    +------------+---------------------------------+----------------------------------------------+
 
 ## Cleaning up
 

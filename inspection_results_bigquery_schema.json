@@ -1,0 +1,75 @@
+[
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Timestamp of inspection report generation."
+  },
+  {
+    "name": "source_type",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "The type of source inspected."
+  },
+  {
+    "name": "input_pattern",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "The input pattern inspected. Name of the table for BIGQUERY_TABLE or JDBC_TABLE sourceTypes, GCS file patterns for AVRO/PARQUET."
+  },
+  {
+    "name": "avro_schema",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "The equivalent AVRO Schema Json"
+  },
+  {
+    "name": "jdbc_configuration",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "description": "The JDBC connection details if source_type is JDBC_TABLE",
+    "fields": [
+      {
+        "name": "connection_url",
+        "type": "STRING",
+        "mode": "REQUIRED"
+      },
+      {
+        "name": "driver_class_name",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "The input pattern inspected. Name of the table for BIGQUERY_TABLE or JDBC_TABLE sourceTypes, GCS file patterns for AVRO/PARQUET."
+      }
+    ]
+  },
+  {
+    "name": "column_report",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "description": "Sensitive inspection results aggregated for columns. Empty means no sensitive infotypes were detected in the data source.",
+    "fields" : [
+      {
+        "name": "column_name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+      },
+      {
+        "name": "info_types",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "fields": [
+          {
+            "name": "info_type",
+            "type": "STRING",
+            "mode": "REQUIRED"
+          },
+          {
+            "name": "count",
+            "type": "INTEGER",
+            "mode": "REQUIRED"
+          }
+        ]
+      }
+    ]
+  }
+]

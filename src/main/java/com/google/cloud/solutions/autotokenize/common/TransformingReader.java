@@ -24,6 +24,7 @@ import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
+import java.util.Arrays;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -203,8 +204,8 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
       default:
         throw new IllegalArgumentException(
             String.format(
-                "Unsupported File type (%s). should be \"AVRO\" or \"PARQUET\" or \"BIGQUERY\"",
-                sourceType()));
+                "Unsupported File type (%s). should be one of %s",
+                sourceType(), Arrays.toString(SourceType.values())));
     }
   }
 

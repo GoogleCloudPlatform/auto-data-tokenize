@@ -15,6 +15,7 @@ syntax = "proto3";
 
 package com.google.cloud.solutions.autotokenize;
 
+import "google/protobuf/timestamp.proto";
 import "google/privacy/dlp/v2/dlp.proto";
 import "google/cloud/datacatalog/v1/datacatalog.proto";
 import "google/cloud/datacatalog/v1/tags.proto";
@@ -68,6 +69,30 @@ message InfoTypeInformation {
 
   // The number of times this info type occurred in the column of the sample.
   int64 count = 2;
+}
+
+
+// The information that is written out to BigQuery Table.
+message InspectionReport {
+
+  // The timestamp of report generation
+  .google.protobuf.Timestamp timestamp = 1;
+
+  // The type of source that was inspected
+  SourceType source_type = 5;
+
+  // The Table name, or File pattern that was inspected
+  string input_pattern = 6;
+
+  // The configuration if the source is a SourceType.JDBC_TABLE
+  JdbcConfiguration jdbc_configuration = 7;
+
+  // The equivalent AVRO Schema of the source
+  string avro_schema = 10;
+
+  // The inspection results per column of the source
+  // Only contains columns that have inspection results.
+  repeated ColumnInformation column_report = 15;
 }
 
 // Flattened representation of an AVRO GenericRecord's JSON.

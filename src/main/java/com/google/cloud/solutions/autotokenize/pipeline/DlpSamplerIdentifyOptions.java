@@ -41,10 +41,13 @@ public interface DlpSamplerIdentifyOptions extends GcpOptions {
 
   void setInputPattern(String inputFilePattern);
 
-  @Required
   String getReportLocation();
 
   void setReportLocation(String reportLocation);
+
+  String getReportBigQueryTable();
+
+  void setReportBigQueryTable(String reportBigQueryTable);
 
   List<String> getObservableInfoTypes();
 

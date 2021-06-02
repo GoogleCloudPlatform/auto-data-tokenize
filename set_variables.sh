@@ -16,14 +16,14 @@
 #
 
 # The Google Cloud project to use for this tutorial
-export PROJECT_ID="auto-dlp"
+export PROJECT_ID="[project-id]"
 
 # The Compute Engine region to use for running Dataflow jobs and create a
 # temporary storage bucket
-export REGION_ID="asia-southeast1"
+export REGION_ID="[google-cloud-region-id]"
 
 # define the GCS bucket to use as temporary bucket for Dataflow
-export TEMP_GCS_BUCKET="auto-dlp-temp"
+export TEMP_GCS_BUCKET="[gcs-bucket-name]"
 
 # Name of the service account to use (not the email address)
 export DLP_RUNNER_SERVICE_ACCOUNT_NAME="[service-account-name-for-runner]"
@@ -32,7 +32,7 @@ export DLP_RUNNER_SERVICE_ACCOUNT_NAME="[service-account-name-for-runner]"
 export DATA_CATALOG_ENTRY_GROUP_ID="[non-bigquery-data-catalog-entry-group]"
 
 # The fully qualified Data Catalog Tag Template Id to use for creating sensitivity tags in Data Catalog.
-export INSPECTION_TAG_TEMPLATE_ID="auto_dlp_inspection"
+export INSPECTION_TAG_TEMPLATE_ID="[datacatalog-inspection-tag-template]"
 
 # Name of the GCP KMS key ring name
 export KMS_KEYRING_ID="[key-ring-name]"
