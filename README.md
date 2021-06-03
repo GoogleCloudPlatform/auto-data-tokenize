@@ -1,8 +1,8 @@
 # Automatic data tokenizing pipelines
 
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=GoogleCloudPlatform_auto-data-tokenize&metric=ncloc)](https://sonarcloud.io/dashboard?id=GoogleCloudPlatform_auto-data-tokenize)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=GoogleCloudPlatform_auto-data-tokenize&metric=coverage)](https://sonarcloud.io/dashboard?id=GoogleCloudPlatform_auto-data-tokenize)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=GoogleCloudPlatform_auto-data-tokenize&metric=code_smells)](https://sonarcloud.io/dashboard?id=GoogleCloudPlatform_auto-data-tokenize)
+[![codecov](https://codecov.io/gh/GoogleCloudPlatform/auto-data-tokenize/branch/main/graph/badge.svg?token=2BUEEXNC1H)](https://codecov.io/gh/GoogleCloudPlatform/auto-data-tokenize)
+[![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/GoogleCloudPlatform/auto-data-tokenize.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/GoogleCloudPlatform/auto-data-tokenize/context:java)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/GoogleCloudPlatform/auto-data-tokenize.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/GoogleCloudPlatform/auto-data-tokenize/alerts/)
 
 This document discusses how to identify and tokenize data with an automated data transformation pipeline to detect sensitive data like personally identifiable information (PII), using Cloud Data Loss Prevention [(Cloud DLP)](https://cloud.google.com/dlp) and [Cloud KMS](https://cloud.google.com/kms). De-identification techniques like encryption lets you preserve the utility of your data for joining or analytics while reducing the risk of handling the data by obfuscating the raw sensitive identifiers.
 
