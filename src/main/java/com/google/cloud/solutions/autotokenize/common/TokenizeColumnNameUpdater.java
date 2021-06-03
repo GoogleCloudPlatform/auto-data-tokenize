@@ -109,7 +109,7 @@ public class TokenizeColumnNameUpdater implements Serializable {
 
       // check for type conversion for union
       if (fieldNameOffset == 2) {
-        flatKeyParts[flatKeyFieldNamePartIndex + 1] = "string";
+        flatKeyParts[flatKeyParts.length - 1] = "string";
       }
 
       flatKeyParts[flatKeyFieldNamePartIndex] =
