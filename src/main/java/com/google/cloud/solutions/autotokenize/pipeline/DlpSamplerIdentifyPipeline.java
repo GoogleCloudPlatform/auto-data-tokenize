@@ -19,19 +19,17 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static org.apache.beam.sdk.io.FileIO.Write.defaultNaming;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.google.cloud.dlp.v2.DlpServiceClient;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
+import com.google.cloud.solutions.autotokenize.common.InspectionReportFileWriter;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportToTableRow;
 import com.google.cloud.solutions.autotokenize.common.SourceNames;
 import com.google.cloud.solutions.autotokenize.common.TransformingReader;
-import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.datacatalog.DataCatalogWriter;
 import com.google.cloud.solutions.autotokenize.datacatalog.MakeDataCatalogItems;
 import com.google.cloud.solutions.autotokenize.dlp.BatchColumnsForDlp;
@@ -39,23 +37,15 @@ import com.google.cloud.solutions.autotokenize.dlp.DlpBatchInspectFactory;
 import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.dlp.DlpIdentify;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
 import com.google.privacy.dlp.v2.InfoType;
 import java.time.Clock;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.io.FileIO;
-import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.CreateDisposition;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.Contextful;
-import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
@@ -166,43 +156,8 @@ public final class DlpSamplerIdentifyPipeline {
 
   private void writeReportToGcs(PCollection<InspectionReport> inspectionReport) {
     if (isNotBlank(options.getReportLocation())) {
-
-      PCollection<String> avroSchema =
-          inspectionReport.apply("ExtractSchema", MapElements.via(new SchemaExtractor()));
-
-      PCollection<ColumnInformation> columnInformation =
-          inspectionReport
-              .apply("ExtractColumnInformation", MapElements.via(new ColumnInformationExtractor()))
-              .apply(Flatten.iterables());
-
-      // Write the schema to a file.
-      avroSchema.apply(
-          "WriteSchema",
-          FileIO.<String>write()
-              .to(options.getReportLocation())
-              .via(TextIO.sink())
-              .withNumShards(1)
-              .withNaming((window, pane, numShards, shardIndex, compression) -> "schema.json"));
-
-      // Write Column Information to GCS file.
-      columnInformation.apply(
-          "WriteColumnReport",
-          FileIO.<String, ColumnInformation>writeDynamic()
-              .via(
-                  Contextful.fn(JsonConvertor::asJsonString),
-                  Contextful.fn(colName -> TextIO.sink()))
-              .by(ColumnInformation::getColumnName)
-              .withDestinationCoder(StringUtf8Coder.of())
-              .withNoSpilling()
-              .withNaming(
-                  Contextful.fn(
-                      colName ->
-                          defaultNaming(
-                              /*prefix=*/ String.format(
-                                      "col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
-                                  .replaceAll("[-]+", "-"),
-                              /*suffix=*/ ".json")))
-              .to(options.getReportLocation()));
+      inspectionReport.apply(
+          "WriteReportToGcs", InspectionReportFileWriter.create(options.getReportLocation()));
     }
   }
 
@@ -291,27 +246,5 @@ public final class DlpSamplerIdentifyPipeline {
     logger.atInfo().log("Staging the Dataflow job");
 
     new DlpSamplerIdentifyPipeline(options).makePipeline().run();
-  }
-
-  private static final class SchemaExtractor extends SimpleFunction<InspectionReport, String> {
-
-    @Override
-    public String apply(InspectionReport input) {
-      return input.getAvroSchema();
-    }
-  }
-
-  private static final class ColumnInformationExtractor
-      extends SimpleFunction<InspectionReport, Iterable<ColumnInformation>> {
-
-    @Override
-    public Iterable<ColumnInformation> apply(InspectionReport input) {
-
-      if (input.getColumnReportCount() == 0) {
-        return ImmutableList.of();
-      }
-
-      return input.getColumnReportList();
-    }
   }
 }

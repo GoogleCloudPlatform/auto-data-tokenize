@@ -29,6 +29,7 @@ import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,6 +44,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 /**
  * Supports loading testing files and decoding into formats like String, Proto and AVRO for ease in
@@ -51,6 +53,11 @@ import org.apache.avro.generic.GenericRecord;
 public interface TestResourceLoader {
 
   URL loadResource(String resourcePath) throws MalformedURLException;
+
+  default ImmutableList<String> loadResourcesLike(String baseDir, String resourcePattern)
+      throws MalformedURLException {
+    throw new UnsupportedOperationException();
+  }
 
   default String loadResourceAsString(String resourcePath) throws IOException {
 
@@ -75,7 +82,24 @@ public interface TestResourceLoader {
   }
 
   static ResourceActions absolutePath() {
-    return new ResourceActions(resourcePath -> new File(resourcePath).toURI().toURL());
+    return new ResourceActions(
+        new TestResourceLoader() {
+          @Override
+          public URL loadResource(String resourcePath) throws MalformedURLException {
+            return new File(resourcePath).toURI().toURL();
+          }
+
+          @Override
+          public ImmutableList<String> loadResourcesLike(String baseDir, String resourcePattern) {
+            var files =
+                new File(baseDir).listFiles((FileFilter) new WildcardFileFilter(resourcePattern));
+
+            if (files != null && files.length > 0) {
+              return Arrays.stream(files).map(File::toString).collect(toImmutableList());
+            }
+            return ImmutableList.of();
+          }
+        });
   }
 
   @SuppressWarnings("UnstableApiUsage")
@@ -149,8 +173,30 @@ public interface TestResourceLoader {
         }
 
         @Override
-        public ImmutableList<T> loadAllJsonFiles(String... jsonPbFiles) {
-          return loadAllJsonFiles(ImmutableList.copyOf(jsonPbFiles));
+        public ImmutableList<T> loadAllJsonFiles(String jsonPbFile, String... otherJsonPbFiles) {
+          var fileListBuilder = ImmutableList.<String>builder().add(jsonPbFile);
+
+          if (otherJsonPbFiles != null && otherJsonPbFiles.length > 0) {
+            fileListBuilder.addAll(Arrays.asList(otherJsonPbFiles));
+          }
+
+          return loadAllJsonFiles(fileListBuilder.build());
+        }
+
+        @Override
+        public ImmutableList<T> loadAllJsonFilesLike(String baseDir, String filePattern) {
+          try {
+            return resourceLoader.loadResourcesLike(baseDir, filePattern).stream()
+                .map(this::loadJson)
+                .collect(toImmutableList());
+          } catch (MalformedURLException malformedURLException) {
+            GoogleLogger.forEnclosingClass()
+                .atSevere()
+                .withCause(malformedURLException)
+                .log("Loading error with FilePattern: %s", filePattern);
+          }
+
+          return ImmutableList.of();
         }
       };
     }
@@ -171,7 +217,9 @@ public interface TestResourceLoader {
 
       ImmutableList<P> loadAllJsonFiles(List<String> jsonPbFiles);
 
-      ImmutableList<P> loadAllJsonFiles(String... jsonPbFiles);
+      ImmutableList<P> loadAllJsonFiles(String jsonPbFile, String... jsonPbFiles);
+
+      ImmutableList<P> loadAllJsonFilesLike(String baseDir, String filePattern);
     }
 
     public interface CopyActions {
