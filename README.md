@@ -22,15 +22,21 @@ Watch the video to learn how the tool works:
 
 ## Architecture
 
-![Auto tokenizing pipelines](Auto_Tokenizing_Pipelines_Arch.svg)
-
 The solution comprises two pipelines (one for each of the tasks):
   1. Sample + Identify
   1. Tokenize
 
+### Sample & Identify Pipeline
+
+![Identify pipeline](sampling_dlp_identify_catalog_architecture.svg)
+
 The __sample & identify pipeline__ extracts a few sample records from the source files. The *identify* part of pipeline then decomposes each sample record into columns to categorize them into one of the [in-built infotypes](https://cloud.google.com/dlp/docs/infotypes-reference) or [custom infotypes](https://cloud.google.com/dlp/docs/creating-custom-infotypes) using Cloud DLP. The sample & identify pipeline outputs following files to Cloud Storage:
   * Avro schema of the file
   * Detected info-types for each of the input columns.
+
+### Tokenization Pipeline
+
+![Tokenization pipeline](AutoDLP_Encryption_Catalog_Architecture.svg)
 
 The __tokenize pipeline__ then encrypts the user-specified source columns using the schema information from the _sample & identify pipeline_ and user provided enveloped data encryption key. The tokenizing pipeline performs following of transforms on each of the records in the source file:
   1. Unwrap data-encryption key using Cloud KMS
@@ -283,7 +289,6 @@ You need to compile all the modules to build executables for deploying the _samp
 ```
 
 > Add `-x test` flag to skip running tests.
-> Add `--parallel` to allow gradle to use multiple threads.
 
 ## Run Sample and Identify pipeline
 
@@ -326,11 +331,29 @@ The pipeline supports multiple **Source Types**, use the following table to use 
 The pipeline detects all the [standard infotypes](https://cloud.google.com/dlp/docs/infotypes-reference) supported by DLP.
 Use `--observableInfoTypes` to provide additional custom info-types that you need.
 
+
+Pipeline options for Sample, Identify and Tag pipeline (`DlpSamplerPipelineOptions`):
+
+| Sampling Pipeline Options | Description                                                              |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `sourceType`              | The data source to analyse/inspect. One of: [AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE] |
+| `inputPattern`            | The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input.<br>For BIGQUERY_TABLE: Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table. |
+| `reportLocation`          | (Optional) The GCS location to write the aggregated inspection results and the datasource's AVRO Schema. Atleast one of `reportLocation` or `reportBigQueryTable` must be specified. |
+| `reportBigQueryTable`     | (Optional) The BigQuery table ({projectId}:{datasetId}.{tableId}) to write the aggregated inspection results, the table must exist. Atleast one of reportLocation or reportBigQueryTable must be specified. |
+| `observableInfoTypes`     | (Optional) Provide a list of DLP InfoTypes to inspect the data with. Keeping EMPTY uses all DLP supported InfoTypes. |
+| `jdbcConnectionUrl` | The Connection URL used for connecting to a SQL datasource using JDBC. (Required when `sourceType=JDBC_TABLE`) |
+| `jdbcDriverClass` | The JDBC driver to use for reading from SQL datasource. (Required when `sourceType=JDBC_TABLE`) |
+| `dataCatalogEntryGroupId` | The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for `sourceType=BIGQUERY_TABLE`) |
+| `dataCatalogInspectionTagTemplateId` | The Datacatalog TempalteId to use for creating the sensitivity tags. |
+| `dataCatalogForcedUpdate` | Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: `false`) |
+
+
+
 ### Sample & Identify pipeline DAG
 
 The Dataflow execution DAG would look like following:
 
-![Sample and Identify Pipeline DAG](sample_and_identify_pipeline_dag.png)
+![Sample and Identify Pipeline DAG](sampling_pipeline_with_catalog_jdbc.png)
 
 ### Retrieve report
 
