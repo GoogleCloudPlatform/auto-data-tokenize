@@ -13,7 +13,7 @@
 # limitations under the License.
 
 title: "Data tokenization Runner"
-description: "Perform data sampling, identification and tokenization using Dataflow and DLP."
+description: "Perform data sampling, identification and tokenization using Dataflow and DLP, also update Entry in Data Catalog"
 stage: "BETA"
 includedPermissions:
   # Generic
@@ -63,3 +63,18 @@ includedPermissions:
   # KMS permissions
   - cloudkms.cryptoKeyVersions.useToDecrypt
   - cloudkms.cryptoKeyVersions.useToEncrypt
+  # Cloud SQL Permissions
+  - cloudsql.instances.get
+  - cloudsql.instances.connect
+  - cloudsql.instances.login
+  # Data Catalog Permissions
+  - datacatalog.categories.fineGrainedGet
+  - datacatalog.entries.create
+  - datacatalog.entries.delete
+  - datacatalog.entries.get
+  - datacatalog.entries.update
+  - datacatalog.entries.updateTag
+  - datacatalog.entryGroups.get
+  - datacatalog.tagTemplates.get
+  - datacatalog.tagTemplates.getTag
+  - datacatalog.tagTemplates.use

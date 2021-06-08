@@ -67,12 +67,14 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
 1.  Enable APIs for Cloud DLP, Compute Engine, Cloud Storage, Dataflow, and Cloud SQL:
 
         gcloud services enable \
-        dlp.googleapis.com \
+        cloudbuild.googleapis.com \
         compute.googleapis.com \
-        storage.googleapis.com \
+        datacatalog.googleapis.com \
         dataflow.googleapis.com \
+        dlp.googleapis.com \
         sql-component.googleapis.com \
-        sqladmin.googleapis.com
+        sqladmin.googleapis.com \
+        storage.googleapis.com
 
 
 ## Setting up your environment
@@ -140,7 +142,7 @@ page in the Cloud Console.
 
         gcloud iam roles create ${SAMPLING_CATALOGING_ROLE_NAME} \
         --project=${PROJECT_ID} \
-        --file=sampling_and_cataloging_runner_permissions.yaml
+        --file=tokenizing_runner_permissions.yaml
 
 1.  Apply the custom role to the service account:
 
