@@ -19,6 +19,7 @@ package com.google.cloud.solutions.autotokenize.testing;
 import static com.google.common.truth.Truth.assertThat;
 
 import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Iterables;
 
 /** Utility Matcher for PAssert to check the number of items in a given PCollection. */
 public class RecordsCountMatcher<T> implements SerializableFunction<Iterable<T>, Void> {
@@ -35,7 +36,8 @@ public class RecordsCountMatcher<T> implements SerializableFunction<Iterable<T>,
 
   @Override
   public Void apply(Iterable<T> input) {
-    assertThat(input).hasSize(expectedRecordCount);
+    var inputSize = Iterables.size(input);
+    assertThat(inputSize).isEqualTo(expectedRecordCount);
     return null;
   }
 }

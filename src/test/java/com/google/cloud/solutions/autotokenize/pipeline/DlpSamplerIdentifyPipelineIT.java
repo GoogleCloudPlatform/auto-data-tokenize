@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -59,8 +60,9 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -72,7 +74,6 @@ import org.junit.runners.Parameterized.Parameters;
 public final class DlpSamplerIdentifyPipelineIT {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private static final String TEST_DB_NAME = "test_contacts_db";
   private static final String TEST_TIMESTAMP = "2021-06-02T14:32:00Z";
 
   @Rule public transient TestPipeline testPipeline = TestPipeline.create();
@@ -89,7 +90,7 @@ public final class DlpSamplerIdentifyPipelineIT {
   private final Clock fixedClock;
 
   private transient String outputFolder;
-  public transient DB testDatabase;
+  public static transient DB testDBInstance;
   public transient DlpSamplerIdentifyOptions pipelineOptions;
 
   @Test
@@ -216,6 +217,31 @@ public final class DlpSamplerIdentifyPipelineIT {
                   "$.topLevelRecord.person_name", "PERSON_NAME",
                   "$.topLevelRecord.contact_number", "PHONE_NUMBER")
             })
+        .add(
+            new Object[] {
+              "MySQL 5000 records sample 2000",
+              ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --sampleSize=2000",
+              TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
+              ImmutableList.of(
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.topLevelRecord.person_name")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder()
+                              .setInfoType("PERSON_NAME")
+                              .setCount(2000))
+                      .build(),
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.topLevelRecord.contact_number")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder()
+                              .setInfoType("PHONE_NUMBER")
+                              .setCount(2000))
+                      .build()),
+              ImmutableMap.of(
+                  "$.topLevelRecord.person_name", "PERSON_NAME",
+                  "$.topLevelRecord.contact_number", "PHONE_NUMBER")
+            })
         .build();
   }
 
@@ -233,6 +259,19 @@ public final class DlpSamplerIdentifyPipelineIT {
     this.schemaKeyInfoTypeMap = schemaKeyInfoTypeMap;
     this.fixedClock =
         Clock.fixed(Instant.from(ZonedDateTime.parse(TEST_TIMESTAMP)), ZoneOffset.UTC);
+  }
+
+  @BeforeClass
+  public static void setupMariaDBInMemory() throws ManagedProcessException {
+    testDBInstance = DB.newEmbeddedDB(0);
+    testDBInstance.start();
+  }
+
+  @AfterClass
+  public static void tearDownTestDB() throws ManagedProcessException {
+    if (testDBInstance != null) {
+      testDBInstance.stop();
+    }
   }
 
   @Before
@@ -268,13 +307,16 @@ public final class DlpSamplerIdentifyPipelineIT {
         options.put("--inputPattern", testParquetFileFolder + "/*");
         break;
       case JDBC_TABLE:
-        setupMariaDBInMemory();
+        var initScript = configParameters.get("initScript");
+        var testDatabaseName = "test_" + new Random().nextLong();
+        testDBInstance.createDB(testDatabaseName);
+        testDBInstance.source(initScript, testDatabaseName);
         // update connection url:
         options.put(
             "--jdbcConnectionUrl",
             String.format(
                 "%s?user=%s&password=%s",
-                testDatabase.getConfiguration().getURL(TEST_DB_NAME), "root", ""));
+                testDBInstance.getConfiguration().getURL(testDatabaseName), "root", ""));
         break;
       case BIGQUERY_TABLE:
       case BIGQUERY_QUERY:
@@ -312,20 +354,5 @@ public final class DlpSamplerIdentifyPipelineIT {
                 .to(folder));
 
     sampleRecordWritePipeline.run().waitUntilFinish();
-  }
-
-  public void setupMariaDBInMemory() throws ManagedProcessException {
-    var initScript = configParameters.get("initScript");
-    testDatabase = DB.newEmbeddedDB(0);
-    testDatabase.start();
-    testDatabase.createDB(TEST_DB_NAME);
-    testDatabase.source(initScript, TEST_DB_NAME);
-  }
-
-  @After
-  public void tearDownTestDB() throws ManagedProcessException {
-    if (testDatabase != null) {
-      testDatabase.stop();
-    }
   }
 }
