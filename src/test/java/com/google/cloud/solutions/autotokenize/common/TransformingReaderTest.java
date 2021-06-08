@@ -42,8 +42,9 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.TupleTag;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -58,7 +59,7 @@ public class TransformingReaderTest {
 
     @Rule public transient TestPipeline testPipeline = TestPipeline.create();
 
-    public transient DB testDatabase;
+    private static transient DB testDatabase;
 
     private final String testConditionName;
     private final String initScriptFile;
@@ -78,17 +79,21 @@ public class TransformingReaderTest {
       this.testDatabaseName = "test_" + UUID.randomUUID().toString().replaceAll("[\\-]", "_");
     }
 
-    @Before
-    public void setUpDatabase() throws Exception {
+    @BeforeClass
+    public static void setUpTestDbInstance() throws Exception {
       testDatabase = DB.newEmbeddedDB(0);
       testDatabase.start();
-      testDatabase.createDB(testDatabaseName);
-      testDatabase.source(initScriptFile, testDatabaseName);
     }
 
-    @After
-    public void tearDownDatabase() throws Exception {
+    @AfterClass
+    public static void tearDownDatabase() throws Exception {
       testDatabase.stop();
+    }
+
+    @Before
+    public void createTempDatabase() throws Exception {
+      testDatabase.createDB(testDatabaseName);
+      testDatabase.source(initScriptFile, testDatabaseName);
     }
 
     @Test

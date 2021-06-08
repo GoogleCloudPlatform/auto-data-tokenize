@@ -34,17 +34,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.google.privacy.dlp.v2.DeidentifyConfig;
 import com.google.privacy.dlp.v2.FieldId;
-import com.google.privacy.dlp.v2.FieldTransformation;
-import com.google.privacy.dlp.v2.RecordTransformations;
 import com.google.privacy.dlp.v2.Table;
 import com.google.privacy.dlp.v2.Value;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @AutoValue
@@ -54,8 +50,6 @@ public abstract class PartialColumnBatchAccumulator
   public static final String RECORD_ID_COLUMN_NAME = "__AUTOTOKENIZE__RECORD_ID__";
   public static final int MAX_DLP_PAYLOAD_SIZE_BYTES = 500000; // 500kB
   public static final int MAX_DLP_PAYLOAD_CELLS = 50000; // 50K
-
-  private static final Pattern ARRAY_INDEX_PATTERN = Pattern.compile("\\[\\d+\\]");
 
   abstract int maxPayloadSize();
 
@@ -160,38 +154,17 @@ public abstract class PartialColumnBatchAccumulator
 
   @Override
   public final BatchPartialColumnDlpTable makeBatch() {
+
+    var dlpDeidentifyConfig =
+        DeidetifyConfigMaker.of(dlpEncryptConfig()).makeForMapping(columnSchemaKeyMap);
+
     PartialColumnDlpTable tableWithDeidentifyConfig =
         accumulatedRecords.toBuilder()
             .setRecordIdColumnName(recordIdColumnName())
-            .setDeidentifyConfig(buildTableDeidentifyConfig())
+            .setDeidentifyConfig(dlpDeidentifyConfig)
             .build();
 
     return BatchPartialColumnDlpTable.create(tableWithDeidentifyConfig);
-  }
-
-  private DeidentifyConfig buildTableDeidentifyConfig() {
-
-    ImmutableList<FieldTransformation> fieldTransformations =
-        dlpEncryptConfig().getTransformsList().stream()
-            .map(
-                colEncryptConfig ->
-                    FieldTransformation.newBuilder()
-                        .addAllFields(
-                            DeidentifyColumns.fieldIdsFor(
-                                columnSchemaKeyMap.get(colEncryptConfig.getColumnId()).stream()
-                                    .map(
-                                        colName ->
-                                            ARRAY_INDEX_PATTERN.matcher(colName).replaceAll(""))
-                                    .distinct()
-                                    .collect(toImmutableList())))
-                        .setPrimitiveTransformation(colEncryptConfig.getTransform())
-                        .build())
-            .collect(toImmutableList());
-
-    return DeidentifyConfig.newBuilder()
-        .setRecordTransformations(
-            RecordTransformations.newBuilder().addAllFieldTransformations(fieldTransformations))
-        .build();
   }
 
   private class TableUpdater {

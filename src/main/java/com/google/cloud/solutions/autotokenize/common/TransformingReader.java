@@ -209,10 +209,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     }
   }
 
-  /**
-   * Custom database IO to extract upto first 1000 rows from the provided table from a JDBC
-   * database.
-   */
+  /** Custom database IO to extract records in the provided table from a JDBC database. */
   @AutoValue
   abstract static class TransformingJdbcIO
       extends PTransform<PBegin, PCollection<KV<FlatRecord, String>>> {
@@ -238,17 +235,18 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
                       DataSourceConfiguration.create(
                           jdbcConfiguration().getDriverClassName(),
                           jdbcConfiguration().getConnectionUrl()))
-                  .withQuery(makeSamplingQuery()))
+                  .withQuery(makeQuery()))
           .apply(MapElements.via(FlatRecordConvertFn.forBeamRow()));
     }
 
-    private String makeSamplingQuery() {
-      return String.format(
-          "SELECT * FROM %s%s;", tableName(), isSampling() ? " LIMIT " + sampleSize() : "");
-    }
+    private String makeQuery() {
+      var queryBuilder = new StringBuilder().append("SELECT * FROM ").append(tableName());
 
-    private boolean isSampling() {
-      return sampleSize() != null && sampleSize() > 0;
+      if (sampleSize() != null && sampleSize() > 0) {
+        queryBuilder.append(" LIMIT ").append(sampleSize());
+      }
+
+      return queryBuilder.append(';').toString();
     }
   }
 

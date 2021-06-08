@@ -67,10 +67,10 @@ public abstract class FlatRecordConvertFn<T> extends SimpleFunction<T, KV<FlatRe
 
     @Override
     public KV<FlatRecord, String> apply(Row input) {
-      var avroSchema = AvroUtils.toAvroSchema(input.getSchema());
+      var genericRecord = AvroUtils.toGenericRecord(input, null);
       return KV.of(
-          RecordFlattener.forGenericRecord().flatten(AvroUtils.toGenericRecord(input, avroSchema)),
-          avroSchema.toString());
+          RecordFlattener.forGenericRecord().flatten(genericRecord),
+          genericRecord.getSchema().toString());
     }
   }
 
