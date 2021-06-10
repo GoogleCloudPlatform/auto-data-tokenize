@@ -98,8 +98,7 @@ public final class DlpSamplerIdentifyPipeline {
                 .from(options.getInputPattern())
                 .withJdbcConfiguration(jdbcConfiguration)
                 .withRecordsTag(recordsTag)
-                .withAvroSchemaTag(avroSchemaTag)
-                .withSampleSize(options.getSampleSize()));
+                .withAvroSchemaTag(avroSchemaTag));
 
     // Sample and Identify columns
     var inspectionReport =
@@ -204,10 +203,16 @@ public final class DlpSamplerIdentifyPipeline {
           isNotBlank(options.getJdbcConnectionUrl()) && isNotBlank(options.getJdbcDriverClass()),
           "Provide both jdbcDriverClass and jdbcConnectionUrl parameters.");
 
-      return JdbcConfiguration.newBuilder()
-          .setConnectionUrl(options.getJdbcConnectionUrl())
-          .setDriverClassName(options.getJdbcDriverClass())
-          .build();
+      var configBuilder =
+          JdbcConfiguration.newBuilder()
+              .setConnectionUrl(options.getJdbcConnectionUrl())
+              .setDriverClassName(options.getJdbcDriverClass());
+
+      if (options.getJdbcFilterClause() != null) {
+        configBuilder.setFilterClause(options.getJdbcFilterClause());
+      }
+
+      return configBuilder.build();
     }
 
     return null;

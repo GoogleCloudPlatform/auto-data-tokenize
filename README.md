@@ -336,17 +336,18 @@ Pipeline options for Sample, Identify and Tag pipeline (`DlpSamplerPipelineOptio
 
 | Sampling Pipeline Options | Description                                                              |
 | ------------------------- | ------------------------------------------------------------------------ |
-| `sourceType`              | The data source to analyse/inspect. One of: [AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE] |
+| `sourceType`              | The data source to analyse/inspect. One of: \[AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE\] |
 | `inputPattern`            | The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input.<br>For BIGQUERY_TABLE: Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table. |
+| `sampleSize`              | (Optional) The sample size to send to DLP. (Default:1000)
 | `reportLocation`          | (Optional) The GCS location to write the aggregated inspection results and the datasource's AVRO Schema. Atleast one of `reportLocation` or `reportBigQueryTable` must be specified. |
 | `reportBigQueryTable`     | (Optional) The BigQuery table ({projectId}:{datasetId}.{tableId}) to write the aggregated inspection results, the table must exist. Atleast one of reportLocation or reportBigQueryTable must be specified. |
 | `observableInfoTypes`     | (Optional) Provide a list of DLP InfoTypes to inspect the data with. Keeping EMPTY uses all DLP supported InfoTypes. |
-| `jdbcConnectionUrl` | The Connection URL used for connecting to a SQL datasource using JDBC. (Required when `sourceType=JDBC_TABLE`) |
-| `jdbcDriverClass` | The JDBC driver to use for reading from SQL datasource. (Required when `sourceType=JDBC_TABLE`) |
+| `jdbcConnectionUrl`       | The Connection URL used for connecting to a SQL datasource using JDBC. (Required when `sourceType=JDBC_TABLE`) |
+| `jdbcDriverClass`         | The JDBC driver to use for reading from SQL datasource. (Required when `sourceType=JDBC_TABLE`) |
+| `jdbcFilterClause`        | When using JDBC source, it is highly recommended to use a sampling filter to select random records, instead of fetching all the records from a relational database. The provided string is set as the WHERE clause of the query. (Optional when `sourceType=JDBC_TABLE`)|
 | `dataCatalogEntryGroupId` | The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for `sourceType=BIGQUERY_TABLE`) |
 | `dataCatalogInspectionTagTemplateId` | The Datacatalog TempalteId to use for creating the sensitivity tags. |
 | `dataCatalogForcedUpdate` | Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: `false`) |
-
 
 
 ### Sample & Identify pipeline DAG
