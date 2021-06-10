@@ -48,6 +48,12 @@
       "isOptional": true
     },
     {
+      "name": "jdbcFilterClause",
+      "label": "JDBC Filter clause",
+      "helpText": "The WHERE clause to filter records for inspection from JDBC source. (Optional, though Recommended when sourceType=JDBC_TABLE)",
+      "isOptional": true
+    },
+    {
       "name": "dataCatalogEntryGroupId",
       "label": "Cloud Data Catalog Entry Group",
       "helpText": "The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for sourceType=BIGQUERY_TABLE)",
