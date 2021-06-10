@@ -14,7 +14,11 @@
       "name": "person_name",
       "type": [
         "null",
-        "string"
+        {
+          "type": "string",
+          "logicalType": "varchar",
+          "maxLength": 65535
+        }
       ],
       "doc": ""
     },
@@ -22,7 +26,11 @@
       "name": "contact_type",
       "type": [
         "null",
-        "string"
+        {
+          "type": "string",
+          "logicalType": "varchar",
+          "maxLength": 65535
+        }
       ],
       "doc": ""
     },
@@ -30,7 +38,11 @@
       "name": "contact_number",
       "type": [
         "null",
-        "string"
+        {
+          "type": "string",
+          "logicalType": "varchar",
+          "maxLength": 65535
+        }
       ],
       "doc": ""
     }
