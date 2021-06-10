@@ -18,6 +18,7 @@ package com.google.cloud.solutions.autotokenize.common;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.google.auto.value.AutoValue;
@@ -84,8 +85,6 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
   abstract @Nullable TupleTag<String> avroSchemaTag();
 
-  abstract @Nullable Integer sampleSize();
-
   abstract Builder toBuilder();
 
   static Builder builder() {
@@ -104,8 +103,6 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
 
     abstract Builder avroSchemaTag(TupleTag<String> avroSchemaTag);
-
-    public abstract Builder sampleSize(Integer value);
 
     abstract TransformingReader build();
   }
@@ -133,15 +130,6 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
   /** Provide a JdbcConfiguration for JDBC Connections. */
   public TransformingReader withJdbcConfiguration(JdbcConfiguration jdbcConfiguration) {
     return toBuilder().jdbcConfiguration(jdbcConfiguration).build();
-  }
-
-  /** Provide a sampling signal for JDBC Connections. */
-  public TransformingReader withSampleSize(Integer sampleSize) {
-    checkArgument(
-        sampleSize != null && sampleSize > 0,
-        "Provide a valid sampleSize (>0), found: %s",
-        sampleSize);
-    return toBuilder().sampleSize(sampleSize).build();
   }
 
   @Override
@@ -199,7 +187,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
         return bigQueryReader().fromQuery(inputPattern()).usingStandardSql();
 
       case JDBC_TABLE:
-        return TransformingJdbcIO.create(jdbcConfiguration(), inputPattern(), sampleSize());
+        return TransformingJdbcIO.create(jdbcConfiguration(), inputPattern());
 
       default:
         throw new IllegalArgumentException(
@@ -214,17 +202,13 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
   abstract static class TransformingJdbcIO
       extends PTransform<PBegin, PCollection<KV<FlatRecord, String>>> {
 
-    public static TransformingJdbcIO create(
-        JdbcConfiguration jdbcConfiguration, String tableName, Integer sampleSize) {
-      return new AutoValue_TransformingReader_TransformingJdbcIO(
-          jdbcConfiguration, tableName, sampleSize);
+    public static TransformingJdbcIO create(JdbcConfiguration jdbcConfiguration, String tableName) {
+      return new AutoValue_TransformingReader_TransformingJdbcIO(jdbcConfiguration, tableName);
     }
 
     abstract JdbcConfiguration jdbcConfiguration();
 
     abstract String tableName();
-
-    abstract @Nullable Integer sampleSize();
 
     @Override
     public PCollection<KV<FlatRecord, String>> expand(PBegin pBegin) {
@@ -242,8 +226,8 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     private String makeQuery() {
       var queryBuilder = new StringBuilder().append("SELECT * FROM ").append(tableName());
 
-      if (sampleSize() != null && sampleSize() > 0) {
-        queryBuilder.append(" LIMIT ").append(sampleSize());
+      if (isNotBlank(jdbcConfiguration().getFilterClause())) {
+        queryBuilder.append(" WHERE ").append(jdbcConfiguration().getFilterClause());
       }
 
       return queryBuilder.append(';').toString();

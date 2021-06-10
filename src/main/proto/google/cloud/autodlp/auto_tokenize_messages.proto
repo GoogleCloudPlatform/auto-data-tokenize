@@ -46,8 +46,16 @@ enum SourceType {
 
 // Source configuration for JDBC Databases/sources
 message JdbcConfiguration {
+
+  // The JDBC Connection URL
+  // e.g. "jdbc:mysql://localhost/database?user=[user_name]&password=[password]
   string connection_url = 1;
+
+  // The JDBC SQL Driver class name. The class must be available on the classpath.
   string driver_class_name = 2;
+
+  // The provided WHERE clause for inspection.
+  string filter_clause = 5;
 }
 
 // The information types associated with each column of the input structured file.

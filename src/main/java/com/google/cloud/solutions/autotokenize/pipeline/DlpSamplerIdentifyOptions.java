@@ -61,6 +61,10 @@ public interface DlpSamplerIdentifyOptions extends GcpOptions {
 
   void setJdbcDriverClass(String jdbcDriverClass);
 
+  String getJdbcFilterClause();
+
+  void setJdbcFilterClause(String jdbcFilterClause);
+
   String getDataCatalogEntryGroupId();
 
   void setDataCatalogEntryGroupId(String dataCatalogEntryGroupId);

@@ -194,24 +194,22 @@ public final class DlpSamplerIdentifyPipelineIT {
             })
         .add(
             new Object[] {
-              "MySQL 5000 records",
+              "MySQL 5000 records, selects only records_that_end_with 1",
               ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
-              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver",
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10) IN (1)",
               TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
               ImmutableList.of(
                   ColumnInformation.newBuilder()
                       .setColumnName("$.topLevelRecord.person_name")
                       .addInfoTypes(
-                          InfoTypeInformation.newBuilder()
-                              .setInfoType("PERSON_NAME")
-                              .setCount(1000))
+                          InfoTypeInformation.newBuilder().setInfoType("PERSON_NAME").setCount(500))
                       .build(),
                   ColumnInformation.newBuilder()
                       .setColumnName("$.topLevelRecord.contact_number")
                       .addInfoTypes(
                           InfoTypeInformation.newBuilder()
                               .setInfoType("PHONE_NUMBER")
-                              .setCount(1000))
+                              .setCount(500))
                       .build()),
               ImmutableMap.of(
                   "$.topLevelRecord.person_name", "PERSON_NAME",
@@ -221,7 +219,7 @@ public final class DlpSamplerIdentifyPipelineIT {
             new Object[] {
               "MySQL 5000 records sample 2000",
               ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
-              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --sampleSize=2000",
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts --sampleSize=2000 --jdbcDriverClass=com.mysql.cj.jdbc.Driver",
               TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
               ImmutableList.of(
                   ColumnInformation.newBuilder()
@@ -283,11 +281,12 @@ public final class DlpSamplerIdentifyPipelineIT {
   @SuppressWarnings("UnstableApiUsage")
   public void makeOptions() throws IOException, ManagedProcessException {
     Map<String, String> options =
-        Splitter.on(CharMatcher.anyOf("\n "))
+        Splitter.on(CharMatcher.anyOf("--"))
             .splitToStream(basicArgs)
             .filter(StringUtils::isNotBlank)
+            .map(String::trim)
             .map(opt -> Splitter.on('=').splitToList(opt))
-            .map(x -> Map.entry(x.get(0), x.get(1)))
+            .map(x -> Map.entry("--" + x.get(0), x.get(1)))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     var sourceType = SourceType.valueOf(options.get("--sourceType"));
