@@ -143,6 +143,8 @@ shadowJar {
 }
 
 test {
+    dependsOn cleanTest
+    testLogging.showStandardStreams = true
     finalizedBy jacocoTestReport
 }
 
