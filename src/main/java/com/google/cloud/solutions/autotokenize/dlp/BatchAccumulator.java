@@ -83,6 +83,11 @@ public interface BatchAccumulator<InputT, OutputT> {
     /** The number of elements in the batch. */
     int elementsCount();
 
+    /** Checks if the batch has no elements. */
+    default boolean isEmpty() {
+      return elementsCount() <= 0;
+    }
+
     /** The serialized size of the batch. */
     int serializedSize();
 

@@ -16,25 +16,41 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
+import ch.vorburger.exec.ManagedProcessException;
+import ch.vorburger.mariadb4j.DB;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
 import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
-import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
-import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
-import com.google.cloud.solutions.autotokenize.dlp.PartialColumnBatchAccumulator;
+import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
+import com.google.cloud.solutions.autotokenize.dlp.PartialBatchAccumulator;
 import com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.crypto.tink.CleartextKeysetHandle;
+import com.google.crypto.tink.JsonKeysetReader;
+import com.google.crypto.tink.JsonKeysetWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.GeneralSecurityException;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.AvroIO;
@@ -42,98 +58,271 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public final class EncryptionPipelineIT implements Serializable {
 
-  @Rule public transient TestPipeline mainPipeline = TestPipeline.create();
+  @Rule public transient TestPipeline testPipeline = TestPipeline.create();
 
   @Rule public transient TestPipeline readPipeline = TestPipeline.create();
 
   @Rule public transient TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private transient String tempAvroFile;
-
-  private static final ImmutableList<GenericRecord> TEST_RECORDS;
-  private static final Schema TEST_RECORD_SCHEMA;
-  private static final String TEST_DLP_ENCRYPT_CONFIG_JSON;
   private static final String PROJECT_ID = "test-project";
 
-  static {
-    TEST_RECORDS =
-        TestResourceLoader.classPath().forAvro().readFile("userdata.avro").loadAllRecords();
-    TEST_RECORD_SCHEMA = TEST_RECORDS.get(0).getSchema();
-    TEST_DLP_ENCRYPT_CONFIG_JSON =
-        TestResourceLoader.classPath().loadAsString("email_cc_dlp_encrypt_config.json");
+  private final String testCondition;
+  private final ImmutableMap<String, String> configParameters;
+  private final String baseArgs;
+  private final String inputSchemaJsonFile;
+  private final int expectedRecordsCount;
+
+  public static transient DB testDBInstance;
+  private transient EncryptingPipelineOptions pipelineOptions;
+  private transient DlpClientFactory dlpClientFactory;
+  private transient Schema expectedSchema;
+  private transient String clearTextEncryptionKeySet;
+
+  @BeforeClass
+  public static void setupMariaDBInMemory() throws ManagedProcessException {
+    testDBInstance = DB.newEmbeddedDB(0);
+    testDBInstance.start();
+  }
+
+  @AfterClass
+  public static void tearDownTestDB() throws ManagedProcessException {
+    if (testDBInstance != null) {
+      testDBInstance.stop();
+    }
   }
 
   @Before
-  public void makeTempCopyOfUserDataAvro() throws IOException {
-    tempAvroFile =
-        TestResourceLoader.classPath()
-            .copyTo(temporaryFolder.newFolder())
-            .createFileTestCopy("userdata.avro")
-            .getAbsolutePath();
+  public void setupClearTextKeySetHandle() throws GeneralSecurityException, IOException {
+    var tinkKeySet = pipelineOptions.getTinkEncryptionKeySetJson();
+
+    if (tinkKeySet == null) {
+      clearTextEncryptionKeySet = null;
+      return;
+    }
+
+    var baos = new ByteArrayOutputStream();
+    CleartextKeysetHandle.write(
+        CleartextKeysetHandle.read(JsonKeysetReader.withString(tinkKeySet)),
+        JsonKeysetWriter.withOutputStream(baos));
+    clearTextEncryptionKeySet = baos.toString();
   }
 
   @Test
-  public void expand() throws IOException, GeneralSecurityException {
-    EncryptingPipelineOptions options = PipelineOptionsFactory.as(EncryptingPipelineOptions.class);
-    options.setDlpEncryptConfigJson(TEST_DLP_ENCRYPT_CONFIG_JSON);
-    options.setInputPattern(tempAvroFile);
-    options.setSourceType(SourceType.AVRO);
-    options.setSchema(TEST_RECORD_SCHEMA.toString());
-    options.setOutputDirectory(temporaryFolder.newFolder().getAbsolutePath());
-    options.setTokenizeColumns(
-        DeidentifyColumns.columnNamesIn(
-            JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class)));
-    options.setProject(PROJECT_ID);
-    Schema encryptedSchema =
-        DeIdentifiedRecordSchemaConverter.withOriginalSchema(TEST_RECORD_SCHEMA)
-            .withEncryptColumnKeys(options.getTokenizeColumns())
-            .updatedSchema();
+  public void buildPipeline_valid() throws Exception {
 
     // Perform the Encryption pipeline
     new EncryptionPipeline.EncryptingPipelineFactory(
-            options, mainPipeline, new StubbingDlpClientFactory(makeDlpStub()))
+            pipelineOptions, testPipeline, dlpClientFactory, clearTextEncryptionKeySet)
         .buildPipeline()
         .run()
         .waitUntilFinish();
 
-    // Read the output Avro file
+    // Verify the output Avro file
     PCollection<GenericRecord> encryptedRecords =
         readPipeline.apply(
-            AvroIO.readGenericRecords(encryptedSchema).from(options.getOutputDirectory() + "/*"));
+            AvroIO.readGenericRecords(expectedSchema)
+                .from(pipelineOptions.getOutputDirectory() + "/*"));
 
-    PAssert.that(encryptedRecords).satisfies(new RecordsCountMatcher<>(TEST_RECORDS.size()));
+    PAssert.that(encryptedRecords).satisfies(new RecordsCountMatcher<>(expectedRecordsCount));
 
     readPipeline.run();
   }
 
-  private static Base64EncodingDlpStub makeDlpStub() {
-    return new Base64EncodingDlpStub(
-        PartialColumnBatchAccumulator.RECORD_ID_COLUMN_NAME, buildExpectedHeaders(), PROJECT_ID);
+  public EncryptionPipelineIT(
+      String testCondition,
+      ImmutableMap<String, String> configParameters,
+      String baseArgs,
+      String inputSchemaJsonFile,
+      int expectedRecordsCount) {
+    this.testCondition = testCondition;
+    this.configParameters = configParameters;
+    this.baseArgs = baseArgs;
+    this.inputSchemaJsonFile = inputSchemaJsonFile;
+    this.expectedRecordsCount = expectedRecordsCount;
   }
 
-  private static ImmutableList<String> buildExpectedHeaders() {
-    ImmutableList<String> encryptColumns =
-        DeidentifyColumns.columnNamesIn(
-            JsonConvertor.parseJson(TEST_DLP_ENCRYPT_CONFIG_JSON, DlpEncryptConfig.class));
+  @Parameters(name = "{0}")
+  public static ImmutableList<Object[]> testParameters() {
+    return ImmutableList.<Object[]>builder()
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Avro input: 1000 records (DLP)",
+              /*configParameters=*/ ImmutableMap.of(
+                  "testFile",
+                  "userdata.avro",
+                  "dlpEncryptConfigFile",
+                  "email_cc_dlp_encrypt_config.json"),
+              /*baseArgs*/ "--sourceType=AVRO",
+              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
+              /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Avro input: 1000 records (TINK)",
+              /*configParameters=*/ ImmutableMap.of(
+                  "testFile",
+                  "userdata.avro",
+                  "tinkEncryptionKeySetJsonFile",
+                  "test_encryption_key.json"),
+              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc --tokenizeColumns=$.kylosample.email",
+              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
+              /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "JDBC input: 500 records",
+              /*configParameters=*/ ImmutableMap.of(
+                  "initScript",
+                  "db_init_scripts/contacts5k.sql",
+                  "dlpEncryptConfigFile",
+                  "contacts5k_dlp_encrypt_config.json"),
+              /*baseArgs*/ "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1)",
+              /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
+              /*expectedRecordsCount=*/ 500
+            })
+        .build();
+  }
 
-    return TEST_RECORDS.stream()
-        .map(RecordFlattener.forGenericRecord()::flatten)
-        .map(FlatRecord::getFlatKeySchemaMap)
-        .map(Map::entrySet)
-        .flatMap(Set::stream)
-        .filter(e -> encryptColumns.contains(e.getValue()))
-        .map(Map.Entry::getKey)
-        .distinct()
-        .collect(ImmutableList.toImmutableList());
+  @Before
+  @SuppressWarnings("UnstableApiUsage")
+  public void makeOptions() throws Exception {
+    var options =
+        Splitter.on(CharMatcher.anyOf("--"))
+            .splitToStream(baseArgs)
+            .filter(StringUtils::isNotBlank)
+            .map(String::trim)
+            .map(opt -> Splitter.on('=').splitToList(opt))
+            .map(x -> Map.entry(x.get(0), x.get(1)))
+            .collect(Collectors.groupingBy(Map.Entry::getKey))
+            .entrySet()
+            .stream()
+            .map(
+                e ->
+                    Map.entry(
+                        e.getKey(),
+                        e.getValue().stream().map(Map.Entry::getValue).collect(toList())))
+            .map(
+                e ->
+                    Map.entry(
+                        e.getKey(),
+                        (e.getValue().size() == 1) ? e.getValue().get(0) : e.getValue()))
+            .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    var sourceType = SourceType.valueOf((String) options.get("sourceType"));
+    var inputSchemaJson = TestResourceLoader.classPath().loadAsString(inputSchemaJsonFile);
+
+    if (configParameters.containsKey("dlpEncryptConfigFile")) {
+      options.put(
+          "dlpEncryptConfigJson",
+          TestResourceLoader.classPath()
+              .loadAsString(configParameters.get("dlpEncryptConfigFile")));
+      makeDlpStub();
+    }
+
+    if (configParameters.containsKey("tinkEncryptionKeySetJsonFile")) {
+      options.put(
+          "tinkEncryptionKeySetJson",
+          TestResourceLoader.classPath()
+              .loadAsString(configParameters.get("tinkEncryptionKeySetJsonFile")));
+      options.put("mainKmsKeyUri", "project/my-project/locations");
+
+      //noinspection unchecked testing class.
+      expectedSchema =
+          DeIdentifiedRecordSchemaConverter.withOriginalSchemaJson(inputSchemaJson)
+              .withEncryptColumnKeys((List<String>) options.get("tokenizeColumns"))
+              .updatedSchema();
+    }
+
+    switch (sourceType) {
+      case PARQUET:
+      case AVRO:
+        var testAvroFileFolder = temporaryFolder.newFolder();
+        TestResourceLoader.absolutePath()
+            .copyTo(testAvroFileFolder)
+            .createFileTestCopy(configParameters.get("testFile"));
+        options.put("inputPattern", testAvroFileFolder.getAbsolutePath() + "/*");
+        break;
+
+      case JDBC_TABLE:
+        var initScript = configParameters.get("initScript");
+        var testDatabaseName = "test_" + new Random().nextLong();
+        testDBInstance.createDB(testDatabaseName);
+        testDBInstance.source(initScript, testDatabaseName);
+        // update connection url:
+        options.put(
+            "jdbcConnectionUrl",
+            String.format(
+                "%s?user=%s&password=%s",
+                testDBInstance.getConfiguration().getURL(testDatabaseName), "root", ""));
+        break;
+      case BIGQUERY_TABLE:
+      case BIGQUERY_QUERY:
+      case UNRECOGNIZED:
+      case UNKNOWN_FILE_TYPE:
+        throw new IllegalArgumentException("Unsupported Test Type");
+    }
+
+    options.put("schema", inputSchemaJson);
+    options.put("outputDirectory", temporaryFolder.newFolder().getAbsolutePath());
+    options.put("project", PROJECT_ID);
+
+    var completeArgs =
+        options.entrySet().stream()
+            .flatMap(flattenRepeatedValues())
+            .map(e -> String.format("--%s=%s", e.getKey(), e.getValue()))
+            .toArray(String[]::new);
+
+    pipelineOptions =
+        PipelineOptionsFactory.fromArgs(completeArgs).as(EncryptingPipelineOptions.class);
+  }
+
+  private Function<Entry<String, Object>, Stream<? extends Entry<String, ? extends Object>>>
+      flattenRepeatedValues() {
+    return entry ->
+        (entry.getValue() instanceof List)
+            ? ((List) entry.getValue())
+                .stream().map(repeatedValue -> Map.entry(entry.getKey(), repeatedValue))
+            : Stream.of(entry);
+  }
+
+  public void makeDlpStub() {
+    var dlpEncryptConfig =
+        TestResourceLoader.classPath()
+            .forProto(DlpEncryptConfig.class)
+            .loadJson(configParameters.get("dlpEncryptConfigFile"));
+
+    var encryptSchemaColumns = DeidentifyColumns.columnNamesIn(dlpEncryptConfig);
+
+    expectedSchema =
+        DeIdentifiedRecordSchemaConverter.withOriginalSchemaJson(
+                TestResourceLoader.classPath().loadAsString(inputSchemaJsonFile))
+            .withEncryptColumnKeys(encryptSchemaColumns)
+            .updatedSchema();
+
+    var encryptColumns =
+        encryptSchemaColumns.stream()
+            .map(
+                name ->
+                    Pattern.compile("^(\\$\\.)?([^\\.]+\\.)(.*)$").matcher(name).replaceAll("$1$3"))
+            .collect(toImmutableList());
+
+    dlpClientFactory =
+        new StubbingDlpClientFactory(
+            new Base64EncodingDlpStub(
+                PartialBatchAccumulator.RECORD_ID_COLUMN_NAME, encryptColumns, PROJECT_ID));
   }
 }

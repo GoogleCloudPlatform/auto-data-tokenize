@@ -1,0 +1,17 @@
+{
+  "transforms" : [
+    {
+      "columnId": "$.topLevelRecord.contact_number",
+      "transform" : {
+        "cryptoDeterministicConfig": {
+          "cryptoKey": {
+            "kmsWrapped": {
+              "cryptoKeyName": "projects/auto-dlp/locations/global/keyRings/sym-keyring-global/cryptoKeys/sym-1-global",
+              "wrappedKey": "CiQAYIQbd1ZtrAdo4rOWwhhM7hI/m/7ueJeSYBkW/qeR0FYmlXsSOQDn0cOhESBwbLfVIZXrOsBLyB9S+EaQeA778CLis9DbGtzr+80YB/nVH98Lhe6PJyMrYrfXfjQ0qQ=="
+            }
+          }
+        }
+      }
+    }
+  ]
+}

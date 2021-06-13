@@ -16,7 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-import static com.google.cloud.solutions.autotokenize.common.util.JsonConvertor.convertJsonToAvro;
+import static com.google.cloud.solutions.autotokenize.common.JsonConvertor.convertJsonToAvro;
 
 import com.github.wnameless.json.unflattener.JsonUnflattener;
 import com.google.api.client.util.Maps;

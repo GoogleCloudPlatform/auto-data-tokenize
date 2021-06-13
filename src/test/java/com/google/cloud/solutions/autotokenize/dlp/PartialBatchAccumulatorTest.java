@@ -25,8 +25,10 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptCo
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
 import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
-import com.google.cloud.solutions.autotokenize.dlp.PartialColumnBatchAccumulator.BatchPartialColumnDlpTable;
+import com.google.cloud.solutions.autotokenize.dlp.PartialBatchAccumulator.BatchPartialColumnDlpTable;
+import com.google.cloud.solutions.autotokenize.testing.FieldIdMatchesTokenizeColumns;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
+import com.google.cloud.solutions.autotokenize.testing.TokenizingColPatternChecker;
 import com.google.common.collect.ImmutableList;
 import com.google.privacy.dlp.v2.CryptoDeterministicConfig;
 import com.google.privacy.dlp.v2.CryptoKey;
@@ -46,7 +48,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class PartialColumnBatchAccumulatorTest {
+public class PartialBatchAccumulatorTest {
 
   private static final ImmutableList<FlatRecord> CONTACT_RECORDS =
       TestResourceLoader.classPath()
@@ -95,16 +97,16 @@ public class PartialColumnBatchAccumulatorTest {
 
   @Test
   public void addElement_noRecordId_throwsIllegalArgumentExecption() {
-    PartialColumnBatchAccumulator accumulator =
-        PartialColumnBatchAccumulator.withConfig(NUMBER_TOKENIZE_CONFIG);
+    PartialBatchAccumulator accumulator =
+        PartialBatchAccumulator.withConfig(NUMBER_TOKENIZE_CONFIG);
 
     assertThrows(IllegalArgumentException.class, () -> accumulator.addElement(JANE_DOE_CONTACT));
   }
 
   @Test
   public void batch_arrayFields_deidConfigContainsOnlyFieldReference() {
-    PartialColumnBatchAccumulator accumulator =
-        PartialColumnBatchAccumulator.withConfig(
+    PartialBatchAccumulator accumulator =
+        PartialBatchAccumulator.withConfig(
             DlpEncryptConfig.newBuilder()
                 .addTransforms(
                     ColumnTransform.newBuilder()
@@ -158,8 +160,8 @@ public class PartialColumnBatchAccumulatorTest {
 
   @Test
   public void batch_arrayFields_itemTableContainsFlattenedEntries() {
-    PartialColumnBatchAccumulator accumulator =
-        PartialColumnBatchAccumulator.withConfig(
+    PartialBatchAccumulator accumulator =
+        PartialBatchAccumulator.withConfig(
             DlpEncryptConfig.newBuilder()
                 .addTransforms(
                     ColumnTransform.newBuilder()
@@ -206,9 +208,38 @@ public class PartialColumnBatchAccumulatorTest {
   }
 
   @Test
+  public void batch_nullableUnionField_valid() {
+    PartialBatchAccumulator accumulator =
+        PartialBatchAccumulator.withConfig(
+            TestResourceLoader.classPath()
+                .forProto(DlpEncryptConfig.class)
+                .loadJson("email_cc_dlp_encrypt_config.json"));
+
+    var flatRecords =
+        TestResourceLoader.classPath()
+            .forAvro()
+            .withSchemaFile("avro_records/userdata_records/schema.json")
+            .loadAllRecords(
+                "avro_records/userdata_records/record-2.json",
+                "avro_records/userdata_records/record-3-cc-null.json")
+            .stream()
+            .map(RecordFlattener.forGenericRecord()::flatten)
+            .map(record -> record.toBuilder().setRecordId(UUID.randomUUID().toString()).build())
+            .collect(toImmutableList());
+
+    accumulator.addAllElements(flatRecords);
+
+    BatchPartialColumnDlpTable batch = accumulator.makeBatch();
+
+    FieldIdMatchesTokenizeColumns.withRecordIdColumn("__AUTOTOKENIZE__RECORD_ID__")
+        .assertExpectedHeadersOnly(batch.get().getTable().getHeadersList())
+        .contains(TokenizingColPatternChecker.of("$.email", "$.cc"));
+  }
+
+  @Test
   public void addElement_exceedsSize_returnsFalse() {
-    PartialColumnBatchAccumulator accumulator =
-        PartialColumnBatchAccumulator.withConfig(
+    PartialBatchAccumulator accumulator =
+        PartialBatchAccumulator.withConfig(
             NUMBER_TOKENIZE_CONFIG.toBuilder()
                 .addTransforms(
                     ColumnTransform.newBuilder()
@@ -233,7 +264,7 @@ public class PartialColumnBatchAccumulatorTest {
     assertThat(
             accumulator.makeBatch().get().getTable().getSerializedSize()
                 + testValue.getSerializedSize())
-        .isGreaterThan(PartialColumnBatchAccumulator.MAX_DLP_PAYLOAD_SIZE_BYTES);
+        .isGreaterThan(PartialBatchAccumulator.MAX_DLP_PAYLOAD_SIZE_BYTES);
   }
 
   private static Value get1KByteString() {

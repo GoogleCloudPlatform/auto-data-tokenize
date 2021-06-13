@@ -19,8 +19,8 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
-import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.encryptors.EncryptingFlatRecordTokenizer;
+import com.google.cloud.solutions.autotokenize.encryptors.ValueTokenizerFactory;
 import java.util.Collection;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -39,7 +39,7 @@ public abstract class ValueEncryptionTransform
     return new AutoValue_ValueEncryptionTransform.Builder();
   }
 
-  abstract DaeadEncryptingValueTokenizerFactory valueTokenizerFactory();
+  abstract ValueTokenizerFactory valueTokenizerFactory();
 
   abstract Collection<String> encryptColumnNames();
 
@@ -58,8 +58,7 @@ public abstract class ValueEncryptionTransform
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder valueTokenizerFactory(
-        DaeadEncryptingValueTokenizerFactory valueTokenizerFactory);
+    public abstract Builder valueTokenizerFactory(ValueTokenizerFactory valueTokenizerFactory);
 
     public abstract Builder encryptColumnNames(Collection<String> encryptColumnNames);
 

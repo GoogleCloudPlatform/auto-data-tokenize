@@ -18,7 +18,7 @@ package com.google.cloud.solutions.autotokenize.testing;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
+import com.google.cloud.solutions.autotokenize.common.JsonConvertor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.io.Files;

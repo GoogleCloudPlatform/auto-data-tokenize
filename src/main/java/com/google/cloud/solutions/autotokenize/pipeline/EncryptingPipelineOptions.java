@@ -40,6 +40,18 @@ public interface EncryptingPipelineOptions extends GcpOptions {
 
   void setSchema(String schema);
 
+  String getJdbcConnectionUrl();
+
+  void setJdbcConnectionUrl(String jdbcConnectionUrl);
+
+  String getJdbcDriverClass();
+
+  void setJdbcDriverClass(String jdbcDriverClass);
+
+  String getJdbcFilterClause();
+
+  void setJdbcFilterClause(String jdbcFilterClause);
+
   @Required
   List<String> getTokenizeColumns();
 

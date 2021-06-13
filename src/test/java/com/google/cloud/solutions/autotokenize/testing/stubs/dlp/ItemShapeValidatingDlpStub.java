@@ -17,7 +17,6 @@
 package com.google.cloud.solutions.autotokenize.testing.stubs.dlp;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.core.ApiFuture;
@@ -25,11 +24,10 @@ import com.google.api.gax.rpc.ApiCallContext;
 import com.google.api.gax.rpc.UnaryCallable;
 import com.google.cloud.dlp.v2.stub.DlpServiceStub;
 import com.google.cloud.solutions.autotokenize.common.PairIterator;
+import com.google.cloud.solutions.autotokenize.testing.ArrayPatternCheckingKeyMap;
 import com.google.cloud.solutions.autotokenize.testing.stubs.BaseUnaryApiFuture;
 import com.google.cloud.solutions.autotokenize.testing.stubs.TestingBackgroundResource;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.privacy.dlp.v2.ContentLocation;
 import com.google.privacy.dlp.v2.Finding;
 import com.google.privacy.dlp.v2.InfoType;
@@ -42,36 +40,21 @@ import com.google.privacy.dlp.v2.Value;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Base64;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class ItemShapeValidatingDlpStub extends DlpServiceStub implements Serializable {
 
   private final String projectId;
-  private final ImmutableSet<ImmutablePair<String, InfoType>> schemaKeyRegexInfoTypes;
+  private final ArrayPatternCheckingKeyMap<String, String, InfoType> schemaKeyRegexInfoTypes;
 
   public ItemShapeValidatingDlpStub(
       String projectId, ImmutableMap<String, String> schemaKeyInfoTypeMap) {
     this.projectId = projectId;
-    this.schemaKeyRegexInfoTypes =
-        schemaKeyInfoTypeMap.entrySet().stream()
-            .map(
-                entry -> {
-                  //noinspection UnstableApiUsage
-                  var schemaKeyWithArrayMatcher =
-                      Splitter.on('.')
-                          .splitToStream(entry.getKey())
-                          .map(x -> x.replaceAll("([\\$\\[\\]\\(\\)])", "\\\\$1"))
-                          .map(x -> x + "(?:\\[\\d+\\])?")
-                          .collect(Collectors.joining("\\."));
 
-                  return ImmutablePair.of(
-                      schemaKeyWithArrayMatcher,
-                      InfoType.newBuilder().setName(entry.getValue()).build());
-                })
-            .collect(toImmutableSet());
+    this.schemaKeyRegexInfoTypes =
+        ArrayPatternCheckingKeyMap.withValueComputeFunction(
+            schemaKeyInfoTypeMap, name -> InfoType.newBuilder().setName(name).build());
   }
 
   @Override
@@ -83,7 +66,7 @@ public class ItemShapeValidatingDlpStub extends DlpServiceStub implements Serial
           InspectContentRequest inspectContentRequest, ApiCallContext context) {
         return new BaseUnaryApiFuture<>() {
           @Override
-          public InspectContentResponse get() throws InterruptedException, ExecutionException {
+          public InspectContentResponse get() {
 
             assertProjectIdMatches(inspectContentRequest.getParent());
 
@@ -104,33 +87,25 @@ public class ItemShapeValidatingDlpStub extends DlpServiceStub implements Serial
                         elementPair ->
                             ImmutablePair.of(
                                 elementPair.getLeft(),
-                                schemaKeyRegexInfoTypes.stream()
-                                    .filter(
-                                        schemaKeyEntry ->
-                                            elementPair
-                                                .getLeft()
-                                                .getName()
-                                                .matches(schemaKeyEntry.getLeft()))
-                                    .findAny()
-                                    .map(ImmutablePair::getRight)
-                                    .orElseGet(InfoType::getDefaultInstance)))
+                                schemaKeyRegexInfoTypes.getOrDefault(
+                                    elementPair.getLeft().getName(),
+                                    InfoType.getDefaultInstance())))
                     .filter(entry -> !entry.getRight().equals(InfoType.getDefaultInstance()))
                     .map(
-                        fieldInfoType -> {
-                          return Finding.newBuilder()
-                              .setInfoType(fieldInfoType.getRight())
-                              .setLocation(
-                                  Location.newBuilder()
-                                      .addContentLocations(
-                                          ContentLocation.newBuilder()
-                                              .setRecordLocation(
-                                                  RecordLocation.newBuilder()
-                                                      .setFieldId(fieldInfoType.getLeft())
-                                                      .build())
-                                              .build())
-                                      .build())
-                              .build();
-                        })
+                        fieldInfoType ->
+                            Finding.newBuilder()
+                                .setInfoType(fieldInfoType.getRight())
+                                .setLocation(
+                                    Location.newBuilder()
+                                        .addContentLocations(
+                                            ContentLocation.newBuilder()
+                                                .setRecordLocation(
+                                                    RecordLocation.newBuilder()
+                                                        .setFieldId(fieldInfoType.getLeft())
+                                                        .build())
+                                                .build())
+                                        .build())
+                                .build())
                     .collect(toImmutableList());
 
             return InspectContentResponse.newBuilder()
