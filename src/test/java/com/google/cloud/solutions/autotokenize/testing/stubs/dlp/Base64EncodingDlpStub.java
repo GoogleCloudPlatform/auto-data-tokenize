@@ -23,10 +23,13 @@ import com.google.api.core.ApiFuture;
 import com.google.api.gax.rpc.ApiCallContext;
 import com.google.api.gax.rpc.UnaryCallable;
 import com.google.cloud.dlp.v2.stub.DlpServiceStub;
+import com.google.cloud.solutions.autotokenize.testing.FieldIdMatchesTokenizeColumns;
+import com.google.cloud.solutions.autotokenize.testing.TokenizingColPatternChecker;
 import com.google.cloud.solutions.autotokenize.testing.stubs.BaseUnaryApiFuture;
 import com.google.cloud.solutions.autotokenize.testing.stubs.TestingBackgroundResource;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import com.google.common.flogger.GoogleLogger;
 import com.google.privacy.dlp.v2.ContentItem;
 import com.google.privacy.dlp.v2.DeidentifyContentRequest;
 import com.google.privacy.dlp.v2.DeidentifyContentResponse;
@@ -37,23 +40,22 @@ import com.google.privacy.dlp.v2.Value;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Base64EncodingDlpStub extends DlpServiceStub implements Serializable {
 
   private final String recordIdColumnName;
-  private final ImmutableList<FieldId> expectedHeaders;
   private final String projectId;
+  private final TokenizingColPatternChecker tokenizeHeaderChecker;
 
   public Base64EncodingDlpStub(
-      String recordIdColumnName, ImmutableList<String> expectedHeaders, String projectId) {
+      String recordIdColumnName, Collection<String> tokenizeColumnIds, String projectId) {
     this.recordIdColumnName = recordIdColumnName;
-    this.expectedHeaders =
-        expectedHeaders.stream()
-            .map(h -> FieldId.newBuilder().setName(h).build())
-            .collect(toImmutableList());
     this.projectId = projectId;
+
+    this.tokenizeHeaderChecker = TokenizingColPatternChecker.of(tokenizeColumnIds);
   }
 
   @Override
@@ -72,31 +74,30 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
 
             List<FieldId> headers = deidentifyContentRequest.getItem().getTable().getHeadersList();
 
-            assertThat(headers)
-                .containsAnyIn(
-                    ImmutableList.builder()
-                        .add(recordIdColumnName)
-                        .addAll(expectedHeaders)
-                        .build());
+            if (deidentifyContentRequest.getItem().getTable().getRowsCount() == 0
+                && deidentifyContentRequest.getItem().getTable().getHeadersCount() == 0) {
+              GoogleLogger.forEnclosingClass().atWarning().log("Empty Table");
+              return DeidentifyContentResponse.newBuilder()
+                  .setItem(ContentItem.newBuilder().setTable(Table.getDefaultInstance()).build())
+                  .build();
+            }
 
-            TokenizingColPatternChecker headerChecker =
-                TokenizingColPatternChecker.forTransforms(
-                    deidentifyContentRequest
-                        .getDeidentifyConfig()
-                        .getRecordTransformations()
-                        .getFieldTransformationsList());
+            FieldIdMatchesTokenizeColumns.withRecordIdColumn(recordIdColumnName)
+                .assertExpectedHeadersOnly(headers)
+                .contains(tokenizeHeaderChecker);
 
             List<Row> updatedRows =
                 deidentifyContentRequest.getItem().getTable().getRowsList().stream()
                     .map(
                         row -> {
+                          //noinspection UnstableApiUsage
                           ImmutableList<Value> updatedValues =
                               Streams.zip(
                                       headers.stream(),
                                       row.getValuesList().stream(),
                                       (header, value) -> {
                                         if (header.getName().equals(recordIdColumnName)
-                                            || !headerChecker.isTokenizeColumn(header)) {
+                                            || !tokenizeHeaderChecker.isTokenizeColumn(header)) {
                                           // do not encode if RecordId column or non-tokenizing
                                           // column.
                                           return value;

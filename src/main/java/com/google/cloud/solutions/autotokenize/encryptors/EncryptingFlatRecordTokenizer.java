@@ -40,7 +40,7 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final ImmutableSet<String> tokenizeSchemaKeys;
-  private final DaeadEncryptingValueTokenizerFactory tokenizerFactory;
+  private final ValueTokenizerFactory tokenizerFactory;
   private final TokenizeColumnNameUpdater tokenizeColumnNameUpdater;
 
   /**
@@ -51,8 +51,7 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
    * @param tokenizerFactory the clear-text value tokenizer factory.
    */
   private EncryptingFlatRecordTokenizer(
-      ImmutableSet<String> tokenizeSchemaKeys,
-      DaeadEncryptingValueTokenizerFactory tokenizerFactory) {
+      ImmutableSet<String> tokenizeSchemaKeys, ValueTokenizerFactory tokenizerFactory) {
     this.tokenizeSchemaKeys = tokenizeSchemaKeys;
     this.tokenizerFactory = tokenizerFactory;
     this.tokenizeColumnNameUpdater = new TokenizeColumnNameUpdater(tokenizeSchemaKeys);
@@ -64,7 +63,7 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
   }
 
   public EncryptingFlatRecordTokenizer withTokenizerFactory(
-      DaeadEncryptingValueTokenizerFactory tokenizerFactory) {
+      ValueTokenizerFactory tokenizerFactory) {
     return new EncryptingFlatRecordTokenizer(tokenizeSchemaKeys, tokenizerFactory);
   }
 
@@ -91,7 +90,7 @@ public final class EncryptingFlatRecordTokenizer implements FlatRecordTokenizer,
   private class FlatRecordTokenizer {
 
     private final TokenizeColumnNameUpdater.RecordColumnNameUpdater columnChecker;
-    private final DaeadEncryptingValueTokenizer valueTokenizer;
+    private final ValueTokenizer valueTokenizer;
 
     private FlatRecordTokenizer(TokenizeColumnNameUpdater.RecordColumnNameUpdater columnChecker) {
       this.columnChecker = columnChecker;

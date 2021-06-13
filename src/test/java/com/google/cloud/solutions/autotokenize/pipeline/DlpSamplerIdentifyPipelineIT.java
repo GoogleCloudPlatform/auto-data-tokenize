@@ -26,7 +26,7 @@ import ch.vorburger.mariadb4j.DB;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InfoTypeInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
-import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
+import com.google.cloud.solutions.autotokenize.common.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.testing.FileStringReader;
 import com.google.cloud.solutions.autotokenize.testing.JsonSubject;
 import com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator;
@@ -130,8 +130,8 @@ public final class DlpSamplerIdentifyPipelineIT {
     return ImmutableList.<Object[]>builder()
         .add(
             new Object[] {
-              "Avro File 10000 records",
-              ImmutableMap.of("recordCount", "10000"),
+              "Avro File 1000 records",
+              ImmutableMap.of("recordCount", "1000"),
               "--sourceType=AVRO",
               RandomGenericRecordGenerator.SCHEMA_STRING,
               ImmutableList.of(
@@ -146,24 +146,22 @@ public final class DlpSamplerIdentifyPipelineIT {
             })
         .add(
             new Object[] {
-              "Avro File 10000 Sampling 3000 records",
-              ImmutableMap.of("recordCount", "10000"),
-              "--sourceType=AVRO --sampleSize=3000",
-              RandomGenericRecordGenerator.SCHEMA_STRING,
-              ImmutableList.of(
-                  ColumnInformation.newBuilder()
-                      .setColumnName("$.testrecord.name")
-                      .addInfoTypes(
-                          InfoTypeInformation.newBuilder()
-                              .setCount(3000)
-                              .setInfoType("PERSON_NAME"))
-                      .build()),
-              ImmutableMap.of("$.testrecord.name", "PERSON_NAME")
-            })
-        .add(
-            new Object[] {
-              "Avro File 2000 Sampling 3000 records",
+              "Avro File 2000 Sampling 500 records",
               ImmutableMap.of("recordCount", "2000"),
+              "--sourceType=AVRO --sampleSize=500",
+              RandomGenericRecordGenerator.SCHEMA_STRING,
+              ImmutableList.of(
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.testrecord.name")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder().setCount(500).setInfoType("PERSON_NAME"))
+                      .build()),
+              ImmutableMap.of("$.testrecord.name", "PERSON_NAME")
+            })
+        .add(
+            new Object[] {
+              "Avro File 1000 Sampling 3000 records",
+              ImmutableMap.of("recordCount", "1000"),
               "--sourceType=AVRO --sampleSize=3000",
               RandomGenericRecordGenerator.SCHEMA_STRING,
               ImmutableList.of(
@@ -171,15 +169,15 @@ public final class DlpSamplerIdentifyPipelineIT {
                       .setColumnName("$.testrecord.name")
                       .addInfoTypes(
                           InfoTypeInformation.newBuilder()
-                              .setCount(2000)
+                              .setCount(1000)
                               .setInfoType("PERSON_NAME"))
                       .build()),
               ImmutableMap.of("$.testrecord.name", "PERSON_NAME")
             })
         .add(
             new Object[] {
-              "Parquet File 10000 records",
-              ImmutableMap.of("recordCount", "10000"),
+              "Parquet File 1000 records",
+              ImmutableMap.of("recordCount", "1000"),
               "--sourceType=PARQUET",
               RandomGenericRecordGenerator.SCHEMA_STRING,
               ImmutableList.of(
@@ -210,31 +208,6 @@ public final class DlpSamplerIdentifyPipelineIT {
                           InfoTypeInformation.newBuilder()
                               .setInfoType("PHONE_NUMBER")
                               .setCount(500))
-                      .build()),
-              ImmutableMap.of(
-                  "$.topLevelRecord.person_name", "PERSON_NAME",
-                  "$.topLevelRecord.contact_number", "PHONE_NUMBER")
-            })
-        .add(
-            new Object[] {
-              "MySQL 5000 records sample 2000",
-              ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
-              "--sourceType=JDBC_TABLE --inputPattern=Contacts --sampleSize=2000 --jdbcDriverClass=com.mysql.cj.jdbc.Driver",
-              TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
-              ImmutableList.of(
-                  ColumnInformation.newBuilder()
-                      .setColumnName("$.topLevelRecord.person_name")
-                      .addInfoTypes(
-                          InfoTypeInformation.newBuilder()
-                              .setInfoType("PERSON_NAME")
-                              .setCount(2000))
-                      .build(),
-                  ColumnInformation.newBuilder()
-                      .setColumnName("$.topLevelRecord.contact_number")
-                      .addInfoTypes(
-                          InfoTypeInformation.newBuilder()
-                              .setInfoType("PHONE_NUMBER")
-                              .setCount(2000))
                       .build()),
               ImmutableMap.of(
                   "$.topLevelRecord.person_name", "PERSON_NAME",

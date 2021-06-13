@@ -113,8 +113,7 @@ public abstract class BatchAndDlpDeIdRecords
         .apply("AddRecordId", MapElements.via(FlatRecordKeysFn.create()))
         .apply(MapElements.via(new ShardAssigner<>(shardCount())))
         .apply(
-            "BatchForDlp",
-            GroupByBatchSize.with(PartialColumnBatchAccumulator.factory(encryptConfig())))
+            "BatchForDlp", GroupByBatchSize.with(PartialBatchAccumulator.factory(encryptConfig())))
         .setCoder(ProtoCoder.of(PartialColumnDlpTable.class))
         .apply(
             ParDo.of(

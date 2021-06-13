@@ -44,7 +44,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @AutoValue
-public abstract class PartialColumnBatchAccumulator
+public abstract class PartialBatchAccumulator
     implements BatchAccumulator<FlatRecord, PartialColumnDlpTable> {
 
   public static final String RECORD_ID_COLUMN_NAME = "__AUTOTOKENIZE__RECORD_ID__";
@@ -74,7 +74,7 @@ public abstract class PartialColumnBatchAccumulator
     }
 
     @Override
-    public PartialColumnBatchAccumulator newAccumulator() {
+    public PartialBatchAccumulator newAccumulator() {
       return withConfig(encryptConfig);
     }
   }
@@ -83,7 +83,7 @@ public abstract class PartialColumnBatchAccumulator
     return new PartialColumnBatchAccumulatorFactory(encryptConfig);
   }
 
-  public static PartialColumnBatchAccumulator withConfig(DlpEncryptConfig encryptConfig) {
+  public static PartialBatchAccumulator withConfig(DlpEncryptConfig encryptConfig) {
     ImmutableSet<String> encryptColumnNames =
         encryptConfig.getTransformsList().stream()
             .map(AutoTokenizeMessages.ColumnTransform::getColumnId)
@@ -93,7 +93,7 @@ public abstract class PartialColumnBatchAccumulator
   }
 
   private static Builder builder() {
-    return new AutoValue_PartialColumnBatchAccumulator.Builder()
+    return new AutoValue_PartialBatchAccumulator.Builder()
         .maxCellCount(MAX_DLP_PAYLOAD_CELLS)
         .maxPayloadSize(MAX_DLP_PAYLOAD_SIZE_BYTES)
         .recordIdColumnName(RECORD_ID_COLUMN_NAME);
@@ -112,20 +112,20 @@ public abstract class PartialColumnBatchAccumulator
 
     public abstract Builder encryptColumns(ImmutableSet<String> encryptColumns);
 
-    public abstract PartialColumnBatchAccumulator build();
+    public abstract PartialBatchAccumulator build();
   }
 
   abstract Builder toBuilder();
 
-  public PartialColumnBatchAccumulator withMaxPayloadSize(int maxPayloadSize) {
+  public PartialBatchAccumulator withMaxPayloadSize(int maxPayloadSize) {
     return toBuilder().maxPayloadSize(maxPayloadSize).build();
   }
 
-  public PartialColumnBatchAccumulator withMaxCellCount(int maxCellCount) {
+  public PartialBatchAccumulator withMaxCellCount(int maxCellCount) {
     return toBuilder().maxCellCount(maxCellCount).build();
   }
 
-  public PartialColumnBatchAccumulator withRecordIdColumnName(String recordIdColumnName) {
+  public PartialBatchAccumulator withRecordIdColumnName(String recordIdColumnName) {
     return toBuilder().recordIdColumnName(recordIdColumnName).build();
   }
 
@@ -273,7 +273,7 @@ public abstract class PartialColumnBatchAccumulator
               .add("serializedSize", serializedSize)
               .toString();
 
-      return new AutoValue_PartialColumnBatchAccumulator_BatchPartialColumnDlpTable(
+      return new AutoValue_PartialBatchAccumulator_BatchPartialColumnDlpTable(
           partialColumnDlpTable, rows, serializedSize, report);
     }
 

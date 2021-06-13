@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.common.util;
+package com.google.cloud.solutions.autotokenize.common;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 

@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
-import com.google.cloud.solutions.autotokenize.common.util.JsonConvertor;
 import com.google.common.collect.ImmutableList;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.FileIO;

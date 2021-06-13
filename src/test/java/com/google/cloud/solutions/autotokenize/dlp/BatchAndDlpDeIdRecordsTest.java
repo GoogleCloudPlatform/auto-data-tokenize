@@ -69,10 +69,8 @@ public class BatchAndDlpDeIdRecordsTest {
                     .withDlpClientFactory(
                         new StubbingDlpClientFactory(
                             new Base64EncodingDlpStub(
-                                PartialColumnBatchAccumulator.RECORD_ID_COLUMN_NAME,
-                                ImmutableList.of(
-                                    "$.contacts[1].[\"contact\"].number",
-                                    "$.contacts[0].[\"contact\"].number"),
+                                PartialBatchAccumulator.RECORD_ID_COLUMN_NAME,
+                                ImmutableList.of("$.contacts.[\"contact\"].number"),
                                 "dlp-test-project"))));
 
     PAssert.that(tokenizedRecords)

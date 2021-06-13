@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.testing.stubs.dlp;
+package com.google.cloud.solutions.autotokenize.testing;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -30,9 +30,8 @@ public class TokenizingColPatternCheckerTest {
   @Test
   public void isTokenizeColumn_singleLevelArrayElement_isTrue() {
     TokenizingColPatternChecker testChecker =
-        new TokenizingColPatternChecker(
-            ImmutableList.of(
-                "$.level1_array.[\"level1_array_record\"].level2_simple_field.string"));
+        TokenizingColPatternChecker.of(
+            "$.level1_array.[\"level1_array_record\"].level2_simple_field.string");
 
     assertThat(
             testChecker.isTokenizeColumn(
@@ -46,7 +45,7 @@ public class TokenizingColPatternCheckerTest {
   @Test
   public void isTokenizeColumn_singleLevelArrayElementNonMatchingArrayExpansion_isFalse() {
     TokenizingColPatternChecker testChecker =
-        new TokenizingColPatternChecker(
+        TokenizingColPatternChecker.of(
             ImmutableList.of(
                 "$.level1_array.[\"level1_array_record\"].level2_simple_field.string"));
 
@@ -61,8 +60,8 @@ public class TokenizingColPatternCheckerTest {
   @Test
   public void isTokenizeColumn_twoLevelArrayElement_isTrue() {
     TokenizingColPatternChecker testChecker =
-        new TokenizingColPatternChecker(
-            ImmutableList.of("$.level1_array.[\"level1_array_record\"].level2_array.string"));
+        TokenizingColPatternChecker.of(
+            "$.level1_array.[\"level1_array_record\"].level2_array.string");
 
     assertThat(
             testChecker.isTokenizeColumn(

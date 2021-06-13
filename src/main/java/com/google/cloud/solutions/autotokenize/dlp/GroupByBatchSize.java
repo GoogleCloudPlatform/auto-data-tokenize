@@ -219,6 +219,12 @@ public abstract class GroupByBatchSize<K, InputT, OutputT>
 
     private static <OutputT> void sendBatchAndLog(
         BatchAccumulator.Batch<OutputT> batch, OutputReceiver<OutputT> receiver) {
+
+      if (batch.isEmpty()) {
+        logger.atInfo().log("***Skipping empty batch:%n%s", batch.report());
+        return;
+      }
+
       receiver.output(batch.get());
       logger.atFine().log("**** Batched Report:%n%s", batch.report());
     }
