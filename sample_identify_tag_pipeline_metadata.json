@@ -48,6 +48,24 @@
       "isOptional": true
     },
     {
+      "name": "jdbcUserName",
+      "label": "JDBC Connection Username",
+      "helpText": "The username for the database connection. (Required when sourceType=JDBC_TABLE)",
+      "isOptional": true
+    },
+    {
+      "name": "jdbcPassword",
+      "label": "Plain-text password for the JDBC user",
+      "helpText": "The plain-text password for the user-name. (One of jdbcPassword or jdbcPasswordSecretsKey required when sourceType=JDBC_TABLE)",
+      "isOptional": true
+    },
+    {
+      "name": "jdbcPasswordSecretsKey",
+      "label": "Cloud Secret Version Id that stores JDBC password",
+      "helpText": "The Cloud Secrets version that stores password for the user-name. (One of jdbcPassword or jdbcPasswordSecretsKey required when sourceType=JDBC_TABLE)",
+      "isOptional": true
+    },
+    {
       "name": "jdbcFilterClause",
       "label": "JDBC Filter clause",
       "helpText": "The WHERE clause to filter records for inspection from JDBC source. (Optional, though Recommended when sourceType=JDBC_TABLE)",

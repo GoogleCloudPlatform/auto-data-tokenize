@@ -63,6 +63,8 @@ includedPermissions:
   # KMS permissions
   - cloudkms.cryptoKeyVersions.useToDecrypt
   - cloudkms.cryptoKeyVersions.useToEncrypt
+  # Cloud Secret Manager
+  - secretmanager.versions.access
   # Cloud SQL Permissions
   - cloudsql.instances.get
   - cloudsql.instances.connect

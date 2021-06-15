@@ -26,12 +26,14 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptCo
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
 import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
+import com.google.cloud.solutions.autotokenize.common.SecretsClient;
 import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.dlp.PartialBatchAccumulator;
 import com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
+import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -82,12 +84,13 @@ public final class EncryptionPipelineIT implements Serializable {
 
   private final String testCondition;
   private final ImmutableMap<String, String> configParameters;
+  private final SecretsClient secretsClient;
   private final String baseArgs;
   private final String inputSchemaJsonFile;
   private final int expectedRecordsCount;
 
   public static transient DB testDBInstance;
-  private transient EncryptingPipelineOptions pipelineOptions;
+  private transient EncryptionPipelineOptions pipelineOptions;
   private transient DlpClientFactory dlpClientFactory;
   private transient Schema expectedSchema;
   private transient String clearTextEncryptionKeySet;
@@ -126,7 +129,11 @@ public final class EncryptionPipelineIT implements Serializable {
 
     // Perform the Encryption pipeline
     new EncryptionPipeline.EncryptingPipelineFactory(
-            pipelineOptions, testPipeline, dlpClientFactory, clearTextEncryptionKeySet)
+            pipelineOptions,
+            testPipeline,
+            dlpClientFactory,
+            secretsClient,
+            clearTextEncryptionKeySet)
         .buildPipeline()
         .run()
         .waitUntilFinish();
@@ -151,6 +158,9 @@ public final class EncryptionPipelineIT implements Serializable {
     this.testCondition = testCondition;
     this.configParameters = configParameters;
     this.baseArgs = baseArgs;
+    this.secretsClient =
+        SecretsClient.withSecretsStub(
+            ConstantSecretVersionValueManagerServicesStub.of("resource/id/of/password/secret", ""));
     this.inputSchemaJsonFile = inputSchemaJsonFile;
     this.expectedRecordsCount = expectedRecordsCount;
   }
@@ -184,13 +194,35 @@ public final class EncryptionPipelineIT implements Serializable {
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "JDBC input: 500 records",
+              /*testCondition=*/ "JDBC input: 500 records [plainPassword]",
               /*configParameters=*/ ImmutableMap.of(
                   "initScript",
                   "db_init_scripts/contacts5k.sql",
                   "dlpEncryptConfigFile",
                   "contacts5k_dlp_encrypt_config.json"),
-              /*baseArgs*/ "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1)",
+              /*baseArgs*/ "--sourceType=JDBC_TABLE "
+                  + "--inputPattern=Contacts "
+                  + "--jdbcDriverClass=com.mysql.cj.jdbc.Driver "
+                  + "--jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1) "
+                  + "--jdbcUserName=root "
+                  + "--jdbcPassword=",
+              /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
+              /*expectedRecordsCount=*/ 500
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "JDBC input: 500 records [passwordSecret]",
+              /*configParameters=*/ ImmutableMap.of(
+                  "initScript",
+                  "db_init_scripts/contacts5k.sql",
+                  "dlpEncryptConfigFile",
+                  "contacts5k_dlp_encrypt_config.json"),
+              /*baseArgs*/ "--sourceType=JDBC_TABLE "
+                  + "--inputPattern=Contacts "
+                  + "--jdbcDriverClass=com.mysql.cj.jdbc.Driver "
+                  + "--jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1) "
+                  + "--jdbcUserName=root "
+                  + "--jdbcPasswordSecretsKey=resource/id/of/password/secret",
               /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
               /*expectedRecordsCount=*/ 500
             })
@@ -264,10 +296,7 @@ public final class EncryptionPipelineIT implements Serializable {
         testDBInstance.source(initScript, testDatabaseName);
         // update connection url:
         options.put(
-            "jdbcConnectionUrl",
-            String.format(
-                "%s?user=%s&password=%s",
-                testDBInstance.getConfiguration().getURL(testDatabaseName), "root", ""));
+            "jdbcConnectionUrl", testDBInstance.getConfiguration().getURL(testDatabaseName));
         break;
       case BIGQUERY_TABLE:
       case BIGQUERY_QUERY:
@@ -287,7 +316,7 @@ public final class EncryptionPipelineIT implements Serializable {
             .toArray(String[]::new);
 
     pipelineOptions =
-        PipelineOptionsFactory.fromArgs(completeArgs).as(EncryptingPipelineOptions.class);
+        PipelineOptionsFactory.fromArgs(completeArgs).as(EncryptionPipelineOptions.class);
   }
 
   private Function<Entry<String, Object>, Stream<? extends Entry<String, ? extends Object>>>

@@ -24,12 +24,11 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
 import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
 import com.google.cloud.solutions.autotokenize.common.JsonConvertor;
 import com.google.cloud.solutions.autotokenize.common.RecordNester;
+import com.google.cloud.solutions.autotokenize.common.SecretsClient;
 import com.google.cloud.solutions.autotokenize.common.SourceNames;
 import com.google.cloud.solutions.autotokenize.common.TransformingReader;
 import com.google.cloud.solutions.autotokenize.dlp.BatchAndDlpDeIdRecords;
@@ -54,7 +53,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Creates and launches a Dataflow pipeline to encrypt the provided input files using the
@@ -64,8 +62,8 @@ public class EncryptionPipeline {
 
   public static void main(String[] args) throws GeneralSecurityException, IOException {
 
-    EncryptingPipelineOptions options =
-        PipelineOptionsFactory.fromArgs(args).as(EncryptingPipelineOptions.class);
+    EncryptionPipelineOptions options =
+        PipelineOptionsFactory.fromArgs(args).as(EncryptionPipelineOptions.class);
 
     EncryptingPipelineFactory.using(options).buildPipeline().run();
   }
@@ -74,7 +72,7 @@ public class EncryptionPipeline {
   @VisibleForTesting
   static class EncryptingPipelineFactory {
 
-    private final EncryptingPipelineOptions options;
+    private final EncryptionPipelineOptions options;
     private final Schema inputSchema;
     private final Schema encryptedSchema;
     private final Pipeline pipeline;
@@ -82,12 +80,14 @@ public class EncryptionPipeline {
     private final String mainKeyKmsUri;
     private final DlpEncryptConfig dlpEncryptConfig;
     private final DlpClientFactory dlpClientFactory;
+    private final SecretsClient secretsClient;
     private final String clearTextEncryptionKeySet;
 
     EncryptingPipelineFactory(
-        EncryptingPipelineOptions options,
+        EncryptionPipelineOptions options,
         Pipeline pipeline,
         DlpClientFactory dlpClientFactory,
+        SecretsClient secretsClient,
         String clearTextEncryptionKeySet)
         throws GeneralSecurityException, IOException {
       this.options = checkValid(options);
@@ -116,6 +116,7 @@ public class EncryptionPipeline {
 
       this.pipeline = pipeline;
       this.dlpClientFactory = dlpClientFactory;
+      this.secretsClient = checkNotNull(secretsClient);
 
       this.clearTextEncryptionKeySet =
           (options.getDlpEncryptConfigJson() == null && clearTextEncryptionKeySet == null)
@@ -123,13 +124,17 @@ public class EncryptionPipeline {
               : clearTextEncryptionKeySet;
     }
 
-    public static EncryptingPipelineFactory using(EncryptingPipelineOptions options)
+    public static EncryptingPipelineFactory using(EncryptionPipelineOptions options)
         throws GeneralSecurityException, IOException {
       return new EncryptingPipelineFactory(
-          options, Pipeline.create(checkValid(options)), DlpClientFactory.defaultFactory(), null);
+          options,
+          Pipeline.create(checkValid(options)),
+          DlpClientFactory.defaultFactory(),
+          SecretsClient.of(),
+          null);
     }
 
-    private static EncryptingPipelineOptions checkValid(EncryptingPipelineOptions options) {
+    private static EncryptionPipelineOptions checkValid(EncryptionPipelineOptions options) {
       checkArgument(
           (options.getTokenizeColumns() != null && !options.getTokenizeColumns().isEmpty())
               || options.getDlpEncryptConfigJson() != null,
@@ -171,7 +176,9 @@ public class EncryptionPipeline {
                   "Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
                   TransformingReader.forSourceType(options.getSourceType())
                       .from(options.getInputPattern())
-                      .withJdbcConfiguration(extractJdbcConfiguration())
+                      .withJdbcConfiguration(
+                          JdbcConfigurationExtractor.using(options).jdbcConfiguration())
+                      .withSecretsClient(secretsClient)
                       .withRecordsTag(flatRecordsTag))
               .get(flatRecordsTag)
               .apply((dlpEncryptConfig != null) ? dlpDeidentify() : tinkEncryption())
@@ -235,29 +242,6 @@ public class EncryptionPipeline {
     /** Returns a directory path string without trailing {@code /}. */
     private static String cleanDirectoryString(String directory) {
       return checkNotNull(directory).replaceAll("(/)$", "");
-    }
-
-    @Nullable
-    private JdbcConfiguration extractJdbcConfiguration() {
-      if (options.getSourceType().equals(SourceType.JDBC_TABLE)) {
-
-        checkArgument(
-            isNotBlank(options.getJdbcConnectionUrl()) && isNotBlank(options.getJdbcDriverClass()),
-            "Provide both jdbcDriverClass and jdbcConnectionUrl parameters.");
-
-        var jdbcConfigBuilder =
-            JdbcConfiguration.newBuilder()
-                .setConnectionUrl(options.getJdbcConnectionUrl())
-                .setDriverClassName(options.getJdbcDriverClass());
-
-        if (isNotBlank(options.getJdbcFilterClause())) {
-          jdbcConfigBuilder.setFilterClause(options.getJdbcFilterClause());
-        }
-
-        return jdbcConfigBuilder.build();
-      }
-
-      return null;
     }
   }
 }

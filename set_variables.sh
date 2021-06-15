@@ -16,23 +16,30 @@
 #
 
 # The Google Cloud project to use for this tutorial
-export PROJECT_ID="[project-id]"
+export PROJECT_ID="[YOUR_PROJECT_ID]"
 
 # The Compute Engine region to use for running Dataflow jobs and create a
 # temporary storage bucket
-export REGION_ID="[google-cloud-region-id]"
+export REGION_ID="[YOUR_COMPUTE_ENGINE_REGION]"
 
-# define the GCS bucket to use as temporary bucket for Dataflow
-export TEMP_GCS_BUCKET="[gcs-bucket-name]"
+# The Cloud Storage bucket to use as a temporary bucket for Dataflow
+export TEMP_GCS_BUCKET="[CLOUD_STORAGE_BUCKET_NAME]"
 
 # Name of the service account to use (not the email address)
-export DLP_RUNNER_SERVICE_ACCOUNT_NAME="[service-account-name-for-runner]"
+# (e.g. tokenizing-runner)
+export DLP_RUNNER_SERVICE_ACCOUNT_NAME="[SERVICE_ACCOUNT_NAME_FOR_RUNNER]"
 
-# Fully Qualified Entry Group Id to use for creating/searching for Entries in Data Catalog for non-BigQuery entries.
-export DATA_CATALOG_ENTRY_GROUP_ID="[non-bigquery-data-catalog-entry-group]"
+# Fully Qualified Entry Group Id to use for creating/searching for Entries
+# in Data Catalog for non-BigQuery entries.
+# The ID must begin with a letter or underscore, contain only English letters, numbers and underscores, and be at most 64 characters.
+# Refer: https://cloud.google.com/data-catalog/docs/reference/rest/v1/projects.locations.entryGroups/create#query-parameters
+export DATA_CATALOG_ENTRY_GROUP_ID="[NON_BIGQUERY_DATA_CATALOG_ENTRY_GROUP]"
 
-# The fully qualified Data Catalog Tag Template Id to use for creating sensitivity tags in Data Catalog.
-export INSPECTION_TAG_TEMPLATE_ID="[datacatalog-inspection-tag-template]"
+# The Data Catalog Tag Template Id to use
+# for creating sensitivity tags in Data Catalog.
+# The ID must contain only lowercase letters (a-z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum size is 64 bytes when encoded in UTF-8
+# Refer: https://cloud.google.com/data-catalog/docs/reference/rest/v1/projects.locations.tagTemplates/create#query-parameters
+export INSPECTION_TAG_TEMPLATE_ID="[DATA_CATALOG_TAG_TEMPLATE_NAME]"
 
 # Name of the GCP KMS key ring name
 export KMS_KEYRING_ID="[key-ring-name]"
@@ -59,8 +66,8 @@ AUTO_TOKENIZE_JAR="${PWD}/build/libs/autotokenize-all.jar"
 
 # Fix the execution directory to present the JARs in this folder
 # shellcheck disable=SC2139
-alias sample_and_identify_pipeline="java -cp ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.DlpSamplerIdentifyPipeline"
+alias sample_and_identify_pipeline="java -cp ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.DlpInspectionPipeline"
 
 # Fix the execution directory to present the JARs in this folder
 # shellcheck disable=SC2139
-alias tokenize_pipeline="java -jar ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.EncryptionPipeline"
+alias tokenize_pipeline="java -cp ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.EncryptionPipeline"

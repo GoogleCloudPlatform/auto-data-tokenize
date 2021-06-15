@@ -54,8 +54,20 @@ message JdbcConfiguration {
   // The JDBC SQL Driver class name. The class must be available on the classpath.
   string driver_class_name = 2;
 
+  // The Username for connecting to JDBC Server
+  string user_name = 3;
+
   // The provided WHERE clause for inspection.
   string filter_clause = 5;
+
+  oneof passwords{
+    // Plain text password to use for JDBC Connection.
+    string password = 6;
+
+    // Fully Qualified id of the secret stored in Cloud Secret Manager.
+    // Sample format: projects/[project-number]/secrets/[secret-id]/versions/[version-id]
+    string password_secrets_key = 7;
+  }
 }
 
 // The information types associated with each column of the input structured file.

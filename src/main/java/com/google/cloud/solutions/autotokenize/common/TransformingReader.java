@@ -24,6 +24,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration.PasswordsCase;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import java.util.Arrays;
 import org.apache.avro.Schema;
@@ -81,6 +82,8 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
   abstract @Nullable JdbcConfiguration jdbcConfiguration();
 
+  abstract @Nullable SecretsClient secretsClient();
+
   abstract @Nullable TupleTag<FlatRecord> recordsTag();
 
   abstract @Nullable TupleTag<String> avroSchemaTag();
@@ -99,6 +102,8 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     abstract Builder sourceType(SourceType fileType);
 
     abstract Builder jdbcConfiguration(JdbcConfiguration jdbcConfiguration);
+
+    public abstract Builder secretsClient(SecretsClient value);
 
     abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
 
@@ -130,6 +135,11 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
   /** Provide a JdbcConfiguration for JDBC Connections. */
   public TransformingReader withJdbcConfiguration(JdbcConfiguration jdbcConfiguration) {
     return toBuilder().jdbcConfiguration(jdbcConfiguration).build();
+  }
+
+  /** Provide a JdbcConfiguration for JDBC Connections. */
+  public TransformingReader withSecretsClient(SecretsClient secretsClient) {
+    return toBuilder().secretsClient(secretsClient).build();
   }
 
   @Override
@@ -187,7 +197,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
         return bigQueryReader().fromQuery(inputPattern()).usingStandardSql();
 
       case JDBC_TABLE:
-        return TransformingJdbcIO.create(jdbcConfiguration(), inputPattern());
+        return TransformingJdbcIO.create(jdbcConfiguration(), secretsClient(), inputPattern());
 
       default:
         throw new IllegalArgumentException(
@@ -202,11 +212,15 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
   abstract static class TransformingJdbcIO
       extends PTransform<PBegin, PCollection<KV<FlatRecord, String>>> {
 
-    public static TransformingJdbcIO create(JdbcConfiguration jdbcConfiguration, String tableName) {
-      return new AutoValue_TransformingReader_TransformingJdbcIO(jdbcConfiguration, tableName);
+    public static TransformingJdbcIO create(
+        JdbcConfiguration jdbcConfiguration, SecretsClient secretsClient, String tableName) {
+      return new AutoValue_TransformingReader_TransformingJdbcIO(
+          jdbcConfiguration, secretsClient, tableName);
     }
 
     abstract JdbcConfiguration jdbcConfiguration();
+
+    abstract SecretsClient secretsClient();
 
     abstract String tableName();
 
@@ -217,10 +231,18 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
               JdbcIO.readRows()
                   .withDataSourceConfiguration(
                       DataSourceConfiguration.create(
-                          jdbcConfiguration().getDriverClassName(),
-                          jdbcConfiguration().getConnectionUrl()))
+                              jdbcConfiguration().getDriverClassName(),
+                              jdbcConfiguration().getConnectionUrl())
+                          .withUsername(jdbcConfiguration().getUserName())
+                          .withPassword(extractPassword()))
                   .withQuery(makeQuery()))
           .apply(MapElements.via(FlatRecordConvertFn.forBeamRow()));
+    }
+
+    private String extractPassword() {
+      return PasswordsCase.PASSWORD.equals(jdbcConfiguration().getPasswordsCase())
+          ? jdbcConfiguration().getPassword()
+          : secretsClient().accessPasswordSecret(jdbcConfiguration().getPasswordSecretsKey());
     }
 
     private String makeQuery() {
