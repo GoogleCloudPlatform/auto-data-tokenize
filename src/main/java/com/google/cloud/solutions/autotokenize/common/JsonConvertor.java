@@ -48,8 +48,6 @@ public final class JsonConvertor {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private JsonConvertor() {}
-
   /**
    * Returns the Object serialized as JSON using Jackson ObjectWriter or Protobuf JsonFormat if the
    * object is a Message.
@@ -90,7 +88,7 @@ public final class JsonConvertor {
 
   /** Returns a JSON string of the given Map. */
   private static String mapAsJsonString(Map<?, ?> map) {
-    if (map == null || map.isEmpty()) {
+    if (map.isEmpty()) {
       return "{}";
     }
 
@@ -186,11 +184,12 @@ public final class JsonConvertor {
     try {
       return new GenericDatumReader<GenericRecord>(schema)
           .read(null, DecoderFactory.get().jsonDecoder(schema, avroJson));
-    } catch (IOException exception) {
+    } catch (Exception exception) {
       throw new JsonConversionException(exception);
     }
   }
 
+  /** Returns a JSON representation of {@link GenericRecord} object. */
   public static String convertRecordToJson(GenericRecord genericRecord) {
     var schema = genericRecord.getSchema();
     var baos = new ByteArrayOutputStream();
@@ -216,4 +215,6 @@ public final class JsonConvertor {
       super(cause);
     }
   }
+
+  private JsonConvertor() {}
 }

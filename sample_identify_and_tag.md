@@ -74,6 +74,7 @@ cleanup easiest at the end of the tutorial, we recommend that you create a new p
         dlp.googleapis.com \
         sql-component.googleapis.com \
         sqladmin.googleapis.com \
+        secretmanager.googleapis.com \
         storage.googleapis.com
 
 
@@ -277,7 +278,7 @@ Dataflow pipelines based on Flex templates can be started from Cloud Composer us
         --flex-template-base-image=JAVA11 \
         --metadata-file="sample_identify_tag_pipeline_metadata.json" \
         --jar="build/libs/autotokenize-all.jar" \
-        --env="FLEX_TEMPLATE_JAVA_MAIN_CLASS=\"com.google.cloud.solutions.autotokenize.pipeline.DlpSamplerIdentifyPipeline\""
+        --env="FLEX_TEMPLATE_JAVA_MAIN_CLASS=\"com.google.cloud.solutions.autotokenize.pipeline.DlpInspectionPipeline\""
 
 #### Inspection results to BigQuery table
 
@@ -308,7 +309,7 @@ The sampling and DLP identification pipeline will:
 
 Launch the sampling and DLP identification pipeline:
 
-    export CLOUD_SQL_JDBC_CONNECTION_URL="jdbc:mysql:///${DATABASE_ID}?cloudSqlInstance=${PROJECT_ID}%3A${REGION_ID}%3A${SQL_INSTANCE}&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=root1234"
+    export CLOUD_SQL_JDBC_CONNECTION_URL="jdbc:mysql:///${DATABASE_ID}?cloudSqlInstance=${PROJECT_ID}%3A${REGION_ID}%3A${SQL_INSTANCE}&socketFactory=com.google.cloud.sql.mysql.SocketFactory"
 
     gcloud dataflow flex-template run "sample-inspect-tag-`date +%Y%m%d-%H%M%S`" \
     --template-file-gcs-location "${FLEX_TEMPLATE_PATH}" \
@@ -316,13 +317,16 @@ Launch the sampling and DLP identification pipeline:
     --service-account-email "${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL}" \
     --staging-location "gs://${TEMP_GCS_BUCKET}/staging" \
     --worker-machine-type "n1-standard-1" \
-    --parameters sampleSize=1000 \
+    --parameters sampleSize=2000 \
     --parameters sourceType="JDBC_TABLE" \
     --parameters inputPattern="Contacts" \
     --parameters reportLocation="gs://${TEMP_GCS_BUCKET}/auto_dlp_report/" \
     --parameters reportBigQueryTable="${PROJECT_ID}:inspection_results.SensitivityInspectionResults" \
     --parameters jdbcConnectionUrl="${CLOUD_SQL_JDBC_CONNECTION_URL}" \
     --parameters jdbcDriverClass="com.mysql.cj.jdbc.Driver" \
+    --parameters jdbcUserName="root" \
+    --parameters jdbcPasswordSecretsKey="projects/${PROJECT_ID}/secrets/${SQL_PASSWORD_SECRET_NAME}/versions/1" \
+    --parameters ^:^jdbcFilterClause="ROUND(RAND() * 10) IN (1,3)" \
     --parameters dataCatalogEntryGroupId="projects/${PROJECT_ID}/locations/${REGION_ID}/entryGroups/${DATA_CATALOG_ENTRY_GROUP_ID}" \
     --parameters dataCatalogInspectionTagTemplateId="projects/${PROJECT_ID}/locations/${REGION_ID}/tagTemplates/${INSPECTION_TAG_TEMPLATE_ID}"
 

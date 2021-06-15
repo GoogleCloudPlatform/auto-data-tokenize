@@ -24,10 +24,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportFileWriter;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportToTableRow;
+import com.google.cloud.solutions.autotokenize.common.SecretsClient;
 import com.google.cloud.solutions.autotokenize.common.SourceNames;
 import com.google.cloud.solutions.autotokenize.common.TransformingReader;
 import com.google.cloud.solutions.autotokenize.datacatalog.DataCatalogWriter;
@@ -50,34 +49,42 @@ import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Instantiates the sampling Dataflow pipeline based on provided options. */
-public final class DlpSamplerIdentifyPipeline {
+public final class DlpInspectionPipeline {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
-  private final DlpSamplerIdentifyOptions options;
+  private final DlpInspectionOptions options;
 
   private final Pipeline pipeline;
 
   private final DlpClientFactory dlpClientFactory;
 
+  private final SecretsClient secretsClient;
+
   private final Clock clock;
 
-  private DlpSamplerIdentifyPipeline(DlpSamplerIdentifyOptions options) {
-    this(options, Pipeline.create(options), DlpClientFactory.defaultFactory(), Clock.systemUTC());
+  private DlpInspectionPipeline(DlpInspectionOptions options) {
+    this(
+        options,
+        Pipeline.create(options),
+        DlpClientFactory.defaultFactory(),
+        SecretsClient.of(),
+        Clock.systemUTC());
   }
 
   @VisibleForTesting
-  DlpSamplerIdentifyPipeline(
-      DlpSamplerIdentifyOptions options,
+  DlpInspectionPipeline(
+      DlpInspectionOptions options,
       Pipeline pipeline,
       DlpClientFactory dlpClientFactory,
+      SecretsClient secretsClient,
       Clock clock) {
     this.options = options;
     this.pipeline = pipeline;
     this.dlpClientFactory = checkNotNull(dlpClientFactory);
+    this.secretsClient = checkNotNull(secretsClient);
     this.clock = checkNotNull(clock);
 
     validateOptions();
@@ -89,14 +96,14 @@ public final class DlpSamplerIdentifyPipeline {
     TupleTag<FlatRecord> recordsTag = new TupleTag<>();
     TupleTag<String> avroSchemaTag = new TupleTag<>();
 
-    var jdbcConfiguration = extractJdbcConfiguration();
-
     PCollectionTuple recordSchemaTuple =
         pipeline.apply(
             "Read" + SourceNames.forType(options.getSourceType()).asCamelCase(),
             TransformingReader.forSourceType(options.getSourceType())
                 .from(options.getInputPattern())
-                .withJdbcConfiguration(jdbcConfiguration)
+                .withJdbcConfiguration(
+                    JdbcConfigurationExtractor.using(options).jdbcConfiguration())
+                .withSecretsClient(secretsClient)
                 .withRecordsTag(recordsTag)
                 .withAvroSchemaTag(avroSchemaTag));
 
@@ -115,7 +122,8 @@ public final class DlpSamplerIdentifyPipeline {
                     .setSourceType(options.getSourceType())
                     .setClock(clock)
                     .setInputPattern(options.getInputPattern())
-                    .setJdbcConfiguration(jdbcConfiguration)
+                    .setJdbcConfiguration(
+                        JdbcConfigurationExtractor.using(options).jdbcConfiguration())
                     .build());
 
     writeReportToGcs(inspectionReport);
@@ -168,7 +176,8 @@ public final class DlpSamplerIdentifyPipeline {
     switch (options.getSourceType()) {
       case JDBC_TABLE:
         checkArgument(
-            extractJdbcConfiguration() != null, "JDBCConfiguration missing for source-type");
+            JdbcConfigurationExtractor.using(options).jdbcConfiguration() != null,
+            "JDBCConfiguration missing for source-type");
         // For JDBC there is additional check for entry group id.
         checkArgument(
             options.getDataCatalogInspectionTagTemplateId() == null
@@ -193,29 +202,6 @@ public final class DlpSamplerIdentifyPipeline {
       default:
         throw new IllegalArgumentException("" + options.getSourceType() + " is unsupported.");
     }
-  }
-
-  @Nullable
-  private JdbcConfiguration extractJdbcConfiguration() {
-    if (options.getSourceType().equals(SourceType.JDBC_TABLE)) {
-
-      checkArgument(
-          isNotBlank(options.getJdbcConnectionUrl()) && isNotBlank(options.getJdbcDriverClass()),
-          "Provide both jdbcDriverClass and jdbcConnectionUrl parameters.");
-
-      var configBuilder =
-          JdbcConfiguration.newBuilder()
-              .setConnectionUrl(options.getJdbcConnectionUrl())
-              .setDriverClassName(options.getJdbcDriverClass());
-
-      if (options.getJdbcFilterClause() != null) {
-        configBuilder.setFilterClause(options.getJdbcFilterClause());
-      }
-
-      return configBuilder.build();
-    }
-
-    return null;
   }
 
   /**
@@ -244,12 +230,12 @@ public final class DlpSamplerIdentifyPipeline {
   }
 
   public static void main(String[] args) {
-    PipelineOptionsFactory.register(DlpSamplerIdentifyOptions.class);
-    DlpSamplerIdentifyOptions options =
-        PipelineOptionsFactory.fromArgs(args).as(DlpSamplerIdentifyOptions.class);
+    PipelineOptionsFactory.register(DlpInspectionOptions.class);
+    DlpInspectionOptions options =
+        PipelineOptionsFactory.fromArgs(args).as(DlpInspectionOptions.class);
 
     logger.atInfo().log("Staging the Dataflow job");
 
-    new DlpSamplerIdentifyPipeline(options).makePipeline().run();
+    new DlpInspectionPipeline(options).makePipeline().run();
   }
 }

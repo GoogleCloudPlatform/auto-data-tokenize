@@ -27,12 +27,14 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInform
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InfoTypeInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.JsonConvertor;
+import com.google.cloud.solutions.autotokenize.common.SecretsClient;
 import com.google.cloud.solutions.autotokenize.testing.FileStringReader;
 import com.google.cloud.solutions.autotokenize.testing.JsonSubject;
 import com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.ItemShapeValidatingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
+import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -71,7 +73,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public final class DlpSamplerIdentifyPipelineIT {
+public final class DlpInspectionPipelineIT {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final String TEST_TIMESTAMP = "2021-06-02T14:32:00Z";
@@ -84,6 +86,7 @@ public final class DlpSamplerIdentifyPipelineIT {
 
   private final ImmutableMap<String, String> configParameters;
   private final String basicArgs;
+  private final SecretsClient secretsClient;
   private final String expectedSchema;
   private final ImmutableList<ColumnInformation> expectedColumnInformation;
   private final ImmutableMap<String, String> schemaKeyInfoTypeMap;
@@ -91,15 +94,19 @@ public final class DlpSamplerIdentifyPipelineIT {
 
   private transient String outputFolder;
   public static transient DB testDBInstance;
-  public transient DlpSamplerIdentifyOptions pipelineOptions;
+  public transient DlpInspectionOptions pipelineOptions;
 
   @Test
   public void makePipeline_valid() {
     var dlpStub =
         new ItemShapeValidatingDlpStub(pipelineOptions.getProject(), schemaKeyInfoTypeMap);
 
-    new DlpSamplerIdentifyPipeline(
-            pipelineOptions, testPipeline, new StubbingDlpClientFactory(dlpStub), fixedClock)
+    new DlpInspectionPipeline(
+            pipelineOptions,
+            testPipeline,
+            new StubbingDlpClientFactory(dlpStub),
+            secretsClient,
+            fixedClock)
         .makePipeline()
         .run()
         .waitUntilFinish();
@@ -192,9 +199,32 @@ public final class DlpSamplerIdentifyPipelineIT {
             })
         .add(
             new Object[] {
-              "MySQL 5000 records, selects only records_that_end_with 1",
+              "MySQL 5000 records, selects only records_that_end_with 1 [password]",
               ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
-              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10) IN (1)",
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10) IN (1) --jdbcUserName=root --jdbcPassword=",
+              TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
+              ImmutableList.of(
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.topLevelRecord.person_name")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder().setInfoType("PERSON_NAME").setCount(500))
+                      .build(),
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.topLevelRecord.contact_number")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder()
+                              .setInfoType("PHONE_NUMBER")
+                              .setCount(500))
+                      .build()),
+              ImmutableMap.of(
+                  "$.topLevelRecord.person_name", "PERSON_NAME",
+                  "$.topLevelRecord.contact_number", "PHONE_NUMBER")
+            })
+        .add(
+            new Object[] {
+              "MySQL 5000 records, selects only records_that_end_with 1 [passwordSecret]",
+              ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10) IN (1) --jdbcUserName=root --jdbcPasswordSecretsKey=id/to/password",
               TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
               ImmutableList.of(
                   ColumnInformation.newBuilder()
@@ -216,7 +246,7 @@ public final class DlpSamplerIdentifyPipelineIT {
         .build();
   }
 
-  public DlpSamplerIdentifyPipelineIT(
+  public DlpInspectionPipelineIT(
       String testName,
       ImmutableMap<String, String> configParameters,
       String basicArgs,
@@ -225,6 +255,9 @@ public final class DlpSamplerIdentifyPipelineIT {
       ImmutableMap<String, String> schemaKeyInfoTypeMap) {
     this.configParameters = configParameters;
     this.basicArgs = basicArgs;
+    this.secretsClient =
+        SecretsClient.withSecretsStub(
+            ConstantSecretVersionValueManagerServicesStub.of("id/to/password", ""));
     this.expectedSchema = expectedSchema;
     this.expectedColumnInformation = expectedColumnInformation;
     this.schemaKeyInfoTypeMap = schemaKeyInfoTypeMap;
@@ -305,8 +338,7 @@ public final class DlpSamplerIdentifyPipelineIT {
             .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
             .toArray(String[]::new);
 
-    pipelineOptions =
-        PipelineOptionsFactory.fromArgs(completeArgs).as(DlpSamplerIdentifyOptions.class);
+    pipelineOptions = PipelineOptionsFactory.fromArgs(completeArgs).as(DlpInspectionOptions.class);
   }
 
   private void generateTestRecordsFile(SourceType sourceType, String folder) {

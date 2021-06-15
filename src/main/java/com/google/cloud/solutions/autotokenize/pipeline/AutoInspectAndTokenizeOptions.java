@@ -18,13 +18,11 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
-import java.util.List;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.Validation.Required;
 
-/** Defines all the required inputs for the Encrypting pipeline. */
-public interface EncryptingPipelineOptions extends GcpOptions {
-
+/** Common options for Inspection and Tokenization pipelines. */
+public interface AutoInspectAndTokenizeOptions extends GcpOptions {
   @Required
   AutoTokenizeMessages.SourceType getSourceType();
 
@@ -34,11 +32,6 @@ public interface EncryptingPipelineOptions extends GcpOptions {
   String getInputPattern();
 
   void setInputPattern(String inputPattern);
-
-  @Required
-  String getSchema();
-
-  void setSchema(String schema);
 
   String getJdbcConnectionUrl();
 
@@ -52,28 +45,15 @@ public interface EncryptingPipelineOptions extends GcpOptions {
 
   void setJdbcFilterClause(String jdbcFilterClause);
 
-  @Required
-  List<String> getTokenizeColumns();
+  String getJdbcUserName();
 
-  void setTokenizeColumns(List<String> fileDlpReportJson);
+  void setJdbcUserName(String jdbcUserName);
 
-  String getOutputDirectory();
+  String getJdbcPasswordSecretsKey();
 
-  void setOutputDirectory(String outputFilePattern);
+  void setJdbcPasswordSecretsKey(String jdbcPasswordSecretsKey);
 
-  String getOutputBigQueryTable();
+  String getJdbcPassword();
 
-  void setOutputBigQueryTable(String outputBigQueryTable);
-
-  String getTinkEncryptionKeySetJson();
-
-  void setTinkEncryptionKeySetJson(String tinkKeySetJson);
-
-  String getMainKmsKeyUri();
-
-  void setMainKmsKeyUri(String mainKmsKeyUri);
-
-  String getDlpEncryptConfigJson();
-
-  void setDlpEncryptConfigJson(String dlpEncryptConfigJson);
+  void setJdbcPassword(String jdbcPassword);
 }

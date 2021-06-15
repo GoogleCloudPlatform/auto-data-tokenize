@@ -26,6 +26,7 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfigur
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
+import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
 import java.io.File;
@@ -52,10 +53,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-public class TransformingReaderTest {
+public final class TransformingReaderTest {
 
   @RunWith(Parameterized.class)
-  public static class JdbcReaderTest {
+  public static final class JdbcReaderTest {
 
     @Rule public transient TestPipeline testPipeline = TestPipeline.create();
 
@@ -64,19 +65,25 @@ public class TransformingReaderTest {
     private final String testConditionName;
     private final String initScriptFile;
     private final String tableName;
+    private final JdbcConfiguration jdbcConfiguration;
     private final ImmutableList<FlatRecord> expectedRecords;
     private final String testDatabaseName;
+    private final ConstantSecretVersionValueManagerServicesStub secretsStub;
 
     public JdbcReaderTest(
         String testConditionName,
         String initScriptFile,
         String tableName,
+        JdbcConfiguration jdbcConfiguration,
         ImmutableList<FlatRecord> expectedRecords) {
       this.testConditionName = testConditionName;
       this.initScriptFile = initScriptFile;
       this.tableName = tableName;
+      this.jdbcConfiguration = jdbcConfiguration;
       this.expectedRecords = expectedRecords;
       this.testDatabaseName = "test_" + UUID.randomUUID().toString().replaceAll("[\\-]", "_");
+      this.secretsStub =
+          ConstantSecretVersionValueManagerServicesStub.of("id/to/secrets/key/version", "");
     }
 
     @BeforeClass
@@ -107,10 +114,10 @@ public class TransformingReaderTest {
               TransformingReader.forSourceType(SourceType.JDBC_TABLE)
                   .from(tableName)
                   .withJdbcConfiguration(
-                      JdbcConfiguration.newBuilder()
+                      jdbcConfiguration.toBuilder()
                           .setConnectionUrl(getCompleteDbConnectionString())
-                          .setDriverClassName("com.mysql.cj.jdbc.Driver")
                           .build())
+                  .withSecretsClient(SecretsClient.withSecretsStub(secretsStub))
                   .withRecordsTag(recordTag)
                   .withAvroSchemaTag(schemaTag));
 
@@ -127,6 +134,11 @@ public class TransformingReaderTest {
                 "SimpleFlatRecord",
                 "db_init_scripts/simple_flat_records.sql",
                 "SimpleFlatRecords",
+                JdbcConfiguration.newBuilder()
+                    .setDriverClassName("com.mysql.cj.jdbc.Driver")
+                    .setUserName("root")
+                    .setPasswordSecretsKey("id/to/secrets/key/version")
+                    .build(),
                 TestResourceLoader.classPath()
                     .forProto(FlatRecord.class)
                     .loadAllTextFiles(
@@ -138,6 +150,11 @@ public class TransformingReaderTest {
                 "TableWithTimeFields",
                 "db_init_scripts/table_with_timefields_records.sql",
                 "TableWithTimeFields",
+                JdbcConfiguration.newBuilder()
+                    .setDriverClassName("com.mysql.cj.jdbc.Driver")
+                    .setUserName("root")
+                    .setPassword("")
+                    .build(),
                 TestResourceLoader.classPath()
                     .forProto(FlatRecord.class)
                     .loadAllTextFiles("jdbc_flatrecords/date_time_fields_flatrecords.textpb")
@@ -153,7 +170,7 @@ public class TransformingReaderTest {
   }
 
   @RunWith(Parameterized.class)
-  public static class AvroParquetReaderTest {
+  public static final class AvroParquetReaderTest {
 
     private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 

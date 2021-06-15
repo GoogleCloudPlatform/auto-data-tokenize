@@ -17,29 +17,16 @@
 package com.google.cloud.solutions.autotokenize.pipeline;
 
 
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import java.util.List;
-import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Validation.Required;
 
-/** Defines the sampling pipeline parameters. */
-public interface DlpSamplerIdentifyOptions extends GcpOptions {
+/** Defines the Inspection pipeline parameters. */
+public interface DlpInspectionOptions extends AutoInspectAndTokenizeOptions {
 
   @Default.Integer(1000)
   int getSampleSize();
 
   void setSampleSize(int sampleSize);
-
-  @Required
-  SourceType getSourceType();
-
-  void setSourceType(SourceType fileType);
-
-  @Required
-  String getInputPattern();
-
-  void setInputPattern(String inputFilePattern);
 
   String getReportLocation();
 
@@ -52,18 +39,6 @@ public interface DlpSamplerIdentifyOptions extends GcpOptions {
   List<String> getObservableInfoTypes();
 
   void setObservableInfoTypes(List<String> infoTypes);
-
-  String getJdbcConnectionUrl();
-
-  void setJdbcConnectionUrl(String jdbcConnectionUrl);
-
-  String getJdbcDriverClass();
-
-  void setJdbcDriverClass(String jdbcDriverClass);
-
-  String getJdbcFilterClause();
-
-  void setJdbcFilterClause(String jdbcFilterClause);
 
   String getDataCatalogEntryGroupId();
 
