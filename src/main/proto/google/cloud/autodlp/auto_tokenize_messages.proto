@@ -172,9 +172,24 @@ message DlpEncryptConfig {
   repeated ColumnTransform transforms = 1;
 }
 
+// Specifies DLP Transform to Deidentify a column's information.
 message ColumnTransform {
+
+  // The JSON-path of the column to be de-identified.
   string column_id = 1;
-  .google.privacy.dlp.v2.PrimitiveTransformation transform = 5;
+
+  // Handle the column as free-form to tokenize specific InfoTypes within the
+  // free-form text.
+  bool free_form_column = 2;
+
+  // The InfoType to tokenize in free-form text
+  // e.g. PHONE_NUMBER, EMAIL_ADDRESS.
+  // Refer: https://cloud.google.com/dlp/docs/infotypes-reference#global
+  // used only when free_form_column=True, keep empty to use all InfoTypes.
+  repeated string info_types = 3;
+
+    // Transform to be used for tokenizing entire column value
+    .google.privacy.dlp.v2.PrimitiveTransformation transform = 5;
 }
 
 

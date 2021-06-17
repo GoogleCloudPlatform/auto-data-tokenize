@@ -25,10 +25,16 @@ import com.google.common.collect.Multimap;
 import com.google.privacy.dlp.v2.DeidentifyConfig;
 import com.google.privacy.dlp.v2.FieldTransformation;
 import com.google.privacy.dlp.v2.InfoType;
+import com.google.privacy.dlp.v2.InfoTypeTransformations;
+import com.google.privacy.dlp.v2.InfoTypeTransformations.InfoTypeTransformation;
 import com.google.privacy.dlp.v2.PrimitiveTransformation;
 import com.google.privacy.dlp.v2.RecordTransformations;
 import java.util.regex.Pattern;
 
+/**
+ * Create DLP DeidentifyConfiguration based on user provided parameters. Uses the flattened record
+ * keys' to schema keys and apply DLP primitive transforms appropriately.
+ */
 public final class DeidetifyConfigMaker {
 
   private static final Pattern ARRAY_INDEX_PATTERN = Pattern.compile("\\[\\d+\\]");
@@ -48,7 +54,14 @@ public final class DeidetifyConfigMaker {
     var fieldTransforms =
         dlpEncryptConfig.getTransformsList().stream()
             .map(col -> new FieldTransformMaker(col, columnSchemaKeyMap).make())
+            .filter(
+                fieldTransformation ->
+                    !FieldTransformation.getDefaultInstance().equals(fieldTransformation))
             .collect(toImmutableList());
+
+    if (fieldTransforms.isEmpty()) {
+      return DeidentifyConfig.getDefaultInstance();
+    }
 
     return DeidentifyConfig.newBuilder()
         .setRecordTransformations(
@@ -71,40 +84,77 @@ public final class DeidetifyConfigMaker {
     }
 
     private FieldTransformation make() {
-      return FieldTransformation.newBuilder()
-          .addAllFields(
-              DeidentifyColumns.fieldIdsFor(
-                  columnSchemaKeyMap.get(colEncryptConfig.getColumnId()).stream()
-                      .map(colName -> ARRAY_INDEX_PATTERN.matcher(colName).replaceAll(""))
-                      .distinct()
-                      .collect(toImmutableList())))
-          .setPrimitiveTransformation(createTransformation())
-          .build();
+      var fieldNames =
+          columnSchemaKeyMap.get(colEncryptConfig.getColumnId()).stream()
+              .map(colName -> ARRAY_INDEX_PATTERN.matcher(colName).replaceAll(""))
+              .distinct()
+              .collect(toImmutableList());
+
+      if (fieldNames.isEmpty()) {
+        return FieldTransformation.getDefaultInstance();
+      }
+
+      var fieldTransformBuilder =
+          FieldTransformation.newBuilder().addAllFields(DeidentifyColumns.fieldIdsFor(fieldNames));
+
+      if (colEncryptConfig.getFreeFormColumn()) {
+        fieldTransformBuilder.setInfoTypeTransformations(
+            InfoTypeTransformations.newBuilder()
+                .addTransformations(buildInfoTypeTransformConfig()));
+      } else {
+        fieldTransformBuilder.setPrimitiveTransformation(createTransformation());
+      }
+      return fieldTransformBuilder.build();
     }
 
+    private InfoTypeTransformation buildInfoTypeTransformConfig() {
+      var infoTransformBuilder = InfoTypeTransformation.newBuilder();
+
+      if (colEncryptConfig.getInfoTypesCount() > 0) {
+        infoTransformBuilder.addAllInfoTypes(
+            colEncryptConfig.getInfoTypesList().stream()
+                .map(name -> InfoType.newBuilder().setName(name).build())
+                .collect(toImmutableList()));
+      }
+
+      return infoTransformBuilder.setPrimitiveTransformation(createTransformation()).build();
+    }
+
+    /** Returns the transform with set surrogate_infotype value if missing. */
     private PrimitiveTransformation createTransformation() {
       var transformation = colEncryptConfig.getTransform();
+      switch (transformation.getTransformationCase()) {
+        case CRYPTO_REPLACE_FFX_FPE_CONFIG:
+          return makeCryptoReplaceFfxWithSurrogate();
 
-      if (transformation.hasCryptoReplaceFfxFpeConfig()) {
-        var cryptoConfig = transformation.getCryptoReplaceFfxFpeConfig();
-        if (cryptoConfig.getSurrogateInfoType().equals(InfoType.getDefaultInstance())) {
-          return PrimitiveTransformation.newBuilder()
-              .setCryptoReplaceFfxFpeConfig(
-                  cryptoConfig.toBuilder().setSurrogateInfoType(DEFAULT_SURROGATE_INFOTYPE))
-              .build();
-        }
+        case CRYPTO_DETERMINISTIC_CONFIG:
+          return makeCryptoDeterministicWithSurrogate();
 
-        return transformation;
-      } else if (transformation.hasCryptoDeterministicConfig()) {
-        var cryptoConfig = transformation.getCryptoDeterministicConfig();
-        if (cryptoConfig.getSurrogateInfoType().equals(InfoType.getDefaultInstance())) {
-          return PrimitiveTransformation.newBuilder()
-              .setCryptoDeterministicConfig(
-                  cryptoConfig.toBuilder().setSurrogateInfoType(DEFAULT_SURROGATE_INFOTYPE))
-              .build();
-        }
+        default:
+          return transformation;
+      }
+    }
 
-        return transformation;
+    private PrimitiveTransformation makeCryptoReplaceFfxWithSurrogate() {
+      var transformation = colEncryptConfig.getTransform();
+      var cryptoFfxConfig = transformation.getCryptoReplaceFfxFpeConfig();
+      if (cryptoFfxConfig.getSurrogateInfoType().equals(InfoType.getDefaultInstance())) {
+        return PrimitiveTransformation.newBuilder()
+            .setCryptoReplaceFfxFpeConfig(
+                cryptoFfxConfig.toBuilder().setSurrogateInfoType(DEFAULT_SURROGATE_INFOTYPE))
+            .build();
+      }
+      return transformation;
+    }
+
+    private PrimitiveTransformation makeCryptoDeterministicWithSurrogate() {
+      var transformation = colEncryptConfig.getTransform();
+      var cryptoConfig = transformation.getCryptoDeterministicConfig();
+      if (cryptoConfig.getSurrogateInfoType().equals(InfoType.getDefaultInstance())) {
+        return PrimitiveTransformation.newBuilder()
+            .setCryptoDeterministicConfig(
+                cryptoConfig.toBuilder().setSurrogateInfoType(DEFAULT_SURROGATE_INFOTYPE))
+            .build();
       }
 
       return transformation;
