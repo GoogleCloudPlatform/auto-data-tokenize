@@ -43,14 +43,4 @@ public final class SecretsClientTest {
     assertThrows(
         RuntimeException.class, () -> secretsService.accessPasswordSecret("unknown/secret/id"));
   }
-
-  @Test
-  public void accessPasswordSecret_noCredentials_throwsRuntimeException() {
-    var secretsService = SecretsClient.of();
-    assertThrows(
-        RuntimeException.class,
-        () ->
-            secretsService.accessPasswordSecret(
-                "projects/auto-dlp-jdbc/secrets/mysql-password/versions/1"));
-  }
 }
