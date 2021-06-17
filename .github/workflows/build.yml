@@ -14,11 +14,11 @@
 # limitations under the License.
 #
 
-name: Build
+name: Build and Test
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
