@@ -87,7 +87,10 @@ public final class RandomColumnarSamplerTest {
           column -> {
             ImmutableSet<Value> values = ImmutableSet.copyOf(column.getValue());
 
-            assertThat(values.size()).isAtMost(maxSamples);
+            if (maxSamples != 0) {
+              assertThat(values.size()).isAtMost(maxSamples);
+            }
+
             assertThat(Sets.difference(values, expectedValues.get(column.getKey()))).isEmpty();
           });
       return null;
@@ -275,13 +278,45 @@ public final class RandomColumnarSamplerTest {
                           Value.newBuilder().setIntegerValue(3).build()))
                   .build()
             })
-        // .add(new Object[] {
-        //   /*testCondition=*/ "test1",
-        //   /*sampleSize=*/ 100,
-        //   /*flatRecordTextFiles=*/ null,
-        //   /*expectedSplits=*/ ImmutableMap.<String, Iterable<Value>>builder()
-        //   .build()
-        // })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "usesGroupIntoBatches",
+              /*sampleSize=*/ 0,
+              /*flatRecords=*/ ImmutableList.of(
+                  FlatRecord.newBuilder()
+                      .putFlatKeySchema("$.cc[0]", "$.cc")
+                      .putFlatKeySchema("$.cc[1]", "$.cc")
+                      .putFlatKeySchema("$.email", "$.email")
+                      .putValues("$.cc[0]", Value.newBuilder().setIntegerValue(1234567890L).build())
+                      .putValues("$.cc[1]", Value.newBuilder().setIntegerValue(9876543210L).build())
+                      .putValues(
+                          "$.email", Value.newBuilder().setStringValue("email@domain.ext").build())
+                      .build(),
+                  FlatRecord.newBuilder()
+                      .putFlatKeySchema("$.cc[0]", "$.cc")
+                      .putFlatKeySchema("$.cc[1]", "$.cc")
+                      .putFlatKeySchema("$.email", "$.email")
+                      .putValues("$.cc[0]", Value.newBuilder().setIntegerValue(4567890L).build())
+                      .putValues("$.cc[1]", Value.newBuilder().setIntegerValue(91919989L).build())
+                      .putValues(
+                          "$.email",
+                          Value.newBuilder().setStringValue("email2@domain2.ext2").build())
+                      .build()),
+              /*expectedSplits=*/ ImmutableMap.<String, ImmutableSet<Value>>builder()
+                  .put(
+                      "$.cc",
+                      ImmutableSet.of(
+                          Value.newBuilder().setIntegerValue(1234567890L).build(),
+                          Value.newBuilder().setIntegerValue(9876543210L).build(),
+                          Value.newBuilder().setIntegerValue(4567890L).build(),
+                          Value.newBuilder().setIntegerValue(91919989L).build()))
+                  .put(
+                      "$.email",
+                      ImmutableSet.of(
+                          Value.newBuilder().setStringValue("email@domain.ext").build(),
+                          Value.newBuilder().setStringValue("email2@domain2.ext2").build()))
+                  .build()
+            })
         .build();
   }
 }
