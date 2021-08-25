@@ -16,11 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
-import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType.AVRO;
-import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType.PARQUET;
-import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
-import static java.lang.Integer.parseInt;
-
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
@@ -40,14 +35,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.GoogleLogger;
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.AvroCoder;
@@ -62,15 +49,25 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType.AVRO;
+import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType.PARQUET;
+import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
+import static java.lang.Integer.parseInt;
 
 @RunWith(Parameterized.class)
 public final class DlpInspectionPipelineIT {
