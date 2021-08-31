@@ -10,7 +10,7 @@ flat_key_schema {
   value: "$.topLevelRecord.id"
 }
 flat_key_schema {
-  key: "$.last_signin_timestamp"
+  key: "$.last_signin_timestamp.long"
   value: "$.topLevelRecord.last_signin_timestamp"
 }
 flat_key_schema {
@@ -38,7 +38,7 @@ values {
   }
 }
 values {
-  key: "$.last_signin_timestamp"
+  key: "$.last_signin_timestamp.long"
   value {
     integer_value: 1563195300000
   }

@@ -14,7 +14,7 @@ flat_key_schema {
   value: "$.topLevelRecord.time_field"
 }
 flat_key_schema {
-  key: "$.timestamp_field"
+  key: "$.timestamp_field.long"
   value: "$.topLevelRecord.timestamp_field"
 }
 flat_key_schema {
@@ -40,7 +40,7 @@ values {
   }
 }
 values {
-  key: "$.timestamp_field"
+  key: "$.timestamp_field.long"
   value {
     integer_value: 1639303890000
   }
