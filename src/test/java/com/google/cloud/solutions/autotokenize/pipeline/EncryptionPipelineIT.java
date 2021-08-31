@@ -20,8 +20,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import ch.vorburger.exec.ManagedProcessException;
-import ch.vorburger.mariadb4j.DB;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
@@ -63,13 +61,13 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.testcontainers.containers.MySQLContainer;
 
 @RunWith(Parameterized.class)
 public final class EncryptionPipelineIT implements Serializable {
@@ -89,22 +87,16 @@ public final class EncryptionPipelineIT implements Serializable {
   private final String inputSchemaJsonFile;
   private final int expectedRecordsCount;
 
-  public static transient DB testDBInstance;
+  private static MySQLContainer databaseContainer;
   private transient EncryptionPipelineOptions pipelineOptions;
   private transient DlpClientFactory dlpClientFactory;
   private transient Schema expectedSchema;
   private transient String clearTextEncryptionKeySet;
 
-  @BeforeClass
-  public static void setupMariaDBInMemory() throws ManagedProcessException {
-    testDBInstance = DB.newEmbeddedDB(0);
-    testDBInstance.start();
-  }
-
   @AfterClass
-  public static void tearDownTestDB() throws ManagedProcessException {
-    if (testDBInstance != null) {
-      testDBInstance.stop();
+  public static void tearDownTestDB() {
+    if (databaseContainer != null) {
+      databaseContainer.stop();
     }
   }
 
@@ -292,11 +284,14 @@ public final class EncryptionPipelineIT implements Serializable {
       case JDBC_TABLE:
         var initScript = configParameters.get("initScript");
         var testDatabaseName = "test_" + new Random().nextLong();
-        testDBInstance.createDB(testDatabaseName);
-        testDBInstance.source(initScript, testDatabaseName);
+        databaseContainer = new MySQLContainer("mysql");
+        databaseContainer.withDatabaseName(testDatabaseName);
+        databaseContainer.withUsername("root");
+        databaseContainer.withPassword("");
+        databaseContainer.withInitScript(initScript);
+        databaseContainer.start();
         // update connection url:
-        options.put(
-            "jdbcConnectionUrl", testDBInstance.getConfiguration().getURL(testDatabaseName));
+        options.put("jdbcConnectionUrl", databaseContainer.getJdbcUrl());
         break;
       case BIGQUERY_TABLE:
       case BIGQUERY_QUERY:
