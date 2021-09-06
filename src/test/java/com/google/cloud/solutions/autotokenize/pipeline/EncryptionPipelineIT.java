@@ -170,6 +170,18 @@ public final class EncryptionPipelineIT implements Serializable {
     return ImmutableList.<Object[]>builder()
         .add(
             new Object[] {
+              /*testCondition=*/ "Nested Repeated Record: 1 record (DLP)",
+              /*configParameters=*/ ImmutableMap.of(
+                  "testFile",
+                  "avro_records/nested_repeated/record.avro",
+                  "dlpEncryptConfigFile",
+                  "avro_records/nested_repeated/encrypt_config.json"),
+              /*baseArgs*/ "--sourceType=AVRO",
+              /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
+              /*expectedRecordsCount=*/ 1
+            })
+        .add(
+            new Object[] {
               /*testCondition=*/ "Avro input: 1000 records (DLP)",
               /*configParameters=*/ ImmutableMap.of(
                   "testFile",
@@ -283,7 +295,7 @@ public final class EncryptionPipelineIT implements Serializable {
       case PARQUET:
       case AVRO:
         var testAvroFileFolder = temporaryFolder.newFolder();
-        TestResourceLoader.absolutePath()
+        TestResourceLoader.classPath()
             .copyTo(testAvroFileFolder)
             .createFileTestCopy(configParameters.get("testFile"));
         options.put("inputPattern", testAvroFileFolder.getAbsolutePath() + "/*");

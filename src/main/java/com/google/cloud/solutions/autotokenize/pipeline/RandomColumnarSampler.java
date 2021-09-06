@@ -17,27 +17,23 @@
 package com.google.cloud.solutions.autotokenize.pipeline;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
-import com.google.common.collect.ImmutableList;
+import com.google.cloud.solutions.autotokenize.common.UnFlattenKvFn;
 import com.google.privacy.dlp.v2.Value;
-import java.util.List;
 import java.util.Map;
+import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Filter;
-import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.GroupIntoBatches;
-import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Sample;
-import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 
 @AutoValue
 public abstract class RandomColumnarSampler
-    extends PTransform<PCollection<FlatRecord>, PCollection<KV<String, Iterable<Value>>>> {
+    extends PTransform<PCollection<FlatRecord>, PCollection<KV<String, Value>>> {
 
   abstract int sampleSize();
 
@@ -50,32 +46,36 @@ public abstract class RandomColumnarSampler
   }
 
   @Override
-  public PCollection<KV<String, Iterable<Value>>> expand(PCollection<FlatRecord> input) {
+  public PCollection<KV<String, Value>> expand(PCollection<FlatRecord> input) {
 
-    return input
-        .apply("SplitIntoSchemaColumns", MapElements.via(new SplitRecordByKeys()))
-        .apply(Flatten.iterables())
-        .apply(Filter.by(kv -> !kv.getValue().equals(Value.getDefaultInstance())))
-        .apply(
-            "MakeBatches",
-            (sampleSize() == 0)
-                ? GroupIntoBatches.ofSize(10000)
-                : Sample.fixedSizePerKey(sampleSize()));
+    var elements =
+        input
+            .apply("SplitIntoSchemaColumns", ParDo.of(new SplitRecordByKeysFn()))
+            .apply(Filter.by(kv -> !Value.getDefaultInstance().equals(kv.getValue())));
+
+    if (sampleSize() == 0) {
+      return elements;
+    }
+
+    return elements
+        .apply("MakeBatches", Sample.fixedSizePerKey(sampleSize()))
+        .apply("UnbundleValues", ParDo.of(new UnFlattenKvFn<>()));
   }
 
-  private static class SplitRecordByKeys
-      extends SimpleFunction<FlatRecord, List<KV<String, Value>>> {
+  private static class SplitRecordByKeysFn extends DoFn<FlatRecord, KV<String, Value>> {
 
-    @Override
-    public ImmutableList<KV<String, Value>> apply(FlatRecord input) {
+    @ProcessElement
+    public void splitValues(
+        @Element FlatRecord input, OutputReceiver<KV<String, Value>> outputReceiver) {
 
       Map<String, String> flatKeySchemaKeyMap = input.getFlatKeySchemaMap();
 
-      return input.getValuesMap().entrySet().stream()
+      input.getValuesMap().entrySet().stream()
+          .filter(kv -> kv.getValue() != null && !kv.getValue().equals(Value.getDefaultInstance()))
           .map(
               valueEntry ->
                   KV.of(flatKeySchemaKeyMap.get(valueEntry.getKey()), valueEntry.getValue()))
-          .collect(toImmutableList());
+          .forEach(outputReceiver::output);
     }
   }
 }

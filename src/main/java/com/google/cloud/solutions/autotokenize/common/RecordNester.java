@@ -21,7 +21,7 @@ import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.schemas.utils.AvroUtils;
+import org.apache.beam.sdk.coders.AvroGenericCoder;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -46,8 +46,7 @@ public abstract class RecordNester
   public PCollection<GenericRecord> expand(PCollection<FlatRecord> flatRecords) {
     return flatRecords
         .apply("ReNestRecords", MapElements.via(new RecordNesterFn(schemaJson())))
-        .setCoder(
-            AvroUtils.schemaCoder(GenericRecord.class, new Schema.Parser().parse(schemaJson())));
+        .setCoder(AvroGenericCoder.of(new Schema.Parser().parse(schemaJson())));
   }
 
   private static class RecordNesterFn extends SimpleFunction<FlatRecord, GenericRecord> {

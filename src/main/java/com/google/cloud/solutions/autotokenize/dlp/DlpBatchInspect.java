@@ -35,7 +35,7 @@ import java.util.function.Function;
 import org.apache.beam.sdk.values.KV;
 
 /** Sends the BatchTable to DLP API and makes the findings available as future result. */
-final class DlpBatchInspect {
+final class DlpBatchInspect implements AutoCloseable {
 
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
@@ -61,8 +61,13 @@ final class DlpBatchInspect {
    */
   public ImmutableList<KV<String, InfoType>> identifyInfoTypes(
       KV<Table, Map<String, String>> dlpTableForIdentify) {
+
     var contentTable = dlpTableForIdentify.getKey();
     var flatKeySchemaKeyMap = dlpTableForIdentify.getValue();
+
+    logger.atInfo().log(
+        "sending %s bytes containing %s records",
+        contentTable.getSerializedSize(), contentTable.getRowsCount());
 
     var inspectContentResponse =
         dlpServiceClient.inspectContent(
@@ -71,10 +76,6 @@ final class DlpBatchInspect {
                 .setInspectConfig(buildInspectConfig())
                 .setItem(ContentItem.newBuilder().setTable(contentTable).build())
                 .build());
-
-    logger.atInfo().log(
-        "sending %s bytes containing %s records",
-        contentTable.getSerializedSize(), contentTable.getRowsCount());
 
     var findingsTranslate = FindingsTranslateFn.create(flatKeySchemaKeyMap);
 
@@ -92,6 +93,15 @@ final class DlpBatchInspect {
     }
 
     return inspectionConfig;
+  }
+
+  @Override
+  public void close() {
+    shutdownClient();
+  }
+
+  public void shutdownClient() {
+    dlpServiceClient.shutdown();
   }
 
   /**

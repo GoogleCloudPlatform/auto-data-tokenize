@@ -1,0 +1,296 @@
+{
+  "type": "record",
+  "name": "Root",
+  "fields": [
+    {
+      "name": "t_id",
+      "type": [
+        "null",
+        "long"
+      ]
+    },
+    {
+      "name": "created",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "ticket",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "Ticket",
+          "namespace": "root",
+          "fields": [
+            {
+              "name": "priority",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "via",
+              "type": [
+                "null",
+                {
+                  "type": "record",
+                  "name": "Via",
+                  "namespace": "root.ticket",
+                  "fields": [
+                    {
+                      "name": "channel",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    {
+                      "name": "source",
+                      "type": [
+                        "null",
+                        {
+                          "type": "record",
+                          "name": "Source",
+                          "namespace": "root.ticket.via",
+                          "fields": [
+                            {
+                              "name": "from",
+                              "type": [
+                                "null",
+                                {
+                                  "type": "record",
+                                  "name": "From",
+                                  "namespace": "root.ticket.via.source",
+                                  "fields": [
+                                    {
+                                      "name": "address",
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    {
+                                      "name": "name",
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    {
+                                      "name": "subject",
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    {
+                                      "name": "ticket_id",
+                                      "type": [
+                                        "null",
+                                        "long"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "name": "to",
+                              "type": [
+                                "null",
+                                {
+                                  "type": "record",
+                                  "name": "To",
+                                  "namespace": "root.ticket.via.source",
+                                  "fields": [
+                                    {
+                                      "name": "address",
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    {
+                                      "name": "name",
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "name": "rel",
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "generated_timestamp",
+              "type": [
+                "null",
+                "long"
+              ]
+            },
+            {
+              "name": "group_id",
+              "type": [
+                "null",
+                "long"
+              ]
+            },
+            {
+              "name": "tags",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "Tags",
+                  "namespace": "root.ticket",
+                  "fields": [
+                    {
+                      "name": "value",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "updated_at",
+              "type": [
+                "null",
+                {
+                  "type": "long",
+                  "logicalType": "timestamp-micros"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "assignee_id",
+              "type": [
+                "null",
+                "long"
+              ]
+            },
+            {
+              "name": "subject",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "description",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "satisfaction_rating",
+              "type": [
+                "null",
+                {
+                  "type": "record",
+                  "name": "Satisfaction_Rating",
+                  "namespace": "root.ticket",
+                  "fields": [
+                    {
+                      "name": "score",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    {
+                      "name": "reason",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    {
+                      "name": "id",
+                      "type": [
+                        "null",
+                        "long"
+                      ]
+                    },
+                    {
+                      "name": "reason_id",
+                      "type": [
+                        "null",
+                        "long"
+                      ]
+                    },
+                    {
+                      "name": "comment",
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "organization_id",
+              "type": [
+                "null",
+                "long"
+              ]
+            },
+            {
+              "name": "ticket_form_id",
+              "type": [
+                "null",
+                "long"
+              ]
+            },
+            {
+              "name": "type",
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "comments",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}

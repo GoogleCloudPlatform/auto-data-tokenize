@@ -34,23 +34,33 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.hash.Hashing;
 import com.google.privacy.dlp.v2.ContentItem;
 import com.google.privacy.dlp.v2.DeidentifyContentRequest;
 import com.google.privacy.dlp.v2.DeidentifyContentResponse;
 import com.google.privacy.dlp.v2.Table;
 import com.google.privacy.dlp.v2.Value;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
+import org.apache.beam.sdk.coders.IterableCoder;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.GroupIntoBatches;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.util.ShardedKey;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -58,7 +68,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public abstract class BatchAndDlpDeIdRecords
     extends PTransform<PCollection<FlatRecord>, PCollection<FlatRecord>> {
 
-  public static final int DEFAULT_SHARDS_COUNT = 5;
+  public static final int DEFAULT_SHARDS_COUNT = 10;
 
   abstract int shardCount();
 
@@ -109,33 +119,106 @@ public abstract class BatchAndDlpDeIdRecords
     checkNotNull(dlpClientFactory(), "Provide Dlp client factory");
     checkArgument(isNotBlank(dlpProjectId()), "DLP ProjectId can't be empty.");
 
-    return input
-        .apply("AddRecordId", MapElements.via(FlatRecordKeysFn.create()))
-        .apply(MapElements.via(new ShardAssigner<>(shardCount())))
-        .apply(
-            "BatchForDlp", GroupByBatchSize.with(PartialBatchAccumulator.factory(encryptConfig())))
-        .setCoder(ProtoCoder.of(PartialColumnDlpTable.class))
-        .apply(
-            ParDo.of(
-                DlpDeidentifyFn.builder()
-                    .encryptConfig(encryptConfig())
-                    .dlpClientFactory(dlpClientFactory())
-                    .dlpProjectId(dlpProjectId())
-                    .build()))
+    var errorTag = new TupleTag<KV<ShardedKey<String>, PartialColumnDlpTable>>();
+    var successTag = new TupleTag<Iterable<FlatRecord>>();
+
+    var successAndError =
+        input
+            .apply("AddRecordId", MapElements.via(FlatRecordKeysFn.create()))
+            .apply(MapElements.via(new ShardAssigner<>(shardCount())))
+            .apply(
+                "BatchForDlp",
+                GroupIntoBatches.<String, FlatRecord>ofByteSize(500000).withShardedKey())
+            .apply("MakeDlpTable", ParDo.of(new DlpTableMaker(encryptConfig())))
+            .setCoder(
+                KvCoder.of(
+                    ShardedKey.Coder.of(StringUtf8Coder.of()),
+                    ProtoCoder.of(PartialColumnDlpTable.class)))
+            .apply(
+                ParDo.of(
+                        DlpDeidentifyFn.builder()
+                            .encryptConfig(encryptConfig())
+                            .dlpClientFactory(dlpClientFactory())
+                            .dlpProjectId(dlpProjectId())
+                            .errorTag(errorTag)
+                            .successTag(successTag)
+                            .build())
+                    .withOutputTags(successTag, TupleTagList.of(errorTag)));
+
+    successAndError
+        .get(errorTag)
+        .setCoder(
+            KvCoder.of(
+                ShardedKey.Coder.of(StringUtf8Coder.of()),
+                ProtoCoder.of(PartialColumnDlpTable.class)));
+
+    return successAndError
+        .get(successTag)
+        .setCoder(IterableCoder.of(ProtoCoder.of(FlatRecord.class)))
         .apply(Flatten.iterables());
+  }
+
+  private static class DlpTableMaker
+      extends DoFn<
+          KV<ShardedKey<String>, Iterable<FlatRecord>>,
+          KV<ShardedKey<String>, PartialColumnDlpTable>> {
+
+    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+    private final DlpEncryptConfig encryptConfig;
+
+    public DlpTableMaker(DlpEncryptConfig encryptConfig) {
+      this.encryptConfig = encryptConfig;
+    }
+
+    @ProcessElement
+    public void makeTables(
+        @Element KV<ShardedKey<String>, Iterable<FlatRecord>> batchedData,
+        OutputReceiver<KV<ShardedKey<String>, PartialColumnDlpTable>> outputReceiver) {
+
+      var accFactory = PartialBatchAccumulator.factory(encryptConfig);
+
+      var accumulator = accFactory.newAccumulator();
+
+      for (FlatRecord record : batchedData.getValue()) {
+        if (!accumulator.addElement(record)) {
+          emitBatch(batchedData.getKey(), accumulator, outputReceiver);
+          accumulator = accFactory.newAccumulator();
+          accumulator.addElement(record);
+        }
+      }
+
+      if (accumulator != null) {
+        emitBatch(batchedData.getKey(), accumulator, outputReceiver);
+      }
+    }
+
+    private void emitBatch(
+        ShardedKey<String> key,
+        PartialBatchAccumulator accumulator,
+        OutputReceiver<KV<ShardedKey<String>, PartialColumnDlpTable>> outputReceiver) {
+      var batch = accumulator.makeBatch();
+      logger.atInfo().log("emitting FlatRecordBatch: %s", batch.report());
+      outputReceiver.output(KV.of(key, batch.get()));
+    }
   }
 
   private static class ShardAssigner<T> extends SimpleFunction<T, KV<String, T>> {
 
     private final int maxShards;
+    private final Random random;
 
     public ShardAssigner(int maxShards) {
       this.maxShards = maxShards;
+      this.random = new Random();
     }
 
     @Override
     public KV<String, T> apply(T input) {
-      return KV.of(String.valueOf(input.hashCode() % maxShards), input);
+
+      var shardBytes = Hashing.sha256().hashInt(random.nextInt(maxShards)).asBytes();
+      var key = Base64.getEncoder().encodeToString(shardBytes);
+
+      return KV.of(key, input);
     }
   }
 
@@ -158,7 +241,10 @@ public abstract class BatchAndDlpDeIdRecords
   }
 
   @AutoValue
-  abstract static class DlpDeidentifyFn extends DoFn<PartialColumnDlpTable, Iterable<FlatRecord>> {
+  abstract static class DlpDeidentifyFn
+      extends DoFn<KV<ShardedKey<String>, PartialColumnDlpTable>, Iterable<FlatRecord>> {
+
+    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
     abstract String dlpProjectId();
 
@@ -166,43 +252,54 @@ public abstract class BatchAndDlpDeIdRecords
 
     abstract DlpEncryptConfig encryptConfig();
 
+    abstract TupleTag<KV<ShardedKey<String>, PartialColumnDlpTable>> errorTag();
+
+    abstract TupleTag<Iterable<FlatRecord>> successTag();
+
     private transient DlpServiceClient dlpClient;
 
-    @Setup
+    @StartBundle
     public void buildDlpClient() throws IOException {
       dlpClient = dlpClientFactory().newClient();
     }
 
-    @Teardown
+    @FinishBundle
     public void shutDownClient() {
       dlpClient.close();
     }
 
     @ProcessElement
     public void processBatch(
-        @Element PartialColumnDlpTable batch, OutputReceiver<Iterable<FlatRecord>> receiver) {
+        @Element KV<ShardedKey<String>, PartialColumnDlpTable> batchKv,
+        ProcessContext processContext) {
 
+      var batch = batchKv.getValue();
       var batchTable = batch.getTable();
 
-      GoogleLogger.forEnclosingClass()
-          .atFine()
-          .log(
-              "Sending Batch:%nBytes:%s%nColumns:%s%nRowCount:%s",
-              batchTable.getSerializedSize(),
-              DeidentifyColumns.columnNamesFromHeaders(batchTable.getHeadersList()),
-              batchTable.getRowsCount());
+      logger.atFine().log(
+          "Sending Batch:%nBytes:%s%nColumns:%s%nRowCount:%s",
+          batchTable.getSerializedSize(),
+          DeidentifyColumns.columnNamesFromHeaders(batchTable.getHeadersList()),
+          batchTable.getRowsCount());
 
-      DeidentifyContentResponse deidResponse =
-          dlpClient.deidentifyContent(
-              DeidentifyContentRequest.newBuilder()
-                  .setParent(String.format("projects/%s", dlpProjectId()))
-                  .setDeidentifyConfig(batch.getDeidentifyConfig())
-                  .setItem(ContentItem.newBuilder().setTable(batchTable).build())
-                  .build());
+      try {
+        DeidentifyContentResponse deidResponse =
+            dlpClient.deidentifyContent(
+                DeidentifyContentRequest.newBuilder()
+                    .setParent(String.format("projects/%s", dlpProjectId()))
+                    .setDeidentifyConfig(batch.getDeidentifyConfig())
+                    .setItem(ContentItem.newBuilder().setTable(batchTable).build())
+                    .build());
 
-      receiver.output(
-          TokenizedDataMerger.create(batch, deidResponse.getItem().getTable(), encryptConfig())
-              .merge());
+        processContext.output(
+            successTag(),
+            TokenizedDataMerger.create(batch, deidResponse.getItem().getTable(), encryptConfig())
+                .merge());
+      } catch (RuntimeException exception) {
+
+        logger.atSevere().withCause(exception).log("ErrorProcessing batch");
+        processContext.output(errorTag(), batchKv);
+      }
     }
 
     public static Builder builder() {
@@ -216,6 +313,11 @@ public abstract class BatchAndDlpDeIdRecords
       public abstract Builder dlpClientFactory(DlpClientFactory dlpClientFactory);
 
       public abstract Builder encryptConfig(DlpEncryptConfig encryptConfig);
+
+      public abstract Builder successTag(TupleTag<Iterable<FlatRecord>> successTag);
+
+      public abstract Builder errorTag(
+          TupleTag<KV<ShardedKey<String>, PartialColumnDlpTable>> errorTag);
 
       public abstract DlpDeidentifyFn build();
     }

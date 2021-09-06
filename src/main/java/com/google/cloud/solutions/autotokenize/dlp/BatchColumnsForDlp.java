@@ -17,53 +17,147 @@
 package com.google.cloud.solutions.autotokenize.dlp;
 
 
+import com.google.common.flogger.GoogleLogger;
+import com.google.privacy.dlp.v2.FieldId;
 import com.google.privacy.dlp.v2.Table;
+import com.google.privacy.dlp.v2.Table.Row;
 import com.google.privacy.dlp.v2.Value;
-import java.util.Map;
 import org.apache.beam.sdk.coders.KvCoder;
-import org.apache.beam.sdk.coders.MapCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
-import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.Filter;
+import org.apache.beam.sdk.transforms.GroupIntoBatches;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.ProcessFunction;
+import org.apache.beam.sdk.util.ShardedKey;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 
 /** Splits the columnName-values lists into chunks that are within the DLP Table limits. */
 public class BatchColumnsForDlp
-    extends PTransform<
-        PCollection<KV<String, Iterable<Value>>>, PCollection<KV<Table, Map<String, String>>>> {
+    extends PTransform<PCollection<KV<String, Value>>, PCollection<KV<ShardedKey<String>, Table>>> {
+
+  private static final int DLP_BATCH_SIZE = 480000;
+  private static final int DLP_MAX_BATCH_PAYLOAD_SIZE = 500000;
+  private static final int DLP_MAX_ELEMENTS_COUNT = 50000;
 
   @Override
-  public PCollection<KV<Table, Map<String, String>>> expand(
-      PCollection<KV<String, Iterable<Value>>> input) {
+  public PCollection<KV<ShardedKey<String>, Table>> expand(PCollection<KV<String, Value>> input) {
 
     return input
-        .apply(MapElements.via(new ColumnNameKeys()))
-        .apply("BatchColumnsForDlp", GroupByBatchSize.with(new DlpColumnAccumulatorFactory()))
+        .apply("FilterNormalElements", Filter.by(new ValidValueChecker()))
+        .apply(
+            "GroupElements",
+            GroupIntoBatches.<String, Value>ofByteSize(
+                    DLP_BATCH_SIZE, (Value v) -> (long) v.getSerializedSize())
+                .withShardedKey())
+        .apply("MakeDlpTable", ParDo.of(new ColumnTableMakerFn()))
         .setCoder(
-            KvCoder.of(
-                ProtoCoder.of(Table.class),
-                MapCoder.of(StringUtf8Coder.of(), StringUtf8Coder.of())));
+            KvCoder.of(ShardedKey.Coder.of(StringUtf8Coder.of()), ProtoCoder.of(Table.class)));
+    //        .apply(Reshuffle.<KV<ShardedKey<String>, Table>>viaRandomKey().withNumBuckets());
   }
 
-  private static class ColumnNameKeys
-      extends SimpleFunction<KV<String, Iterable<Value>>, KV<String, KV<String, Iterable<Value>>>> {
+  /** Batching of column-values into DLP table, Along with a map of ColumnName mapping. */
+  private static class ColumnTableMakerFn
+      extends DoFn<KV<ShardedKey<String>, Iterable<Value>>, KV<ShardedKey<String>, Table>> {
 
-    @Override
-    public KV<String, KV<String, Iterable<Value>>> apply(KV<String, Iterable<Value>> input) {
-      return KV.of(input.getKey(), input);
+    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+
+    @ProcessElement
+    public void makeTables(
+        @Element KV<ShardedKey<String>, Iterable<Value>> input,
+        OutputReceiver<KV<ShardedKey<String>, Table>> outputReceiver) {
+
+      if (input == null || input.getKey() == null || input.getValue() == null) {
+        return;
+      }
+
+      var columnName = input.getKey();
+
+      var accumulatedTable = new ColumnTable(columnName);
+
+      for (var value : input.getValue()) {
+
+        if (accumulatedTable.add(value)) {
+          continue;
+        }
+
+        emitTable(input.getKey(), accumulatedTable.getTable(), outputReceiver);
+        accumulatedTable = new ColumnTable(columnName);
+        accumulatedTable.add(value);
+      }
+
+      if (accumulatedTable.getTable().getRowsCount() > 0) {
+        emitTable(input.getKey(), accumulatedTable.getTable(), outputReceiver);
+      }
+    }
+
+    private void emitTable(
+        ShardedKey<String> columnName,
+        Table emitTable,
+        OutputReceiver<KV<ShardedKey<String>, Table>> outputReceiver) {
+      logger.atInfo().log(
+          "Emitting table| columnName: %s | bytes: %s | elements: %s",
+          columnName.getKey(),
+          emitTable.getSerializedSize(),
+          emitTable.getRowsCount() + emitTable.getHeadersCount());
+      outputReceiver.output(KV.of(columnName, emitTable));
+    }
+
+    /** Decorator class for accumulating column Values. */
+    private static class ColumnTable {
+      private final ShardedKey<String> columnName;
+
+      private Table accumulatedTable;
+      private int accumulatedElementsCount;
+
+      public ColumnTable(ShardedKey<String> columnName) {
+        this.columnName = columnName;
+        this.accumulatedTable =
+            Table.newBuilder()
+                .addHeaders(FieldId.newBuilder().setName(columnName.getKey()))
+                .build();
+        this.accumulatedElementsCount = 1;
+      }
+
+      public boolean add(Value value) {
+
+        var tempTable = accumulatedTable.toBuilder().addRows(makeValueRow(value)).build();
+
+        if (tempTable.getSerializedSize() > DLP_MAX_BATCH_PAYLOAD_SIZE
+            || (accumulatedElementsCount + 1) >= DLP_MAX_ELEMENTS_COUNT) {
+          return false;
+        }
+
+        accumulatedTable = tempTable;
+        accumulatedElementsCount++;
+
+        return true;
+      }
+
+      private static Row makeValueRow(Value value) {
+        return Row.newBuilder().addValues(value).build();
+      }
+
+      public Table getTable() {
+        return accumulatedTable;
+      }
     }
   }
 
-  private static class DlpColumnAccumulatorFactory
-      implements BatchAccumulatorFactory<
-          KV<String, Iterable<Value>>, KV<Table, Map<String, String>>> {
+  /**
+   * Checks if a specific table cell-value fits into the max DLP Batch size for filtering out
+   * excessively large elements.
+   */
+  private static class ValidValueChecker implements ProcessFunction<KV<String, Value>, Boolean> {
     @Override
-    public BatchAccumulator<KV<String, Iterable<Value>>, KV<Table, Map<String, String>>>
-        newAccumulator() {
-      return DlpColumnValueAccumulator.create();
+    public Boolean apply(KV<String, Value> element) {
+      return element != null
+          && element.getKey() != null
+          && element.getValue() != null
+          && element.getValue().getSerializedSize() <= DLP_BATCH_SIZE;
     }
   }
 }
