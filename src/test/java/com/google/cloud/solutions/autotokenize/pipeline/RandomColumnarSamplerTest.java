@@ -28,9 +28,9 @@ import com.google.privacy.dlp.v2.Value;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.KV;
-import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,10 +61,11 @@ public final class RandomColumnarSamplerTest {
 
   @Test
   public void expand_valid() {
-    PCollection<KV<String, Iterable<Value>>> sampledColumns =
+    var sampledColumns =
         testPipeline.apply(Create.of(flatRecords)).apply(RandomColumnarSampler.any(sampleSize));
 
-    PAssert.that(sampledColumns).satisfies(new ColumnValuesChecker(expectedSplits, sampleSize));
+    PAssert.that(sampledColumns.apply(GroupByKey.create()))
+        .satisfies(new ColumnValuesChecker(expectedSplits, sampleSize));
 
     testPipeline.run();
   }

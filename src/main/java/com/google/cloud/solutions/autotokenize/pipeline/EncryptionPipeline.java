@@ -51,6 +51,8 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.schemas.utils.AvroUtils;
+import org.apache.beam.sdk.transforms.Reshuffle;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
 
@@ -195,12 +197,16 @@ public class EncryptionPipeline {
 
       if (options.getOutputBigQueryTable() != null) {
 
-        encryptedRecords.apply(
-            "WriteToBigQuery",
-            BigQueryIO.<GenericRecord>write()
-                .to(options.getOutputBigQueryTable())
-                .useBeamSchema()
-                .withWriteDisposition(WRITE_TRUNCATE));
+        encryptedRecords
+            .apply("Reshuffle", Reshuffle.viaRandomKey())
+            .setCoder(AvroUtils.schemaCoder(GenericRecord.class, encryptedSchema))
+            .apply(
+                "WriteToBigQuery",
+                BigQueryIO.<GenericRecord>write()
+                    .to(options.getOutputBigQueryTable())
+                    .useBeamSchema()
+                    .optimizedWrites()
+                    .withWriteDisposition(WRITE_TRUNCATE));
       }
 
       return pipeline;

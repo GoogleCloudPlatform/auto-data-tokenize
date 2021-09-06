@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-plugins {
-    id "java"
-    id "java-library"
-    id "idea"
-}
+package com.google.cloud.solutions.autotokenize.common;
 
-repositories {
-    mavenCentral()
-}
 
-dependencies {
-    compileOnly "org.checkerframework:checker-qual:3.13.0"
-    implementation "org.apache.beam:beam-sdks-java-core:2.29.0"
-}
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.values.KV;
 
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+public class UnFlattenKvFn<K, V> extends DoFn<KV<K, Iterable<V>>, KV<K, V>> {
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
+  @ProcessElement
+  public void flatternIterable(
+      @Element KV<K, Iterable<V>> input, OutputReceiver<KV<K, V>> outputReceiver) {
+
+    if (input == null || input.getKey() == null || input.getValue() == null) {
+      return;
+    }
+
+    var key = input.getKey();
+
+    for (var value : input.getValue()) {
+      outputReceiver.output(KV.of(key, value));
+    }
+  }
 }

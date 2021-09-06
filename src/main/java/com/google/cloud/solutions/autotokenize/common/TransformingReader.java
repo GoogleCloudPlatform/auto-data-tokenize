@@ -189,9 +189,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
             .from(inputPattern());
 
       case BIGQUERY_TABLE:
-        return bigQueryReader()
-            .from(inputPattern())
-            .withMethod(BigQueryIO.TypedRead.Method.DIRECT_READ);
+        return bigQueryReader().from(inputPattern());
 
       case BIGQUERY_QUERY:
         return bigQueryReader().fromQuery(inputPattern()).usingStandardSql();

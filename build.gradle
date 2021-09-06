@@ -28,15 +28,17 @@ plugins {
 repositories {
     mavenCentral()
     gradlePluginPortal()
+    maven {
+        url "https://packages.confluent.io/maven/"
+    }
 }
 
 def protoVersion = "3.17.0"
-def beamVersion = "2.29.0"
+def beamVersion = "2.32.0"
 def hadoopVersion = "3.3.0"
 
 
 dependencies {
-    implementation project(":third_party")
 
     // Protobuf deps
     compileOnly "com.google.api.grpc:proto-google-common-protos:1.18.1"

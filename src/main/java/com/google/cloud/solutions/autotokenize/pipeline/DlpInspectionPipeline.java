@@ -19,9 +19,11 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static org.apache.beam.sdk.io.FileIO.Write.defaultNaming;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.google.cloud.dlp.v2.DlpServiceClient;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportFileWriter;
@@ -38,14 +40,30 @@ import com.google.cloud.solutions.autotokenize.dlp.DlpIdentify;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 import com.google.privacy.dlp.v2.InfoType;
+import com.google.privacy.dlp.v2.Table;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import java.time.Clock;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
+import org.apache.beam.sdk.io.FileIO;
+import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.CreateDisposition;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.Contextful;
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.transforms.View;
+import org.apache.beam.sdk.util.ShardedKey;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
@@ -108,13 +126,46 @@ public final class DlpInspectionPipeline {
                 .withAvroSchemaTag(avroSchemaTag));
 
     // Sample and Identify columns
-    var inspectionReport =
+    var columnInfoTag = new TupleTag<ColumnInformation>();
+    var errorTag = new TupleTag<KV<ShardedKey<String>, Table>>();
+
+    var dlpInspectResults =
         recordSchemaTuple
             .get(recordsTag)
             .apply("RandomColumnarSample", RandomColumnarSampler.any(options.getSampleSize()))
             .apply("BatchForDlp", new BatchColumnsForDlp())
             .apply(
-                "DlpIdentify", DlpIdentify.withIdentifierFactory(makeDlpBatchIdentifierFactory()))
+                "DlpIdentify",
+                DlpIdentify.builder()
+                    .batchIdentifierFactory(makeDlpBatchIdentifierFactory())
+                    .columnInfoTag(columnInfoTag)
+                    .errorTag(errorTag)
+                    .build());
+
+    dlpInspectResults
+        .get(errorTag)
+        .setCoder(KvCoder.of(ShardedKey.Coder.of(StringUtf8Coder.of()), ProtoCoder.of(Table.class)))
+        .apply("MakeErrorTableJson", ParDo.of(new ConvertTableToJsonFn()))
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), StringUtf8Coder.of()))
+        .apply(
+            "WriteErrorElements",
+            FileIO.<String, KV<String, String>>writeDynamic()
+                .via(Contextful.fn(KV::getValue), Contextful.fn(col -> TextIO.sink()))
+                .by(KV::getKey)
+                .withDestinationCoder(StringUtf8Coder.of())
+                .withNaming(
+                    Contextful.fn(
+                        colName ->
+                            defaultNaming(
+                                /*prefix=*/ String.format(
+                                        "col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
+                                    .replaceAll("[-]+", "-"),
+                                /*suffix=*/ ".json")))
+                .to(options.getReportLocation() + "/error"));
+
+    var inspectionReport =
+        dlpInspectResults
+            .get(columnInfoTag)
             .apply(
                 "ExtractReport",
                 MakeInspectionReport.builder()
@@ -125,6 +176,15 @@ public final class DlpInspectionPipeline {
                     .setJdbcConfiguration(
                         JdbcConfigurationExtractor.using(options).jdbcConfiguration())
                     .build());
+
+    recordSchemaTuple
+        .get(avroSchemaTag)
+        .apply(
+            "WriteSchema",
+            TextIO.write()
+                .to(options.getReportLocation() + "/schema")
+                .withSuffix(".json")
+                .withoutSharding());
 
     writeReportToGcs(inspectionReport);
     writeReportToBigQuery(inspectionReport);
@@ -204,6 +264,14 @@ public final class DlpInspectionPipeline {
     }
   }
 
+  private static class JsonPretty extends SimpleFunction<String, String> {
+
+    @Override
+    public String apply(String json) {
+      return new GsonBuilder().setPrettyPrinting().create().toJson(JsonParser.parseString(json));
+    }
+  }
+
   /**
    * Returns a factory to create {@link DlpServiceClient} instance using {@code
    * DlpServiceClient.create()} method.
@@ -237,5 +305,21 @@ public final class DlpInspectionPipeline {
     logger.atInfo().log("Staging the Dataflow job");
 
     new DlpInspectionPipeline(options).makePipeline().run();
+  }
+
+  private static class ConvertTableToJsonFn
+      extends DoFn<KV<ShardedKey<String>, Table>, KV<String, String>> {
+
+    @ProcessElement
+    public void makeProtoJson(
+        @Element KV<ShardedKey<String>, Table> element,
+        OutputReceiver<KV<String, String>> outputReceiver) {
+      try {
+        outputReceiver.output(
+            KV.of(element.getKey().getKey(), JsonFormat.printer().print(element.getValue())));
+      } catch (InvalidProtocolBufferException ex) {
+        GoogleLogger.forEnclosingClass().atSevere().withCause(ex).log();
+      }
+    }
   }
 }

@@ -1,0 +1,40 @@
+{
+  "transforms" : [
+    {
+      "columnId": "$.Root.ticket.root.Ticket.description",
+      "freeFormColumn": true,
+      "infoTypes" : [
+        "IP_ADDRESS",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS"
+      ],
+      "transform" : {
+        "cryptoDeterministicConfig": {
+          "cryptoKey": {
+            "unwrapped": {
+              "key": "VGhXbVpxNHQ3dyF6JUMqRi1KYU5jUmZValhuMnI1dTg="
+            }
+          }
+        }
+      }
+    },
+    {
+      "columnId": "$.Root.comments",
+      "freeFormColumn": true,
+      "infoTypes" : [
+        "EMAIL_ADDRESS",
+        "IP_ADDRESS",
+        "PHONE_NUMBER"
+      ],
+      "transform" : {
+        "cryptoDeterministicConfig": {
+          "cryptoKey": {
+            "unwrapped": {
+              "key": "VGhXbVpxNHQ3dyF6JUMqRi1KYU5jUmZValhuMnI1dTg="
+            }
+          }
+        }
+      }
+    }
+  ]
+}

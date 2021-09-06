@@ -103,7 +103,10 @@ public class TokenizeColumnNameUpdater implements Serializable {
               .toArray(new String[0]);
       String encryptFieldName = schemaKeyParts[schemaKeyParts.length - 1];
 
-      int fieldNameOffset = flatKeyParts[flatKeyParts.length - 1].equals(encryptFieldName) ? 1 : 2;
+      // check for field name with array operator
+      var fieldNameRegex = "^" + encryptFieldName + "(?:\\[\\d+\\])?$";
+
+      int fieldNameOffset = flatKeyParts[flatKeyParts.length - 1].matches(fieldNameRegex) ? 1 : 2;
 
       int flatKeyFieldNamePartIndex = flatKeyParts.length - fieldNameOffset;
 

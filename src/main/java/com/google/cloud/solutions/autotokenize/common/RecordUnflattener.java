@@ -23,6 +23,7 @@ import com.google.api.client.util.Maps;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.privacy.dlp.v2.Value;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.avro.Schema;
@@ -88,7 +89,7 @@ public class RecordUnflattener {
 
       switch (value.getTypeCase()) {
         case INTEGER_VALUE:
-          return new BigDecimal(String.valueOf(value.getIntegerValue()));
+          return new BigInteger(String.valueOf(value.getIntegerValue()));
         case FLOAT_VALUE:
           return new BigDecimal(String.valueOf(value.getFloatValue()));
 
