@@ -17,7 +17,7 @@
         {
           "type": "string",
           "logicalType": "varchar",
-          "maxLength": 65535
+          "maxLength": 16383
         }
       ],
       "doc": ""
@@ -29,7 +29,7 @@
         {
           "type": "string",
           "logicalType": "varchar",
-          "maxLength": 65535
+          "maxLength": 16383
         }
       ],
       "doc": ""
@@ -41,7 +41,7 @@
         {
           "type": "string",
           "logicalType": "varchar",
-          "maxLength": 65535
+          "maxLength": 16383
         }
       ],
       "doc": ""

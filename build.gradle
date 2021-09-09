@@ -120,8 +120,8 @@ dependencies {
     testImplementation "org.skyscreamer:jsonassert:1.5.0"
     testImplementation "org.apache.logging.log4j:log4j-core:2.14.1"
 
-    // Maria DB for testing
-    testImplementation "ch.vorburger.mariaDB4j:mariaDB4j:2.4.0"
+    // Testcontainers used to mock database
+    testImplementation "org.testcontainers:mysql:1.16.0"
 }
 
 protobuf {

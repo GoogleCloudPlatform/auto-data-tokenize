@@ -282,6 +282,12 @@ gsutil cp userdata.avro gs://${TEMP_GCS_BUCKET}
 
 ## Compile modules
 
+### Prerequisites
+
+As [Testcontainers](https://www.testcontainers.org/) is used for unit testing, you need to install Docker on your machine. Please [see here the supported Docker versions](https://www.testcontainers.org/supported_docker_environment/).
+
+### Compile
+
 You need to compile all the modules to build executables for deploying the _sample & identify_ and _bulk tokenize_ pipelines.
 
 ```shell script

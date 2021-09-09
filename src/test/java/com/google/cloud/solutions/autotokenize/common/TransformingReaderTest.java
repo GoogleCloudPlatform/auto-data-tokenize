@@ -20,7 +20,6 @@ import static com.google.cloud.solutions.autotokenize.testing.FlatRecordsChecker
 import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
 import static com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher.hasRecordCount;
 
-import ch.vorburger.mariadb4j.DB;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
@@ -43,15 +42,16 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.TupleTag;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.MySQLContainer;
 
 public final class TransformingReaderTest {
 
@@ -60,7 +60,7 @@ public final class TransformingReaderTest {
 
     @Rule public transient TestPipeline testPipeline = TestPipeline.create();
 
-    private static transient DB testDatabase;
+    private JdbcDatabaseContainer<?> databaseContainer;
 
     private final String testConditionName;
     private final String initScriptFile;
@@ -84,23 +84,21 @@ public final class TransformingReaderTest {
       this.testDatabaseName = "test_" + UUID.randomUUID().toString().replaceAll("[\\-]", "_");
       this.secretsStub =
           ConstantSecretVersionValueManagerServicesStub.of("id/to/secrets/key/version", "");
+
+      databaseContainer =
+          new MySQLContainer<>("mysql:8.0.24")
+              .withDatabaseName(testDatabaseName)
+              .withUsername("root")
+              .withPassword("")
+              .withInitScript(initScriptFile);
+      databaseContainer.start();
     }
 
-    @BeforeClass
-    public static void setUpTestDbInstance() throws Exception {
-      testDatabase = DB.newEmbeddedDB(0);
-      testDatabase.start();
-    }
-
-    @AfterClass
-    public static void tearDownDatabase() throws Exception {
-      testDatabase.stop();
-    }
-
-    @Before
-    public void createTempDatabase() throws Exception {
-      testDatabase.createDB(testDatabaseName);
-      testDatabase.source(initScriptFile, testDatabaseName);
+    @After
+    public void tearDownDatabase() {
+      if (databaseContainer != null) {
+        databaseContainer.stop();
+      }
     }
 
     @Test
@@ -163,9 +161,7 @@ public final class TransformingReaderTest {
     }
 
     private String getCompleteDbConnectionString() {
-      return String.format(
-          "%s?user=%s&password=%s",
-          testDatabase.getConfiguration().getURL(testDatabaseName), "root", "");
+      return String.format("%s?user=%s&password=%s", databaseContainer.getJdbcUrl(), "root", "");
     }
   }
 

@@ -21,8 +21,6 @@ import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.Sourc
 import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
 import static java.lang.Integer.parseInt;
 
-import ch.vorburger.exec.ManagedProcessException;
-import ch.vorburger.mariadb4j.DB;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InfoTypeInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
@@ -62,15 +60,16 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.MySQLContainer;
 
 @RunWith(Parameterized.class)
 public final class DlpInspectionPipelineIT {
@@ -93,7 +92,7 @@ public final class DlpInspectionPipelineIT {
   private final Clock fixedClock;
 
   private transient String outputFolder;
-  public static transient DB testDBInstance;
+  private JdbcDatabaseContainer<?> databaseContainer;
   public transient DlpInspectionOptions pipelineOptions;
 
   @Test
@@ -265,16 +264,10 @@ public final class DlpInspectionPipelineIT {
         Clock.fixed(Instant.from(ZonedDateTime.parse(TEST_TIMESTAMP)), ZoneOffset.UTC);
   }
 
-  @BeforeClass
-  public static void setupMariaDBInMemory() throws ManagedProcessException {
-    testDBInstance = DB.newEmbeddedDB(0);
-    testDBInstance.start();
-  }
-
-  @AfterClass
-  public static void tearDownTestDB() throws ManagedProcessException {
-    if (testDBInstance != null) {
-      testDBInstance.stop();
+  @After
+  public void tearDownTestDB() {
+    if (databaseContainer != null) {
+      databaseContainer.stop();
     }
   }
 
@@ -285,7 +278,7 @@ public final class DlpInspectionPipelineIT {
 
   @Before
   @SuppressWarnings("UnstableApiUsage")
-  public void makeOptions() throws IOException, ManagedProcessException {
+  public void makeOptions() throws IOException {
     Map<String, String> options =
         Splitter.on(CharMatcher.anyOf("--"))
             .splitToStream(basicArgs)
@@ -314,14 +307,17 @@ public final class DlpInspectionPipelineIT {
       case JDBC_TABLE:
         var initScript = configParameters.get("initScript");
         var testDatabaseName = "test_" + new Random().nextLong();
-        testDBInstance.createDB(testDatabaseName);
-        testDBInstance.source(initScript, testDatabaseName);
+        databaseContainer =
+            new MySQLContainer<>("mysql:8.0.24")
+                .withDatabaseName(testDatabaseName)
+                .withUsername("root")
+                .withPassword("")
+                .withInitScript(initScript);
+        databaseContainer.start();
         // update connection url:
         options.put(
             "--jdbcConnectionUrl",
-            String.format(
-                "%s?user=%s&password=%s",
-                testDBInstance.getConfiguration().getURL(testDatabaseName), "root", ""));
+            String.format("%s?user=%s&password=%s", databaseContainer.getJdbcUrl(), "root", ""));
         break;
       case BIGQUERY_TABLE:
       case BIGQUERY_QUERY:
