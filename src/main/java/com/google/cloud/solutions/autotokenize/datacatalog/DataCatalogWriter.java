@@ -85,7 +85,8 @@ public abstract class DataCatalogWriter
       checkArgument(
           entryGroupId == null
               || entryGroupId.matches("^projects/[^/]+/locations/[^/]+/entryGroups/[^/]+$"),
-          "Data Catalog entry group id does not match pattern: ^projects\\/[^/]+\\/locations\\/[^/]+\\/entryGroups\\/[^/]+$ found:%s",
+          "Data Catalog entry group id does not match pattern:"
+              + " ^projects\\/[^/]+\\/locations\\/[^/]+\\/entryGroups\\/[^/]+$ found:%s",
           entryGroupId);
 
       return tempWriter;

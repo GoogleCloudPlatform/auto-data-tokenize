@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
+import static com.google.cloud.solutions.autotokenize.common.CsvRowFlatRecordConvertors.csvRowToFlatRecordAndSchemaFn;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -26,7 +27,10 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration.PasswordsCase;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
+import com.google.cloud.solutions.autotokenize.common.CsvIO.CsvParse;
+import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -88,10 +92,14 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
   abstract @Nullable TupleTag<String> avroSchemaTag();
 
+  abstract @Nullable ImmutableList<String> csvHeaders();
+
+  abstract boolean csvFirstRowHeader();
+
   abstract Builder toBuilder();
 
   static Builder builder() {
-    return new AutoValue_TransformingReader.Builder();
+    return new AutoValue_TransformingReader.Builder().csvFirstRowHeader(false);
   }
 
   @AutoValue.Builder
@@ -108,6 +116,10 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
 
     abstract Builder avroSchemaTag(TupleTag<String> avroSchemaTag);
+
+    abstract Builder csvHeaders(ImmutableList<String> csvHeaders);
+
+    abstract Builder csvFirstRowHeader(boolean csvFirstRowHeader);
 
     abstract TransformingReader build();
   }
@@ -140,6 +152,20 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
   /** Provide a JdbcConfiguration for JDBC Connections. */
   public TransformingReader withSecretsClient(SecretsClient secretsClient) {
     return toBuilder().secretsClient(secretsClient).build();
+  }
+
+  /** Provide predefined CSV Headers. */
+  public TransformingReader withCsvHeaders(List<String> csvHeaders) {
+    if (csvHeaders == null) {
+      return this;
+    }
+
+    return toBuilder().csvHeaders(ImmutableList.copyOf(csvHeaders)).build();
+  }
+
+  /** Configure CSV reader to use first row as header. */
+  public TransformingReader withCsvFirstRowHeader(boolean csvFirstRowHeader) {
+    return toBuilder().csvFirstRowHeader(csvFirstRowHeader).build();
   }
 
   @Override
@@ -196,6 +222,9 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
       case JDBC_TABLE:
         return TransformingJdbcIO.create(jdbcConfiguration(), secretsClient(), inputPattern());
+
+      case CSV_FILE:
+        return makeCsvReader();
 
       default:
         throw new IllegalArgumentException(
@@ -256,5 +285,19 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
   private static BigQueryIO.TypedRead<KV<FlatRecord, String>> bigQueryReader() {
     return BigQueryIO.read(FlatRecordConvertFn.forBigQueryTableRow()).useAvroLogicalTypes();
+  }
+
+  private CsvParse<KV<FlatRecord, String>> makeCsvReader() {
+    var csvIo = CsvIO.parse(inputPattern(), csvRowToFlatRecordAndSchemaFn());
+
+    if (csvHeaders() != null && csvHeaders().size() > 0) {
+      csvIo = csvIo.withHeaders(csvHeaders());
+    }
+
+    if (csvFirstRowHeader()) {
+      csvIo = csvIo.withUseFirstRowHeader();
+    }
+
+    return csvIo;
   }
 }

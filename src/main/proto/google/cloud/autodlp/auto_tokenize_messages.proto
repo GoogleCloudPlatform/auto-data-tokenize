@@ -42,6 +42,7 @@ enum SourceType {
   BIGQUERY_TABLE = 3;
   BIGQUERY_QUERY = 4;
   JDBC_TABLE = 5;
+  CSV_FILE =  6;
 }
 
 // Source configuration for JDBC Databases/sources

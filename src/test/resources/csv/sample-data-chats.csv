@@ -1,0 +1,100 @@
+551955364318142016,agent,"<span>I haven't [CUSTOM_FIRST_NAME_DETECTOR] from you for a while, are you still there?</span>",5,2019-10-19 17:49:12
+551955364318142016,agent,<span>Are we still connected?</span>,6,2019-10-19 17:51:21
+551955364318141998,customer,I would like to add sky sports to my account,3,2019-10-19 17:44:15
+551955364318141998,agent,"Hi <span>[CUSTOM_FIRST_NAME_DETECTOR]</span>, <span>as I am from the repair team hence we do not the tools to place the order as we only deal with tv faults. However my colleague from value team will get this done for you and will add Sky sports in your account. Unfortunately the team do not have the chat desk and only available on the call. I am sharing the direct number, kindly contact them as per your convenience.<br><br>Please fell free to contact them on [PHONE_NUMBER] and their working hours are 8 am to 9pm [CUSTOM_FIRST_NAME_DETECTOR]-Fri 8am to 8pm Saturday 9am to 6pm Sunday<br><br>I hope this information will help you.</span>",4,2019-10-19 17:45:40
+551955364318141998,customer,Ok will do,5,2019-10-19 17:46:44
+551955364318142003,agent,Please click on below link and login to your MY  account.,11,2019-10-19 17:50:40
+551955364318142003,agent,www.bt.com/mybt,12,2019-10-19 17:50:47
+551955364318142003,customer,I am currently using our home PC.  Do I need to log on with the new laptop in order to add it to our  package?,13,2019-10-19 17:51:26
+551955364318142003,customer,I have logged in to my account on our home PC,14,2019-10-19 17:51:50
+551955364318142003,agent,"No, please login with your PC",15,2019-10-19 17:51:54
+551955364318142003,agent,Yes,16,2019-10-19 17:51:58
+551955364318142003,agent,Please follow below steps and let me in case you need help.,17,2019-10-19 17:52:15
+551955364318142003,agent,click on your packages,18,2019-10-19 17:52:22
+551955364318142003,customer,I'm in Package Overview,19,2019-10-19 17:53:19
+551955364318142003,agent,You are now chatting with [CUSTOM_FULL_NAME].,2,2019-10-19 17:43:35
+551955364318142003,agent,Yes click on My extras.,20,2019-10-19 17:53:37
+551955364318142003,customer,I'm in Your included extras,21,2019-10-19 17:54:27
+551955364318142003,agent,Yes,22,2019-10-19 17:54:34
+551955364318142003,agent,May I know what all the services are activted Extras.,23,2019-10-19 17:54:58
+551955364318142003,customer, Web Protect;  Vius Protect;  Call Protect; [CUSTOM_FULL_NAME],24,2019-10-19 17:56:05
+551955364318142003,agent,"Yes that's correct, can you now login with your laptop",25,2019-10-19 17:56:45
+551955364318142003,agent,Login to your MY  account from your laptop and do the same.,26,2019-10-19 17:57:06
+551955364318142003,customer,Does that mean that my laptop is protected when I am online?,27,2019-10-19 17:57:18
+551955364318142003,agent,Let me if you are able to see the activated services in your laptop or not.,28,2019-10-19 17:57:22
+551955364318142003,customer,I'll go and check,29,2019-10-19 17:57:54
+551955364318142003,customer,I need to add a laptop to our package,3,2019-10-19 17:43:55
+551955364318142003,agent,"Sure, please take your time and let me know if you face any error.",30,2019-10-19 17:58:14
+551955364318142003,customer,"I can see my active extras on the web page on the laptop, but I don't have any  programs on the laptop, such as  Protect",31,2019-10-19 18:02:46
+551955364318142003,agent,Okay,32,2019-10-19 18:02:57
+551955364318142003,agent, [PERSON_NAME] to worry,33,2019-10-19 18:04:01
+551955364318142003,agent,Please click on below link and login with your credentials.,34,2019-10-19 18:04:21
+551955364318142003,agent,<span><extras,35,2019-10-19 18:04:22
+551955364318142003,agent,You will be able to get the download option for  anti virus and  web protect.,36,2019-10-19 18:04:47
+551955364318142003,customer,"I have not been able to find a download page, just lots of [CUSTOM_FIRST_NAME_DETECTOR] adverts for upgrades and other things to buy - very confusing",37,2019-10-19 18:08:42
+551955364318142003,agent,It seems due to your browsing history you are facing this issue. No need to worry may I know which web browser you are using on your laptop?,38,2019-10-19 18:10:28
+551955364318142003,customer,Found it !!,39,2019-10-19 18:10:43
+551955364318142003,agent,"Hi <span>[PERSON_NAME]</span>, Good evening.",4,2019-10-19 17:44:01
+551955364318142003,customer,I'm using Google Chrome,40,2019-10-19 18:11:05
+551955364318142003,agent,"Okay, please confirm have you got the login page",41,2019-10-19 18:11:22
+551955364318142003,customer,I'm downloading McAfee,42,2019-10-19 18:12:25
+551955364318142003,agent,Okay,43,2019-10-19 18:13:43
+551955364318142003,customer,Thank you for your help,44,2019-10-19 18:14:22
+551955364318142003,agent,"You're welcome, <span>Is there anything else apart from this which may I help you with?</span>",45,2019-10-19 18:15:08
+551955364318142003,customer,No thank you. Goodbye for now,46,2019-10-19 18:15:57
+551955364318142003,agent,"You're welcome, have a great evening ahead take care bye.",47,2019-10-19 18:16:16
+551955364318142003,agent,"<span>Thanks for chatting with me, please press the + symbol at the side of the chat box then select ‘End Conversation’ to close this window. You then have the option to fill out a short survey which will help us improve our Chat service. Thanks again **** Chat</span>",48,2019-10-19 18:16:28
+551955364318142003,customer,"Hi,  We have a new laptop and I need to add it to our  Protect package",5,2019-10-19 17:44:39
+551955364318142003,agent,Conrgratulations for the new laptop<img width=17 height=17 title= alt= src=https://lpcdn.lpsnmedia.net/le_emoticons/happy.png data-emojicode=>,6,2019-10-19 17:45:22
+551955364318142003,agent,"<span>I undestand that you want to add your new</span> laptop into your  protect package. Don't worry, I'll definitely check that for you.",7,2019-10-19 17:45:57
+551955364318142003,agent," <span>Before we proceed further, please help me with your full name and complete billing address along with the property name and number, street name and the postcode?</span>",8,2019-10-19 17:46:56
+551955364318142003,customer,"[PERSON_NAME][CUSTOM_FULL_NAME][PERSON_NAME][CUSTOM_FIRST_NAME_DETECTOR], Badgers, [CUSTOM_FULL_NAME], Herstmonceux, [CUSTOM_FULL_NAME] B****NA  Tel. *****15",9,2019-10-19 17:47:54
+551955364318142008,agent,Thank you for choosing to chat with us.  An agent will be with you shortly.,1,2019-10-19 17:43:26
+551955364318142008,customer,Thanks,10,2019-10-19 17:48:04
+551955364318142008,agent,<img width=17 height=17 title= alt= src=https://lpcdn.lpsnmedia.net/le_emoticons/thumbs_up.png data-emojicode=>,11,2019-10-19 17:48:59
+551955364318142008,agent,"<span>[CUSTOM_FIRST_NAME_DETECTOR]</span>, I just checked and found that your current monthly charges is <span>£78.49.</span><br><span>Broadband and Calls</span> : <span>£50.49</span><br> TV : £11<br> MOBILE  : <span>£17.00</span>",12,2019-10-19 17:52:01
+551955364318142008,customer,That’s right,13,2019-10-19 17:53:04
+551955364318142008,customer,So can I stop paying for the tv? As we [CUSTOM_FIRST_NAME_DETECTOR]’t use it,14,2019-10-19 17:53:17
+551955364318142008,agent,"<span>[CUSTOM_FIRST_NAME_DETECTOR]</span>, let me go through the [PERSON_NAME] once.",15,2019-10-19 17:53:18
+551955364318142008,agent,"<span>[CUSTOM_FIRST_NAME_DETECTOR]</span>, I would love to help you but the cancellation mainly done by the Value team, I will share the phone number so that you can you can get in touch with them and they will help you to cancel it right now.",16,2019-10-19 17:54:28
+551955364318142008,customer,ok.,17,2019-10-19 17:55:17
+551955364318142008,agent,"Thank you so much, please allow me a minute.",18,2019-10-19 17:55:50
+551955364318142008,customer,Also I have the by discs and it [CUSTOM_FIRST_NAME_DETECTOR]’t pair with the router. I have tried over and over and cannot get it to work! So should I be paying for the complete Wi-fi if the disc doesn’t work?,19,2019-10-19 17:55:54
+551955364318142008,agent,All agents are currently assisting other customers. Thank you for your patience.,2,2019-10-19 17:45:26
+551955364318142008,agent,"<span>[CUSTOM_FIRST_NAME_DETECTOR], if you don't use it then you can cancel it and it will also reduce your monthly charges, Value team also help you on that as well.</span>",20,2019-10-19 17:56:43
+551955364318142008,agent,<span><a >Consumer Retention - Value</a></span> : [GENERIC_ID]<br><span>8am to 9pm [CUSTOM_FIRST_NAME_DETECTOR]-Fri 8am to 8pm Saturday 9am to 6pm Sunday</span>,21,2019-10-19 17:57:07
+551955364318142008,customer,Ok thanks,22,2019-10-19 17:57:36
+551955364318142008,agent,"<span>[CUSTOM_FIRST_NAME_DETECTOR]</span>, Its my pleasure helping you.<br> ",23,2019-10-19 17:58:05
+551955364318142008,agent,You are now chatting with Subhankit.,3,2019-10-19 17:45:45
+551955364318142008,customer,Good evening! I want to remove the TV £11 from my package. I have already asked for this but i haven’t stopped paying for it? Thanks.,4,2019-10-19 17:45:49
+551955364318142008,agent,"<span>[CUSTOM_FIRST_NAME_DETECTOR]</span>, <span>I am really very sorry to hear that but don't worry we will look into the matter and help you in the best possible way to resolve your issue <span>for that we have to go through the account so could you please help me with your full name and are you the account [CUSTOM_FIRST_NAME_DETECTOR]?</span> </span>",5,2019-10-19 17:46:21
+551955364318142008,customer,[CUSTOM_FIRST_NAME_DETECTOR] Chubb and yes I am,6,2019-10-19 17:46:37
+551955364318142008,agent,"<span>Thank you so much, could you please help me with your address with postal code and your date of birth for validation purpose?</span>",7,2019-10-19 17:46:52
+551955364318142008,customer,"61 st brides close, [GENERIC_ID]. 18/04/[CUSTOM_NUMBER_DETECTOR]",8,2019-10-19 17:47:15
+551955364318142008,agent,"Thank you so much, please allow me 2-3 minutes to investigate.",9,2019-10-19 17:47:57
+551955364318142016,agent,Thank you for choosing to chat with us.  An agent will be with you shortly.,1,2019-10-19 17:44:22
+551955364318142016,agent,You are now chatting with [CUSTOM_FIRST_NAME_DETECTOR].,2,2019-10-19 17:44:23
+551955364318142016,agent,Hi <span>[PERSON_NAME]</span>,3,2019-10-19 17:45:39
+551955364318142016,agent,<span>Could you please elaborate your issue/concern so I can help you better?</span>,4,2019-10-19 17:46:48
+551955364318142016,agent,"<span>Sorry we couldn't finish our chat. As I haven't [CUSTOM_FIRST_NAME_DETECTOR] from you for some time, I'm going to close this chat. If you need any help in the future, please do not hesitate to chat with us again.</span>",7,2019-10-19 17:52:15
+551955364318142016,agent,Thank you for chatting with us.,8,2019-10-19 17:52:39
+551955364318142017,agent,Thank you for choosing to chat with us.  An agent will be with you shortly.,1,2019-10-19 17:43:44
+551955364318142017,customer,"Yes indeed, its just annoying as a agent the other day said it was fixed after telling me i need to reboot my [CUSTOM_FIRST_NAME_DETECTOR] after midnight due to some congestion I did that, with no success.",10,2019-10-19 17:50:30
+551955364318142017,agent,"Well [PERSON_NAME] I understand that, but the thing which was suggested to you on the basis of the result, that is why it was told to you, I got the result from my end I get to see, that from the exchange till the [CUSTOM_FIRST_NAME_DETECTOR] the connection is good and its delivering the speed, but from the [CUSTOM_FIRST_NAME_DETECTOR] till your devices, the speed is getting effected, that is why it was told to restart the [CUSTOM_FIRST_NAME_DETECTOR], so that it all the congestion get refreshed and the [CUSTOM_FIRST_NAME_DETECTOR] started working properly again, but as its still not working, its clearly indicates your [CUSTOM_FIRST_NAME_DETECTOR]  is not responding well properly, that is why you are not getting the speed which you supposed to get",11,2019-10-19 17:54:33
+551955364318142017,customer,`I see,12,2019-10-19 17:56:00
+551955364318142017,agent,"SO [PERSON_NAME]. as you have been a very [CUSTOM_FIRST_NAME_DETECTOR] customer for us, without any delay we are replacing the [CUSTOM_FIRST_NAME_DETECTOR] for you, also we have decided to upgrade your [CUSTOM_FIRST_NAME_DETECTOR], you have smart [CUSTOM_FIRST_NAME_DETECTOR] now, But we have decided to send you the most updated [CUSTOM_FIRST_NAME_DETECTOR], which is smart [CUSTOM_FIRST_NAME_DETECTOR] 2, the market cost of the [CUSTOM_FIRST_NAME_DETECTOR] is [CUSTOM_NUMBER_DETECTOR] pound, but  is sending it absolutely free, sounds good to you?",13,2019-10-19 17:56:32
+551955364318142017,customer,"Sounds absolutely fine to me, I just wish to stay connected to my speed that I have long waited for.",14,2019-10-19 17:57:42
+551955364318142017,customer,"Prior to this chat, I arranged a engineer to come out on the 21st, I'm hoping this new [CUSTOM_FIRST_NAME_DETECTOR] 2 will fix the problem. Do you think it would be a good idea to cancel that appointment now?",15,2019-10-19 17:58:43
+551955364318142017,agent,You are now chatting with [CUSTOM_FIRST_NAME_DETECTOR].,2,2019-10-19 17:43:45
+551955364318142017,agent,"<span>Thank you for contacting  [CUSTOM_FULL_NAME]. You are connected to [CUSTOM_FIRST_NAME_DETECTOR],HOw may I help you today?</span>",3,2019-10-19 17:44:02
+551955364318142017,customer,"Hello there, ive been experiencing very slow broadband for the past few days now from the 16th of october, I contacted  live chat 2 days ago with the same problem and they managed to say that my fault was fixed. I left it for a while to see if it would come back and it still hasnt.",4,2019-10-19 17:45:18
+551955364318142017,agent," I see, in that case, may I know what is the speed your are getting now, if its slow will  check what can be done , as you have already monitored the connection, <span>to proceed may I have your full address and post code? are you the account [CUSTOM_FIRST_NAME_DETECTOR] (yes/no)?</span>",5,2019-10-19 17:46:42
+551955364318142017,customer,"around 5.16 mbps download, my upload seems to unaffected, and my address is 59 [CUSTOM_FIRST_NAME_DETECTOR] close, [GENERIC_ID]. and yes i am",6,2019-10-19 17:47:45
+551955364318142017,agent,"in that case, let me start my checks from my end, now let me know to access your internet do you mostly depends on wifi?",7,2019-10-19 17:48:40
+551955364318142017,customer,No everything is wired.,8,2019-10-19 17:48:52
+551955364318142017,agent,"even with the wired its slow, then surely there is an issue",9,2019-10-19 17:49:15
+551955364318141998,agent,<span>Thank you so much for the co-operation.</span> <span>Is there anything else may I help you with?</span>,6,2019-10-19 17:46:56
+551955364318141998,customer,No thats it thanks,7,2019-10-19 17:47:17
+551955364318141998,agent,"<span>Thank you for contacting . Have a nice evening. Take care, bye. ☺</span>",8,2019-10-19 17:47:21
+551955364318142003,agent,Thank you for choosing to chat with us.  An agent will be with you shortly.,1,2019-10-19 17:43:33
+551955364318142003,agent,"<span>Thank you for providing the information, <span>please allow me 2 minutes while I check your account with the above details.</span></span>",10,2019-10-19 17:48:55

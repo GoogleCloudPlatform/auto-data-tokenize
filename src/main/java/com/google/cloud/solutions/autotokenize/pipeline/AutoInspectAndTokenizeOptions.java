@@ -18,7 +18,9 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
+import java.util.List;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
+import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Validation.Required;
 
 /** Common options for Inspection and Tokenization pipelines. */
@@ -33,6 +35,32 @@ public interface AutoInspectAndTokenizeOptions extends GcpOptions {
 
   void setInputPattern(String inputPattern);
 
+  // CsvIO parameters
+  List<String> getCsvHeaders();
+
+  void setCsvHeaders(List<String> csvHeaders);
+
+  @Default.Boolean(false)
+  boolean getCsvFirstRowHeader();
+
+  void setCsvFirstRowHeader(boolean csvFirstRowHeader);
+
+  @Default.String("UTF-8")
+  String getCsvCharset();
+
+  void setCsvCharset(String csvCharset);
+
+  @Default.String(",")
+  String getCsvColumnDelimiter();
+
+  void setCsvColumnDelimiter(String csvColumnDelimiter);
+
+  @Default.String("Default")
+  String getCsvFormatType();
+
+  void setCsvFormatType(String csvFormatType);
+
+  // JDBC Connection parameters
   String getJdbcConnectionUrl();
 
   void setJdbcConnectionUrl(String jdbcConnectionUrl);

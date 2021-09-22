@@ -284,7 +284,16 @@ gsutil cp userdata.avro gs://${TEMP_GCS_BUCKET}
 
 ### Prerequisites
 
-As [Testcontainers](https://www.testcontainers.org/) is used for unit testing, you need to install Docker on your machine. Please [see here the supported Docker versions](https://www.testcontainers.org/supported_docker_environment/).
+The solution uses[Testcontainers](https://www.testcontainers.org/) for database dependent unit-tests.
+If you wish to skip running tests add `-x test` flag to `gradle` command.
+
+Install Docker:
+
+   1. Follow [distro specific steps](https://docs.docker.com/engine/install/)
+   1. For security purpose [setup Docker in Root-less mode](https://docs.docker.com/engine/security/rootless/#prerequisites)
+   1. Install Docker Compose using [steps](https://docs.docker.com/compose/install/)
+
+Check the [supported](https://www.testcontainers.org/supported_docker_environment/) Docker versions for TestContainers before installing.
 
 ### Compile
 
@@ -293,8 +302,6 @@ You need to compile all the modules to build executables for deploying the _samp
 ```shell script
 ./gradlew clean buildNeeded shadowJar
 ```
-
-> Add `-x test` flag to skip running tests.
 
 ## Run Sample and Identify pipeline
 
@@ -330,6 +337,7 @@ The pipeline supports multiple **Source Types**, use the following table to use 
 | --------------------------------- | ---------------- | ---------------------------------------------- |
 | **Avro** file in Cloud Storage    | `AVRO`           | `gs://<location of the file(s)`                |
 | **Parquet** file in Cloud Storage | `PARQUET`        | `gs://<location of the file(s)`                |
+| CSV Files in Cloud Storage        | `CSV_FILE`       | `gs://<location of the files(s)`               |
 | BigQuery table                    | `BIGQUERY_TABLE` | `<project-id>:<dataset>.<table>`               |
 | Query results in BigQuery         | `BIGQUERY_QUERY` | BigQuery SQL statement in StandardSQL dialect. |
 | Relational Databases (using JDBC) | `JDBC_TABLE`     | `[TABLE_NAME]`, use parameters `jdbcConnectionUrl` and `jdbcDriverClass` to specify the JDBC connection details. ([Details](sample_identify_and_tag.md))       |
@@ -351,6 +359,11 @@ Pipeline options for Sample, Identify and Tag pipeline (`DlpSamplerPipelineOptio
 | `jdbcConnectionUrl`       | The Connection URL used for connecting to a SQL datasource using JDBC. (Required when `sourceType=JDBC_TABLE`) |
 | `jdbcDriverClass`         | The JDBC driver to use for reading from SQL datasource. (Required when `sourceType=JDBC_TABLE`) |
 | `jdbcFilterClause`        | When using JDBC source, it is highly recommended to use a sampling filter to select random records, instead of fetching all the records from a relational database. The provided string is set as the WHERE clause of the query. (Optional when `sourceType=JDBC_TABLE`)|
+| `csvHeaders`              | (Optional) Provide column names when using `CSV_FILE` sourceType. |
+| `csvFirstRowHeaders`      | (Optional) Direct to omit first row of each CSV file and use as header. (Default: `false`) |
+| `csvCharset`              | (Optional) Specify the charset used for the CSV file. (Default: `UTF-8`) |
+| `csvColumnDelimiter`      | (Optional) Specify the character(s) used for delimiting column in a row. (Default: `,`) |
+| `csvFormatType`           | (Optional) Specify the CSV format based on Apache Commons CSV. Choose from one of the [CSVFormat#Predefined](https://github.com/apache/commons-csv/blob/f6cdeac129665cf6f131b00678c9b4e824d758e5/src/main/java/org/apache/commons/csv/CSVFormat.java#L679) types. (Default: `Default`) |
 | `dataCatalogEntryGroupId` | The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for `sourceType=BIGQUERY_TABLE`) |
 | `dataCatalogInspectionTagTemplateId` | The Datacatalog TempalteId to use for creating the sensitivity tags. |
 | `dataCatalogForcedUpdate` | Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: `false`) |

@@ -200,7 +200,9 @@ public final class DlpInspectionPipelineIT {
             new Object[] {
               "MySQL 5000 records, selects only records_that_end_with 1 [password]",
               ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
-              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10) IN (1) --jdbcUserName=root --jdbcPassword=",
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts"
+                  + " --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10)"
+                  + " IN (1) --jdbcUserName=root --jdbcPassword=",
               TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
               ImmutableList.of(
                   ColumnInformation.newBuilder()
@@ -223,7 +225,9 @@ public final class DlpInspectionPipelineIT {
             new Object[] {
               "MySQL 5000 records, selects only records_that_end_with 1 [passwordSecret]",
               ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
-              "--sourceType=JDBC_TABLE --inputPattern=Contacts --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10) IN (1) --jdbcUserName=root --jdbcPasswordSecretsKey=id/to/password",
+              "--sourceType=JDBC_TABLE --inputPattern=Contacts"
+                  + " --jdbcDriverClass=com.mysql.cj.jdbc.Driver --jdbcFilterClause=MOD(row_id, 10)"
+                  + " IN (1) --jdbcUserName=root --jdbcPasswordSecretsKey=id/to/password",
               TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
               ImmutableList.of(
                   ColumnInformation.newBuilder()
