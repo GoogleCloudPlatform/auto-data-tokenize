@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import static com.google.cloud.solutions.autotokenize.common.CsvRowFlatRecordConvertors.makeCsvAvroSchema;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -27,22 +28,20 @@ import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
 import com.google.cloud.solutions.autotokenize.common.SecretsClient;
 import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.dlp.PartialBatchAccumulator;
+import com.google.cloud.solutions.autotokenize.encryptors.ClearTextKeySetExtractor;
+import com.google.cloud.solutions.autotokenize.encryptors.FixedClearTextKeySetExtractor;
 import com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher;
+import com.google.cloud.solutions.autotokenize.testing.TestCsvFileGenerator;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
 import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.crypto.tink.CleartextKeysetHandle;
-import com.google.crypto.tink.JsonKeysetReader;
-import com.google.crypto.tink.JsonKeysetWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
-import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -92,7 +91,7 @@ public final class EncryptionPipelineIT implements Serializable {
   private transient EncryptionPipelineOptions pipelineOptions;
   private transient DlpClientFactory dlpClientFactory;
   private transient Schema expectedSchema;
-  private transient String clearTextEncryptionKeySet;
+  private transient ClearTextKeySetExtractor clearTextEncryptionKeySetExtractor;
 
   @After
   public void tearDownTestDB() {
@@ -101,33 +100,16 @@ public final class EncryptionPipelineIT implements Serializable {
     }
   }
 
-  @Before
-  public void setupClearTextKeySetHandle() throws GeneralSecurityException, IOException {
-    var tinkKeySet = pipelineOptions.getTinkEncryptionKeySetJson();
-
-    if (tinkKeySet == null) {
-      clearTextEncryptionKeySet = null;
-      return;
-    }
-
-    var baos = new ByteArrayOutputStream();
-    CleartextKeysetHandle.write(
-        CleartextKeysetHandle.read(JsonKeysetReader.withString(tinkKeySet)),
-        JsonKeysetWriter.withOutputStream(baos));
-    clearTextEncryptionKeySet = baos.toString();
-  }
-
   @Test
   public void buildPipeline_valid() throws Exception {
 
     // Perform the Encryption pipeline
-    new EncryptionPipeline.EncryptingPipelineFactory(
+    new EncryptionPipeline(
             pipelineOptions,
             testPipeline,
             dlpClientFactory,
             secretsClient,
-            clearTextEncryptionKeySet)
-        .buildPipeline()
+            new FixedClearTextKeySetExtractor(pipelineOptions.getTinkEncryptionKeySetJson()))
         .run()
         .waitUntilFinish();
 
@@ -193,9 +175,33 @@ public final class EncryptionPipelineIT implements Serializable {
                   "userdata.avro",
                   "tinkEncryptionKeySetJsonFile",
                   "test_encryption_key.json"),
-              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc --tokenizeColumns=$.kylosample.email",
+              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
+                  + " --tokenizeColumns=$.kylosample.email",
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "CSV input: 1000 records with Provided Avro Schema (TINK)",
+              /*configParameters=*/ ImmutableMap.of(
+                  "tinkEncryptionKeySetJsonFile", "test_encryption_key.json"),
+              /*baseArgs*/ "--sourceType=CSV_FILE --tokenizeColumns=$.CsvRecord.col_1",
+              /*inputSchemaJsonFile=*/ "five_column_csv_schema.json",
+              /*expectedRecordsCount=*/ 100
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "CSV input: 1000 records with Headers (TINK)",
+              /*configParameters=*/ ImmutableMap.of(
+                  "tinkEncryptionKeySetJsonFile", "test_encryption_key.json"),
+              /*baseArgs*/
+              Joiner.on(' ')
+                  .join(
+                      "--sourceType=CSV_FILE",
+                      "--tokenizeColumns=$.CsvRecord.col_1",
+                      "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
+              /*inputSchemaJsonFile=*/ null,
+              /*expectedRecordsCount=*/ 100
             })
         .add(
             new Object[] {
@@ -260,7 +266,14 @@ public final class EncryptionPipelineIT implements Serializable {
             .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     var sourceType = SourceType.valueOf((String) options.get("sourceType"));
-    var inputSchemaJson = TestResourceLoader.classPath().loadAsString(inputSchemaJsonFile);
+    var inputSchemaJson =
+        (inputSchemaJsonFile != null)
+            ? TestResourceLoader.classPath().loadAsString(inputSchemaJsonFile)
+            : ((options.get("csvHeaders") != null)
+                ? makeCsvAvroSchema(
+                        Splitter.on(',').splitToList((String) options.get("csvHeaders")))
+                    .toString()
+                : null);
 
     if (configParameters.containsKey("dlpEncryptConfigFile")) {
       options.put(
@@ -277,10 +290,14 @@ public final class EncryptionPipelineIT implements Serializable {
               .loadAsString(configParameters.get("tinkEncryptionKeySetJsonFile")));
       options.put("mainKmsKeyUri", "project/my-project/locations");
 
+      var tokenizeColumnsOption = options.get("tokenizeColumns");
       //noinspection unchecked testing class.
       expectedSchema =
           DeIdentifiedRecordSchemaConverter.withOriginalSchemaJson(inputSchemaJson)
-              .withEncryptColumnKeys((List<String>) options.get("tokenizeColumns"))
+              .withEncryptColumnKeys(
+                  List.class.isAssignableFrom(tokenizeColumnsOption.getClass())
+                      ? (List<String>) tokenizeColumnsOption
+                      : ImmutableList.of((String) tokenizeColumnsOption))
               .updatedSchema();
     }
 
@@ -292,6 +309,14 @@ public final class EncryptionPipelineIT implements Serializable {
             .copyTo(testAvroFileFolder)
             .createFileTestCopy(configParameters.get("testFile"));
         options.put("inputPattern", testAvroFileFolder.getAbsolutePath() + "/*");
+        break;
+
+      case CSV_FILE:
+        var testCsvFile = temporaryFolder.newFolder().getAbsolutePath() + "/random.csv";
+        TestCsvFileGenerator.create()
+            .withRowCount(expectedRecordsCount)
+            .writeRandomRecordsToFile(testCsvFile);
+        options.put("inputPattern", testCsvFile);
         break;
 
       case JDBC_TABLE:
@@ -314,7 +339,10 @@ public final class EncryptionPipelineIT implements Serializable {
         throw new IllegalArgumentException("Unsupported Test Type");
     }
 
-    options.put("schema", inputSchemaJson);
+    if (inputSchemaJsonFile != null) {
+      options.put("schema", inputSchemaJson);
+    }
+
     options.put("outputDirectory", temporaryFolder.newFolder().getAbsolutePath());
     options.put("project", PROJECT_ID);
 

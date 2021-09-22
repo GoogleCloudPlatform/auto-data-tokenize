@@ -19,11 +19,14 @@ package com.google.cloud.solutions.autotokenize.common;
 import static com.google.cloud.solutions.autotokenize.testing.FlatRecordsCheckerFn.withExpectedRecords;
 import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
 import static com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher.hasRecordCount;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
+import com.google.cloud.solutions.autotokenize.common.CsvIO.CsvRow;
 import com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator;
+import com.google.cloud.solutions.autotokenize.testing.TestCsvFileGenerator;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.collect.ImmutableList;
@@ -31,16 +34,23 @@ import com.google.common.flogger.GoogleLogger;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.AvroCoder;
+import org.apache.beam.sdk.coders.ListCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.parquet.ParquetIO;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.Sample;
+import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.TupleTag;
 import org.junit.After;
 import org.junit.Before;
@@ -48,8 +58,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.skyscreamer.jsonassert.JSONAssert;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
 
@@ -250,6 +262,120 @@ public final class TransformingReaderTest {
       }
 
       throw new UnsupportedOperationException("not supported for type: " + fileSourceType.name());
+    }
+  }
+
+  @RunWith(JUnit4.class)
+  public static final class CsvReaderTest {
+
+    @Rule public TestPipeline testPipeline = TestPipeline.create();
+
+    @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    private List<List<String>> testCsvRecords;
+
+    private String inputFile;
+
+    TupleTag<FlatRecord> recordsTag = new TupleTag<>();
+    TupleTag<String> schemaTag = new TupleTag<>();
+
+    @Before
+    public void makeTestCsvFile() throws IOException {
+      var testInputFolder = temporaryFolder.newFolder().getAbsolutePath();
+      inputFile = testInputFolder + "/input.csv";
+
+      testCsvRecords = TestCsvFileGenerator.create().writeRandomRecordsToFile(inputFile);
+    }
+
+    @Test
+    public void expand_simpleCsv_valid() {
+
+      var recordsAndSchema =
+          testPipeline.apply(
+              "LoadCsvFile",
+              TransformingReader.forSourceType(SourceType.CSV_FILE)
+                  .from(inputFile)
+                  .withRecordsTag(recordsTag)
+                  .withAvroSchemaTag(schemaTag));
+
+      var schema = recordsAndSchema.get(schemaTag).apply(Sample.any(1));
+
+      var colValues =
+          recordsAndSchema
+              .get(recordsTag)
+              .apply("MakeCsv", MapElements.via(CsvRowFlatRecordConvertors.flatRecordToCsvRowFn()))
+              .apply("MakeStringList", MapElements.via(new CsvRowToListStringFn()))
+              .setCoder(ListCoder.of(StringUtf8Coder.of()));
+
+      PAssert.that(recordsAndSchema.get(recordsTag))
+          .satisfies(
+              new CheckFlatRecordColNamesFn(
+                  ImmutableList.of("col_0", "col_1", "col_2", "col_3", "col_4")));
+      PAssert.that(colValues).containsInAnyOrder(testCsvRecords);
+      PAssert.thatSingleton(schema)
+          .satisfies(
+              new JsonAssertEqualsFn(
+                  TestResourceLoader.classPath().loadAsString("five_column_csv_schema.json")));
+
+      testPipeline.run().waitUntilFinish();
+    }
+
+    private static class CheckFlatRecordColNamesFn
+        extends SimpleFunction<Iterable<FlatRecord>, Void> {
+
+      private final ImmutableList<String> expectedFlatKeys;
+      private final ImmutableList<String> expectedSchemaKeys;
+
+      public CheckFlatRecordColNamesFn(ImmutableList<String> headers) {
+
+        var expectedFlatKeysBuilder = ImmutableList.<String>builder();
+        var expectedSchemaKeysBuilder = ImmutableList.<String>builder();
+
+        for (String header : headers) {
+          expectedFlatKeysBuilder.add("$." + header);
+          expectedSchemaKeysBuilder.add("$.CsvRecord." + header);
+        }
+
+        this.expectedFlatKeys = expectedFlatKeysBuilder.build();
+        this.expectedSchemaKeys = expectedSchemaKeysBuilder.build();
+      }
+
+      @Override
+      public Void apply(Iterable<FlatRecord> input) {
+        input.forEach(
+            record -> {
+              assertThat(record.getFlatKeySchemaMap().keySet())
+                  .containsExactlyElementsIn(expectedFlatKeys);
+              assertThat(record.getFlatKeySchemaMap().values())
+                  .containsExactlyElementsIn(expectedSchemaKeys);
+              assertThat(record.getValuesMap().keySet())
+                  .containsExactlyElementsIn(expectedFlatKeys);
+            });
+
+        return null;
+      }
+    }
+
+    private static class CsvRowToListStringFn extends SimpleFunction<CsvRow, List<String>> {
+      @Override
+      public List<String> apply(CsvRow input) {
+        return ImmutableList.copyOf(input);
+      }
+    }
+  }
+
+  private static final class JsonAssertEqualsFn implements SerializableFunction<String, Void> {
+
+    private final String expectedJson;
+
+    public JsonAssertEqualsFn(String expectedJson) {
+      this.expectedJson = expectedJson;
+    }
+
+    @Override
+    public Void apply(String input) {
+      JSONAssert.assertEquals(expectedJson, input, true);
+      return null;
     }
   }
 }

@@ -18,17 +18,14 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 
 import java.util.List;
-import org.apache.beam.sdk.options.Validation.Required;
 
 /** Defines all the required inputs for the Encrypting pipeline. */
 public interface EncryptionPipelineOptions extends AutoInspectAndTokenizeOptions {
 
-  @Required
   String getSchema();
 
   void setSchema(String schema);
 
-  @Required
   List<String> getTokenizeColumns();
 
   void setTokenizeColumns(List<String> fileDlpReportJson);

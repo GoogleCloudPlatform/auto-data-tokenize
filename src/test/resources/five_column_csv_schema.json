@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "CsvRecord",
+  "doc": "CsvRecord created by auto-data-tokenize",
+  "fields": [
+    {
+      "name": "col_0",
+      "type": "string"
+    },
+    {
+      "name": "col_1",
+      "type": "string"
+    },
+    {
+      "name": "col_2",
+      "type": "string"
+    },
+    {
+      "name": "col_3",
+      "type": "string"
+    },
+    {
+      "name": "col_4",
+      "type": "string"
+    }
+  ]
+}
