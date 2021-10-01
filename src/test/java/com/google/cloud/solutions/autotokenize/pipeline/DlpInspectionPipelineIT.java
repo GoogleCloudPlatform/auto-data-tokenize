@@ -310,7 +310,7 @@ public final class DlpInspectionPipelineIT {
         break;
       case JDBC_TABLE:
         var initScript = configParameters.get("initScript");
-        var testDatabaseName = "test_" + new Random().nextLong();
+        var testDatabaseName = ("test_" + new Random().nextLong()).replaceAll("-", "");
         databaseContainer =
             new MySQLContainer<>("mysql:8.0.24")
                 .withDatabaseName(testDatabaseName)

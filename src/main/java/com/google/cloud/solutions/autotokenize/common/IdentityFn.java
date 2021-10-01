@@ -14,5 +14,20 @@
  * limitations under the License.
  */
 
-rootProject.name = "autotokenize"
-include(":third_party")
+package com.google.cloud.solutions.autotokenize.common;
+
+
+import org.apache.beam.sdk.transforms.SerializableFunction;
+
+/** Identity function: Returns the same value as input. */
+public class IdentityFn<T> implements SerializableFunction<T, T> {
+
+  public static <T> IdentityFn<T> of() {
+    return new IdentityFn<>();
+  }
+
+  @Override
+  public T apply(T input) {
+    return input;
+  }
+}
