@@ -160,6 +160,7 @@ test {
     dependsOn cleanTest
     testLogging.showStandardStreams = true
     finalizedBy jacocoTestReport
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
 }
 
 jacoco {

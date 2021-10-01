@@ -169,6 +169,18 @@ public final class CsvIOTest {
   }
 
   @Test
+  public void build_userProvidedHeadersEmpty_throwsIllegalArgumentException() {
+    var iaexp =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> CsvIO.read("some_file_path").withHeaders(ImmutableList.of()));
+
+    assertThat(iaexp)
+        .hasMessageThat()
+        .contains("User defined headers should be absent or non-empty");
+  }
+
+  @Test
   public void read_fileHeadersAndManualProvidedHeader_headersContainManualProvided()
       throws IOException {
     var testCsvFile = temporaryFolder.newFile().getAbsolutePath();

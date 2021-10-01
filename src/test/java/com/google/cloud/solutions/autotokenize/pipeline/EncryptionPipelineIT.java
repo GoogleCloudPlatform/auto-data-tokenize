@@ -41,11 +41,14 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import com.google.common.truth.Truth;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -90,6 +93,7 @@ public final class EncryptionPipelineIT implements Serializable {
   private JdbcDatabaseContainer<?> databaseContainer;
   private transient EncryptionPipelineOptions pipelineOptions;
   private transient DlpClientFactory dlpClientFactory;
+  private transient Schema inputSchema;
   private transient Schema expectedSchema;
   private transient ClearTextKeySetExtractor clearTextEncryptionKeySetExtractor;
 
@@ -102,6 +106,12 @@ public final class EncryptionPipelineIT implements Serializable {
 
   @Test
   public void buildPipeline_valid() throws Exception {
+
+    Truth.assertThat(
+            Sets.difference(
+                    Set.copyOf(expectedSchema.getFields()), Set.copyOf(inputSchema.getFields()))
+                .size())
+        .isAtLeast(1);
 
     // Perform the Encryption pipeline
     new EncryptionPipeline(
@@ -120,6 +130,16 @@ public final class EncryptionPipelineIT implements Serializable {
                 .from(pipelineOptions.getOutputDirectory() + "/*"));
 
     PAssert.that(encryptedRecords).satisfies(new RecordsCountMatcher<>(expectedRecordsCount));
+
+    if (configParameters.containsKey("expectedRecordsAvro")) {
+      var expectedRecords =
+          TestResourceLoader.classPath()
+              .forAvro()
+              .readFile(configParameters.get("expectedRecordsAvro"))
+              .loadAllRecords();
+
+      PAssert.that(encryptedRecords).containsInAnyOrder(expectedRecords);
+    }
 
     readPipeline.run();
   }
@@ -193,12 +213,32 @@ public final class EncryptionPipelineIT implements Serializable {
             new Object[] {
               /*testCondition=*/ "CSV input: 1000 records with Headers (TINK)",
               /*configParameters=*/ ImmutableMap.of(
-                  "tinkEncryptionKeySetJsonFile", "test_encryption_key.json"),
+                  "testFile",
+                  "csv/sample-data-chats.csv",
+                  "expectedRecordsAvro",
+                  "csv/tink_encrypted_transcripts.avro",
+                  "tinkEncryptionKeySetJsonFile",
+                  "test_encryption_key.json"),
               /*baseArgs*/
               Joiner.on(' ')
                   .join(
                       "--sourceType=CSV_FILE",
-                      "--tokenizeColumns=$.CsvRecord.col_1",
+                      "--tokenizeColumns=$.CsvRecord.transcript",
+                      "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
+              /*inputSchemaJsonFile=*/ null,
+              /*expectedRecordsCount=*/ 100
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "CSV input: 1000 records with Headers (DLP)",
+              /*configParameters=*/ ImmutableMap.of(
+                  "testFile", "csv/sample-data-chats.csv",
+                  "expectedRecordsAvro", "csv/base64_encrypted_transcripts.avro",
+                  "dlpEncryptConfigFile", "csv/transcript_dlp_encrypt_config.json"),
+              /*baseArgs*/
+              Joiner.on(' ')
+                  .join(
+                      "--sourceType=CSV_FILE",
                       "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
               /*inputSchemaJsonFile=*/ null,
               /*expectedRecordsCount=*/ 100
@@ -266,13 +306,12 @@ public final class EncryptionPipelineIT implements Serializable {
             .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     var sourceType = SourceType.valueOf((String) options.get("sourceType"));
-    var inputSchemaJson =
+    inputSchema =
         (inputSchemaJsonFile != null)
-            ? TestResourceLoader.classPath().loadAsString(inputSchemaJsonFile)
+            ? TestResourceLoader.classPath().forAvro().asSchema(inputSchemaJsonFile)
             : ((options.get("csvHeaders") != null)
                 ? makeCsvAvroSchema(
-                        Splitter.on(',').splitToList((String) options.get("csvHeaders")))
-                    .toString()
+                    Splitter.on(',').splitToList((String) options.get("csvHeaders")))
                 : null);
 
     if (configParameters.containsKey("dlpEncryptConfigFile")) {
@@ -292,13 +331,11 @@ public final class EncryptionPipelineIT implements Serializable {
 
       var tokenizeColumnsOption = options.get("tokenizeColumns");
       //noinspection unchecked testing class.
-      expectedSchema =
-          DeIdentifiedRecordSchemaConverter.withOriginalSchemaJson(inputSchemaJson)
-              .withEncryptColumnKeys(
-                  List.class.isAssignableFrom(tokenizeColumnsOption.getClass())
-                      ? (List<String>) tokenizeColumnsOption
-                      : ImmutableList.of((String) tokenizeColumnsOption))
-              .updatedSchema();
+      var encryptColumns =
+          List.class.isAssignableFrom(tokenizeColumnsOption.getClass())
+              ? (List<String>) tokenizeColumnsOption
+              : ImmutableList.of((String) tokenizeColumnsOption);
+      expectedSchema = makeExpectedSchema(inputSchema.toString(), encryptColumns);
     }
 
     switch (sourceType) {
@@ -312,16 +349,25 @@ public final class EncryptionPipelineIT implements Serializable {
         break;
 
       case CSV_FILE:
-        var testCsvFile = temporaryFolder.newFolder().getAbsolutePath() + "/random.csv";
-        TestCsvFileGenerator.create()
-            .withRowCount(expectedRecordsCount)
-            .writeRandomRecordsToFile(testCsvFile);
+        String testCsvFile = temporaryFolder.newFolder().getAbsolutePath() + "/random.csv";
+
+        if (configParameters.containsKey("testFile")) {
+          testCsvFile =
+              TestResourceLoader.classPath()
+                  .copyTo(temporaryFolder.newFolder())
+                  .createFileTestCopy(configParameters.get("testFile"))
+                  .getAbsolutePath();
+        } else {
+          TestCsvFileGenerator.create()
+              .withRowCount(expectedRecordsCount)
+              .writeRandomRecordsToFile(testCsvFile);
+        }
         options.put("inputPattern", testCsvFile);
         break;
 
       case JDBC_TABLE:
         var initScript = configParameters.get("initScript");
-        var testDatabaseName = "test_" + new Random().nextLong();
+        var testDatabaseName = ("test_" + new Random().nextLong()).replaceAll("-", "");
         databaseContainer =
             new MySQLContainer<>("mysql:8.0.24")
                 .withDatabaseName(testDatabaseName)
@@ -340,7 +386,7 @@ public final class EncryptionPipelineIT implements Serializable {
     }
 
     if (inputSchemaJsonFile != null) {
-      options.put("schema", inputSchemaJson);
+      options.put("schema", inputSchema.toString());
     }
 
     options.put("outputDirectory", temporaryFolder.newFolder().getAbsolutePath());
@@ -373,11 +419,7 @@ public final class EncryptionPipelineIT implements Serializable {
 
     var encryptSchemaColumns = DeidentifyColumns.columnNamesIn(dlpEncryptConfig);
 
-    expectedSchema =
-        DeIdentifiedRecordSchemaConverter.withOriginalSchemaJson(
-                TestResourceLoader.classPath().loadAsString(inputSchemaJsonFile))
-            .withEncryptColumnKeys(encryptSchemaColumns)
-            .updatedSchema();
+    expectedSchema = makeExpectedSchema(inputSchema.toString(), encryptSchemaColumns);
 
     var encryptColumns =
         encryptSchemaColumns.stream()
@@ -390,5 +432,12 @@ public final class EncryptionPipelineIT implements Serializable {
         new StubbingDlpClientFactory(
             new Base64EncodingDlpStub(
                 PartialBatchAccumulator.RECORD_ID_COLUMN_NAME, encryptColumns, PROJECT_ID));
+  }
+
+  private static Schema makeExpectedSchema(
+      String inputSchemaJson, List<String> encryptSchemaColumns) {
+    return DeIdentifiedRecordSchemaConverter.withOriginalSchemaJson(inputSchemaJson)
+        .withEncryptColumnKeys(encryptSchemaColumns)
+        .updatedSchema();
   }
 }

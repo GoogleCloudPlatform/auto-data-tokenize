@@ -35,7 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
+import java.util.Random;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.AvroCoder;
@@ -93,7 +93,7 @@ public final class TransformingReaderTest {
       this.tableName = tableName;
       this.jdbcConfiguration = jdbcConfiguration;
       this.expectedRecords = expectedRecords;
-      this.testDatabaseName = "test_" + UUID.randomUUID().toString().replaceAll("[\\-]", "_");
+      this.testDatabaseName = ("test_" + new Random().nextLong()).replaceAll("-", "");
       this.secretsStub =
           ConstantSecretVersionValueManagerServicesStub.of("id/to/secrets/key/version", "");
 

@@ -22,7 +22,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 import com.google.auto.value.AutoValue;
-import com.google.cloud.solutions.autotokenize.common.CsvIO.CsvFilesRead.Builder;
 import com.google.common.base.Objects;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
@@ -57,7 +56,6 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
-import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -279,23 +277,15 @@ public class CsvIO {
 
     @Override
     public PCollection<CsvRow> expand(PCollection<ReadableFile> input) {
-
-      var csvFormat = CSVFormat.valueOf(csvFormatType());
-
-      if (delimiter() != null) {
-        csvFormat = csvFormat.withDelimiter(delimiter());
-      }
-
-      if (headers() != null) {
-        csvFormat = csvFormat.withHeader(headers().toArray(new String[0]));
-      }
-
-      if (useFirstRowHeader()) {
-        csvFormat = csvFormat.withFirstRecordAsHeader();
-      }
-
       return input
-          .apply("ReadCsvFile", ParDo.of(CsvFileReaderFn.create(fileCharset(), csvFormat)))
+          .apply(
+              "ReadAndParseCsvFile",
+              parseCsvFile(IdentityFn.of())
+                  .withCsvFormatType(csvFormatType())
+                  .withDelimiter(delimiter())
+                  .withFileCharSet(fileCharset())
+                  .withHeaders(headers())
+                  .withUseFirstRowHeader(useFirstRowHeader()))
           .setCoder(CsvRow.coder());
     }
   }
@@ -439,14 +429,22 @@ public class CsvIO {
 
     @Override
     public PCollection<T> expand(PCollection<ReadableFile> input) {
+      var csvFormat = CSVFormat.valueOf(csvFormatType());
+
+      if (delimiter() != null) {
+        csvFormat = csvFormat.withDelimiter(delimiter());
+      }
+
+      if (headers() != null) {
+        csvFormat = csvFormat.withHeader(headers().toArray(new String[0]));
+      }
+
+      if (useFirstRowHeader()) {
+        csvFormat = csvFormat.withFirstRecordAsHeader();
+      }
+
       return input
-          .apply(
-              readFiles()
-                  .withFileCharSet(fileCharset())
-                  .withCsvFormatType(csvFormatType())
-                  .withDelimiter(delimiter())
-                  .withHeaders(headers())
-                  .withUseFirstRowHeader(useFirstRowHeader()))
+          .apply("ReadCsvFile", ParDo.of(CsvFileReaderFn.create(fileCharset(), csvFormat)))
           .apply("Parse", MapElements.into(TypeDescriptors.outputOf(parseFn())).via(parseFn()));
     }
   }
@@ -665,7 +663,7 @@ public class CsvIO {
     }
 
     public static Coder<CsvRow> coder() {
-      return new CsvRowCoder();
+      return CsvRowCoder.of();
     }
 
     /** Returns the value for a the given columnName. {@code null} if not found. */
@@ -776,14 +774,6 @@ public class CsvIO {
        */
       @Override
       public void verifyDeterministic() {}
-    }
-  }
-
-  private static final class IdentityIterableCsvRow
-      extends SimpleFunction<CsvRow, Iterable<CsvRow>> {
-    @Override
-    public Iterable<CsvRow> apply(CsvRow input) {
-      return ImmutableList.of(input);
     }
   }
 }
