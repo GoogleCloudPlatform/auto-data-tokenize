@@ -71,3 +71,6 @@ alias sample_and_identify_pipeline="java -cp ${AUTO_TOKENIZE_JAR} com.google.clo
 # Fix the execution directory to present the JARs in this folder
 # shellcheck disable=SC2139
 alias tokenize_pipeline="java -cp ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.EncryptionPipeline"
+
+# shellcheck disable=SC2139
+alias csv_tokenize_sorted="java -cp ${AUTO_TOKENIZE_JAR} com.google.cloud.solutions.autotokenize.pipeline.CsvTokenizationAndOrderingPipeline"
