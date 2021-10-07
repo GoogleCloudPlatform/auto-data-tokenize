@@ -38,6 +38,7 @@ import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryServices;
 import org.apache.beam.sdk.io.jdbc.JdbcIO;
 import org.apache.beam.sdk.io.jdbc.JdbcIO.DataSourceConfiguration;
 import org.apache.beam.sdk.io.parquet.ParquetIO;
@@ -51,6 +52,7 @@ import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -92,6 +94,8 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
   abstract @Nullable TupleTag<String> avroSchemaTag();
 
+  abstract @Nullable BigQueryServices bigQueryServices();
+
   abstract @Nullable ImmutableList<String> csvHeaders();
 
   abstract boolean csvFirstRowHeader();
@@ -116,6 +120,8 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     abstract Builder recordsTag(TupleTag<FlatRecord> recordsTag);
 
     abstract Builder avroSchemaTag(TupleTag<String> avroSchemaTag);
+
+    abstract Builder bigQueryServices(BigQueryServices bigQueryServices);
 
     abstract Builder csvHeaders(ImmutableList<String> csvHeaders);
 
@@ -152,6 +158,12 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
   /** Provide a JdbcConfiguration for JDBC Connections. */
   public TransformingReader withSecretsClient(SecretsClient secretsClient) {
     return toBuilder().secretsClient(secretsClient).build();
+  }
+
+  /** Provide a mechanism to test BigQuery based operations by allowing fakeBigQuery Services. */
+  @VisibleForTesting
+  public TransformingReader withBigQueryTestServices(BigQueryServices bigQueryServices) {
+    return toBuilder().bigQueryServices(bigQueryServices).build();
   }
 
   /** Provide predefined CSV Headers. */
@@ -218,7 +230,10 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
         return bigQueryReader().from(inputPattern());
 
       case BIGQUERY_QUERY:
-        return bigQueryReader().fromQuery(inputPattern()).usingStandardSql();
+        return bigQueryReader()
+            .fromQuery(inputPattern())
+            .usingStandardSql()
+            .withoutResultFlattening();
 
       case JDBC_TABLE:
         return TransformingJdbcIO.create(jdbcConfiguration(), secretsClient(), inputPattern());
@@ -283,8 +298,17 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     }
   }
 
-  private static BigQueryIO.TypedRead<KV<FlatRecord, String>> bigQueryReader() {
-    return BigQueryIO.read(FlatRecordConvertFn.forBigQueryTableRow()).useAvroLogicalTypes();
+  private BigQueryIO.TypedRead<KV<FlatRecord, String>> bigQueryReader() {
+    var reader = BigQueryIO.read(FlatRecordConvertFn.forBigQueryTableRow()).useAvroLogicalTypes();
+
+    if (bigQueryServices() != null) {
+      return reader
+          .withTestServices(bigQueryServices())
+          // Disable Validation only for testing
+          .withoutValidation();
+    }
+
+    return reader;
   }
 
   private CsvParse<KV<FlatRecord, String>> makeCsvReader() {

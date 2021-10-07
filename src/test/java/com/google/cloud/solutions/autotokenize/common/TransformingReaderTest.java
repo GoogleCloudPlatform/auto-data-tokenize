@@ -21,6 +21,14 @@ import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecor
 import static com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher.hasRecordCount;
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.api.services.bigquery.model.JobStatistics;
+import com.google.api.services.bigquery.model.JobStatistics2;
+import com.google.api.services.bigquery.model.Table;
+import com.google.api.services.bigquery.model.TableFieldSchema;
+import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.bigquery.model.TableRow;
+import com.google.api.services.bigquery.model.TableSchema;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
@@ -31,19 +39,31 @@ import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.GoogleLogger;
-import java.io.File;
+import com.google.common.truth.Correspondence;
+import com.google.common.truth.Correspondence.BinaryPredicate;
+import com.google.privacy.dlp.v2.Value;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.AvroCoder;
+import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.FileIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryOptions;
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
+import org.apache.beam.sdk.io.gcp.testing.FakeBigQueryServices;
+import org.apache.beam.sdk.io.gcp.testing.FakeDatasetService;
+import org.apache.beam.sdk.io.gcp.testing.FakeJobService;
 import org.apache.beam.sdk.io.parquet.ParquetIO;
+import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -51,28 +71,273 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.Sample;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.model.Statement;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
 
+@RunWith(Enclosed.class)
 public final class TransformingReaderTest {
+
+  @RunWith(Parameterized.class)
+  public static final class BigQueryReaderTest {
+
+    private transient PipelineOptions options;
+    private final transient TemporaryFolder testFolder = new TemporaryFolder();
+    private transient TestPipeline readPipeline;
+
+    @Rule
+    public final transient TestRule folderThenPipeline =
+        new TestRule() {
+          @Override
+          public Statement apply(final Statement base, final Description description) {
+            // We need to set up the temporary folder, and then set up the TestPipeline based on the
+            // chosen folder. Unfortunately, since rule evaluation order is unspecified and
+            // unrelated
+            // to field order, and is separate from construction, that requires manually creating
+            // this
+            // TestRule.
+            Statement withPipeline =
+                new Statement() {
+                  @Override
+                  public void evaluate() throws Throwable {
+                    options = TestPipeline.testingPipelineOptions();
+                    options.as(BigQueryOptions.class).setProject(testTableRef.getProjectId());
+                    options
+                        .as(BigQueryOptions.class)
+                        .setTempLocation(testFolder.getRoot().getAbsolutePath());
+                    readPipeline = TestPipeline.fromOptions(options);
+                    readPipeline.apply(base, description).evaluate();
+                  }
+                };
+            return testFolder.apply(withPipeline, description);
+          }
+        };
+
+    @Rule public transient ExpectedException thrown = ExpectedException.none();
+
+    private final FakeDatasetService fakeDatasetService = new FakeDatasetService();
+    private final FakeJobService fakeJobService = new FakeJobService();
+    private final FakeBigQueryServices fakeBqServices =
+        new FakeBigQueryServices()
+            .withDatasetService(fakeDatasetService)
+            .withJobService(fakeJobService);
+
+    private final TableReference testTableRef;
+    private final List<TableRow> testRows;
+    private final TableSchema testTableSchema;
+    private final ImmutableList<FlatRecord> expectedRecords;
+    private final Table testTable;
+
+    public BigQueryReaderTest(
+        String testOptionsName,
+        TableReference testTableRef,
+        List<TableRow> testRows,
+        TableSchema testTableSchema,
+        ImmutableList<FlatRecord> expectedRecords) {
+      this.testTableRef = testTableRef;
+      this.testRows = testRows;
+      this.testTableSchema = testTableSchema;
+      this.expectedRecords = expectedRecords;
+      this.testTable = new Table().setTableReference(testTableRef).setSchema(testTableSchema);
+    }
+
+    @Parameters(name = "{0}")
+    public static ImmutableList<Object[]> testingParameter() {
+      return ImmutableList.<Object[]>builder()
+          .add(
+              new Object[] {
+                "simple_schema_two_rows",
+                new TableReference()
+                    .setProjectId("test-project")
+                    .setDatasetId("sample_dataset")
+                    .setTableId("TestTable"),
+                ImmutableList.of(
+                    new TableRow().set("first_record", 1L).set("second_record", "some string 1"),
+                    new TableRow().set("first_record", 2L).set("second_record", "some string 2")),
+                new TableSchema()
+                    .setFields(
+                        ImmutableList.of(
+                            new TableFieldSchema().setName("first_record").setType("INTEGER"),
+                            new TableFieldSchema().setName("second_record").setType("STRING"))),
+                ImmutableList.of(
+                    FlatRecord.newBuilder()
+                        .putFlatKeySchema("$.first_record.long", "$.first_record")
+                        .putFlatKeySchema("$.second_record.string", "$.second_record")
+                        .putValues(
+                            "$.first_record.long", Value.newBuilder().setIntegerValue(1).build())
+                        .putValues(
+                            "$.second_record.string",
+                            Value.newBuilder().setStringValue("some string 1").build())
+                        .build(),
+                    FlatRecord.newBuilder()
+                        .putFlatKeySchema("$.first_record.long", "$.first_record")
+                        .putFlatKeySchema("$.second_record.string", "$.second_record")
+                        .putValues(
+                            "$.first_record.long", Value.newBuilder().setIntegerValue(2).build())
+                        .putValues(
+                            "$.second_record.string",
+                            Value.newBuilder().setStringValue("some string 2").build())
+                        .build())
+              })
+          .build();
+    }
+
+    @Before
+    public void setUpTestDatasetAndTable() throws IOException, InterruptedException {
+      FakeDatasetService.setUp();
+      fakeDatasetService.createDataset(
+          testTableRef.getProjectId(), testTableRef.getDatasetId(), "", "", null);
+
+      fakeDatasetService.createTable(testTable);
+
+      fakeDatasetService.insertAll(testTableRef, testRows, null);
+    }
+
+    @Test
+    public void expand_bigqueryTable_valid() {
+
+      var recordsTag = new TupleTag<FlatRecord>();
+      var schemaTag = new TupleTag<String>();
+      var recordsAndSchema =
+          readPipeline.apply(
+              TransformingReader.forSourceType(SourceType.BIGQUERY_TABLE)
+                  .withBigQueryTestServices(fakeBqServices)
+                  .from(
+                      String.format(
+                          "%s:%s.%s",
+                          testTableRef.getProjectId(),
+                          testTableRef.getDatasetId(),
+                          testTableRef.getTableId()))
+                  .withRecordsTag(recordsTag)
+                  .withAvroSchemaTag(schemaTag));
+
+      PAssert.that(recordsAndSchema.get(schemaTag)).satisfies(hasRecordCount(1));
+      PAssert.that(recordsAndSchema.get(recordsTag))
+          .satisfies(new ValidateSchemaKeyWithTempQueryTableFn(expectedRecords));
+
+      readPipeline.run().waitUntilFinish();
+    }
+
+    @Test
+    public void expand_bigqueryQuery_valid() throws IOException {
+      var encodeQueryString = buildEncodedQueryString();
+
+      fakeJobService.expectDryRunQuery(
+          testTableRef.getProjectId(),
+          encodeQueryString,
+          new JobStatistics()
+              .setQuery(
+                  new JobStatistics2()
+                      .setTotalBytesProcessed(1000L)
+                      .setReferencedTables(ImmutableList.of(testTableRef))));
+
+      var recordsTag = new TupleTag<FlatRecord>();
+      var schemaTag = new TupleTag<String>();
+      var recordsAndSchema =
+          readPipeline.apply(
+              TransformingReader.forSourceType(SourceType.BIGQUERY_QUERY)
+                  .withBigQueryTestServices(fakeBqServices)
+                  .from(encodeQueryString)
+                  .withRecordsTag(recordsTag)
+                  .withAvroSchemaTag(schemaTag));
+
+      PAssert.that(recordsAndSchema.get(schemaTag)).satisfies(hasRecordCount(1));
+      PAssert.that(recordsAndSchema.get(recordsTag))
+          .satisfies(new ValidateSchemaKeyWithTempQueryTableFn(expectedRecords));
+
+      readPipeline.run().waitUntilFinish();
+    }
+
+    private static class ValidateSchemaKeyWithTempQueryTableFn
+        implements SerializableFunction<Iterable<FlatRecord>, Void> {
+
+      private final ImmutableList<FlatRecord> expectedRecords;
+
+      public ValidateSchemaKeyWithTempQueryTableFn(ImmutableList<FlatRecord> expectedRecords) {
+        this.expectedRecords = expectedRecords;
+      }
+
+      @Override
+      public Void apply(Iterable<FlatRecord> input) {
+        assertThat(input)
+            .comparingElementsUsing(
+                Correspondence.from(
+                    new CompareFlatRecordsWithTempQueryTable(), "Compare without tempTableName"))
+            .containsExactlyElementsIn(expectedRecords);
+
+        return null;
+      }
+    }
+
+    private static class CompareFlatRecordsWithTempQueryTable
+        implements BinaryPredicate<FlatRecord, FlatRecord> {
+
+      @Override
+      public boolean apply(
+          AutoTokenizeMessages.FlatRecord actual, AutoTokenizeMessages.FlatRecord expected) {
+
+        if ((actual == null && expected != null) || (actual != null && expected == null)) {
+          return false;
+        } else if (actual == null && expected == null) {
+          return true;
+        }
+
+        var expectedSchemaKeys = expected.getFlatKeySchemaMap();
+
+        var schemaKeyMatches =
+            actual.getFlatKeySchemaMap().entrySet().stream()
+                .map(
+                    entry -> {
+                      if (!expectedSchemaKeys.containsKey(entry.getKey())) {
+                        return false;
+                      }
+
+                      var expectedSchemaKeyRegex =
+                          String.format(
+                              "^\\$\\.org\\.apache\\.beam\\.sdk\\.io\\.gcp\\.bigquery.\\w+.%s$",
+                              expectedSchemaKeys.get(entry.getKey()).replaceAll("^\\$\\.", ""));
+
+                      return entry.getValue().matches(expectedSchemaKeyRegex);
+                    })
+                .reduce(Boolean::logicalAnd)
+                .orElse(false);
+
+        return schemaKeyMatches && actual.getValuesMap().equals(expected.getValuesMap());
+      }
+    }
+
+    private String buildEncodedQueryString() throws IOException {
+      KvCoder<String, List<TableRow>> coder =
+          KvCoder.of(StringUtf8Coder.of(), ListCoder.of(TableRowJsonCoder.of()));
+
+      var baos = new ByteArrayOutputStream();
+      coder.encode(KV.of(BigQueryHelpers.toJsonString(testTable), testRows), baos);
+      return Base64.getEncoder().encodeToString(baos.toByteArray());
+    }
+  }
 
   @RunWith(Parameterized.class)
   public static final class JdbcReaderTest {
 
     @Rule public transient TestPipeline testPipeline = TestPipeline.create();
 
-    private JdbcDatabaseContainer<?> databaseContainer;
+    private final JdbcDatabaseContainer<?> databaseContainer;
 
     private final String testConditionName;
     private final String initScriptFile;
@@ -192,43 +457,72 @@ public final class TransformingReaderTest {
 
     private final int expectedRecordsCount;
 
-    private String testFileFolder;
+    private final String resourceFile;
+
+    private final String expectedSchemaFile;
+
+    private static final Schema DEFAULT_TEST_SCHEMA = RandomGenericRecordGenerator.SCHEMA;
+
+    private String testFilePattern;
 
     @Parameters(name = "{0} file contains {1} records")
     public static Collection<Object[]> differentFileTypes() {
       return ImmutableList.<Object[]>builder()
-          .add(new Object[] {SourceType.AVRO, 1000})
-          .add(new Object[] {SourceType.PARQUET, 1000})
+          .add(new Object[] {SourceType.AVRO, 1000, null, null})
+          .add(new Object[] {SourceType.PARQUET, 1000, null, null})
+          .add(
+              new Object[] {
+                SourceType.AVRO,
+                2,
+                "avro_records/bq_exported_tables/table_with_date_and_timestamp.avro",
+                "avro_records/bq_exported_tables/table_with_data_and_timestamp_schema.json"
+              })
           .build();
     }
 
-    public AvroParquetReaderTest(SourceType fileSourceType, int expectedRecordsCount) {
+    public AvroParquetReaderTest(
+        SourceType fileSourceType,
+        int expectedRecordsCount,
+        String resourceFile,
+        String expectedSchemaFile) {
       this.fileSourceType = fileSourceType;
       this.expectedRecordsCount = expectedRecordsCount;
+      this.resourceFile = resourceFile;
+      this.expectedSchemaFile = expectedSchemaFile;
     }
 
     @Before
-    public void generateTestRecordsFile() throws IOException {
-      Schema testSchema = RandomGenericRecordGenerator.SCHEMA;
-      File tempFolder = temporaryFolder.newFolder();
-      if (tempFolder.mkdirs()) {
-        throw new IOException("unable to create temporary directories for testing.");
+    public void makeInputFileAccessible() throws IOException {
+      var testInputFolder = temporaryFolder.newFolder();
+      testInputFolder.mkdirs();
+
+      if (resourceFile != null) {
+        testFilePattern =
+            TestResourceLoader.classPath()
+                .copyTo(testInputFolder)
+                .createFileTestCopy(resourceFile)
+                .getAbsolutePath();
+        return;
       }
 
-      testFileFolder = tempFolder.getAbsolutePath();
+      generateTestRecordsFile(testInputFolder.getAbsolutePath());
+    }
 
-      logger.atInfo().log("Writing records to: %s", testFileFolder);
+    public void generateTestRecordsFile(String targetFolder) {
+      logger.atInfo().log("Writing records to: %s", targetFolder);
 
       writePipeline
           .apply(
               Create.of(generateGenericRecords(expectedRecordsCount))
-                  .withCoder(AvroCoder.of(testSchema)))
+                  .withCoder(AvroCoder.of(DEFAULT_TEST_SCHEMA)))
           .apply(
               FileIO.<GenericRecord>write()
-                  .via(fileTypeSpecificSink(testSchema))
-                  .to(testFileFolder));
+                  .via(fileTypeSpecificSink(DEFAULT_TEST_SCHEMA))
+                  .to(targetFolder));
 
       writePipeline.run().waitUntilFinish();
+
+      testFilePattern = targetFolder + "/*";
     }
 
     @Test
@@ -239,7 +533,7 @@ public final class TransformingReaderTest {
       var recordsAndSchemaTuple =
           readPipeline.apply(
               TransformingReader.forSourceType(fileSourceType)
-                  .from(testFileFolder + "/*")
+                  .from(testFilePattern)
                   .withRecordsTag(recordsTag)
                   .withAvroSchemaTag(schemaTag));
 
@@ -248,6 +542,15 @@ public final class TransformingReaderTest {
 
       PAssert.that(records).satisfies(hasRecordCount(expectedRecordsCount));
       PAssert.that(schema).satisfies(hasRecordCount(1));
+      PAssert.that(schema)
+          .containsInAnyOrder(
+              ImmutableList.of(
+                  (expectedSchemaFile != null)
+                      ? TestResourceLoader.classPath()
+                          .forAvro()
+                          .asSchema(expectedSchemaFile)
+                          .toString()
+                      : DEFAULT_TEST_SCHEMA.toString()));
 
       readPipeline.run().waitUntilFinish();
     }
@@ -357,6 +660,7 @@ public final class TransformingReaderTest {
     }
 
     private static class CsvRowToListStringFn extends SimpleFunction<CsvRow, List<String>> {
+
       @Override
       public List<String> apply(CsvRow input) {
         return ImmutableList.copyOf(input);
