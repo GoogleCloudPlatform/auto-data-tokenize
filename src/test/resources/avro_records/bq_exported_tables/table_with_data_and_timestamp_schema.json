@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "Root",
+  "fields": [
+    {
+      "name": "dt",
+      "type": [
+        "null",
+        {
+          "type": "int",
+          "logicalType": "date"
+        }
+      ]
+    },
+    {
+      "name": "ts",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-micros"
+        }
+      ]
+    }
+  ]
+}
