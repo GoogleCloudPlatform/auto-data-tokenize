@@ -90,9 +90,7 @@ public abstract class SortCsvRow
         .apply(
             "Sort",
             SortValues.create(
-                BufferedExternalSorter.options()
-                    .withExternalSorterType(SorterType.NATIVE)
-                    .withTempLocation(getTempLocation())))
+                BufferedExternalSorter.options().withExternalSorterType(SorterType.NATIVE)))
         .apply("ExtractSortedGroupedElements", MapElements.via(ExtractSortedGroupedElements.of()));
   }
 

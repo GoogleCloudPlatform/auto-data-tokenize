@@ -34,7 +34,7 @@ repositories {
 }
 
 def protoVersion = "3.17.0"
-def beamVersion = "2.32.0"
+def beamVersion = "2.33.0"
 def hadoopVersion = "3.3.0"
 
 
@@ -67,8 +67,8 @@ dependencies {
     implementation "com.google.cloud:google-cloud-secretmanager:1.6.3"
 
     // Google Tink for encryption
-    implementation "com.google.crypto.tink:tink:1.5.0"
-    implementation "com.google.crypto.tink:tink-gcpkms:1.5.0"
+    implementation "com.google.crypto.tink:tink:1.6.1"
+    implementation "com.google.crypto.tink:tink-gcpkms:1.6.1"
 
     // JSON related libs
     implementation "com.github.wnameless.json:json-flattener:0.11.0"
