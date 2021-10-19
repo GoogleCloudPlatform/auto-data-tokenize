@@ -62,7 +62,7 @@ DLP_RUNNER_SERVICE_ACCOUNT_EMAIL="${DLP_RUNNER_SERVICE_ACCOUNT_NAME}@$(echo $PRO
 export DLP_RUNNER_SERVICE_ACCOUNT_EMAIL
 
 # Set an easy name to invoke the sampler module
-AUTO_TOKENIZE_JAR="${PWD}/build/libs/autotokenize-all.jar"
+AUTO_TOKENIZE_JAR="${PWD}/build/libs/auto-data-tokenize-all.jar"
 
 # Fix the execution directory to present the JARs in this folder
 # shellcheck disable=SC2139
