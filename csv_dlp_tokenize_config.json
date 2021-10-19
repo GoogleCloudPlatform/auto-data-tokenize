@@ -1,0 +1,21 @@
+{
+  "transforms" : [
+    {
+      "columnId": "$.CsvRecord.transcript",
+      "freeFormColumn": "true",
+      "infoTypes": [
+        "PERSON_NAME", "EMAIL_ADDRESS", "DATE_OF_BIRTH"
+      ],
+      "transform" : {
+        "cryptoDeterministicConfig": {
+          "cryptoKey": {
+            "kmsWrapped": {
+              "cryptoKeyName": "projects/[PROJECT-ID]/locations/global/keyRings/[KEYRING-ID]/cryptoKeys/[KMS-KEY-ID]",
+              "wrappedKey": "[WRAPPED-ENCRYPTION-KEY]"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
