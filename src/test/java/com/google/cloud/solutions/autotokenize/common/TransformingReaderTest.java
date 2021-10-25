@@ -48,6 +48,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import junit.framework.AssertionFailedError;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.coders.AvroCoder;
@@ -73,6 +74,7 @@ import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
+import org.json.JSONException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -678,7 +680,11 @@ public final class TransformingReaderTest {
 
     @Override
     public Void apply(String input) {
-      JSONAssert.assertEquals(expectedJson, input, true);
+      try {
+        JSONAssert.assertEquals(expectedJson, input, true);
+      } catch (JSONException jsonException) {
+        throw new AssertionFailedError(jsonException.getMessage());
+      }
       return null;
     }
   }

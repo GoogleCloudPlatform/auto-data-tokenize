@@ -19,6 +19,7 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.logicalXor;
+import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_APPEND;
 import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -133,7 +134,8 @@ public class EncryptionPipeline {
                   .to(options.getOutputBigQueryTable())
                   .useBeamSchema()
                   .optimizedWrites()
-                  .withWriteDisposition(WRITE_TRUNCATE));
+                  .withWriteDisposition(
+                      (options.getBigQueryAppend()) ? WRITE_APPEND : WRITE_TRUNCATE));
     }
 
     return pipeline.run();

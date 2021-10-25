@@ -18,6 +18,7 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 
 import java.util.List;
+import org.apache.beam.sdk.options.Default;
 
 /** Defines all the required inputs for the Encrypting pipeline. */
 public interface EncryptionPipelineOptions extends AutoInspectAndTokenizeOptions {
@@ -37,6 +38,11 @@ public interface EncryptionPipelineOptions extends AutoInspectAndTokenizeOptions
   String getOutputBigQueryTable();
 
   void setOutputBigQueryTable(String outputBigQueryTable);
+
+  @Default.Boolean(false)
+  boolean getBigQueryAppend();
+
+  void setBigQueryAppend(boolean bigQueryAppend);
 
   String getTinkEncryptionKeySetJson();
 
