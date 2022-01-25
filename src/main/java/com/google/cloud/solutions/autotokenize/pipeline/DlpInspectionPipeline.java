@@ -281,6 +281,7 @@ public final class DlpInspectionPipeline {
     var dlpIdentifierBuilder =
         DlpBatchInspectFactory.builder()
             .projectId(options.getProject())
+            .dlpRegion(options.getDlpRegion())
             .dlpFactory(dlpClientFactory);
 
     if (options.getObservableInfoTypes() != null && !options.getObservableInfoTypes().isEmpty()) {

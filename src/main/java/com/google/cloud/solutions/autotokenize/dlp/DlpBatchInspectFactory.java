@@ -30,13 +30,16 @@ public abstract class DlpBatchInspectFactory implements Serializable {
 
   public abstract String projectId();
 
+  public abstract String dlpRegion();
+
   @Nullable
   public abstract ImmutableSet<InfoType> observableType();
 
   public abstract DlpClientFactory dlpFactory();
 
   public DlpBatchInspect newSender() throws IOException {
-    return new DlpBatchInspect(projectId(), observableType(), dlpFactory().newClient());
+    return new DlpBatchInspect(
+        projectId(), dlpRegion(), observableType(), dlpFactory().newClient());
   }
 
   public static Builder builder() {
@@ -47,6 +50,8 @@ public abstract class DlpBatchInspectFactory implements Serializable {
   public abstract static class Builder {
 
     public abstract Builder projectId(String projectId);
+
+    public abstract Builder dlpRegion(String dlpRegion);
 
     public abstract Builder observableType(@Nullable ImmutableSet<InfoType> observableType);
 

@@ -33,7 +33,6 @@ import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.ItemShapeValidatingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
 import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -98,7 +97,8 @@ public final class DlpInspectionPipelineIT {
   @Test
   public void makePipeline_valid() {
     var dlpStub =
-        new ItemShapeValidatingDlpStub(pipelineOptions.getProject(), schemaKeyInfoTypeMap);
+        new ItemShapeValidatingDlpStub(
+            pipelineOptions.getProject(), pipelineOptions.getDlpRegion(), schemaKeyInfoTypeMap);
 
     new DlpInspectionPipeline(
             pipelineOptions,
@@ -139,6 +139,22 @@ public final class DlpInspectionPipelineIT {
               "Avro File 1000 records",
               ImmutableMap.of("recordCount", "1000"),
               "--sourceType=AVRO",
+              RandomGenericRecordGenerator.SCHEMA_STRING,
+              ImmutableList.of(
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.testrecord.name")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder()
+                              .setCount(1000)
+                              .setInfoType("PERSON_NAME"))
+                      .build()),
+              ImmutableMap.of("$.testrecord.name", "PERSON_NAME")
+            })
+        .add(
+            new Object[] {
+              "Avro File Regional DLP Endpoint",
+              ImmutableMap.of("recordCount", "1000"),
+              "--sourceType=AVRO --dlpRegion=us-central1",
               RandomGenericRecordGenerator.SCHEMA_STRING,
               ImmutableList.of(
                   ColumnInformation.newBuilder()
@@ -284,7 +300,7 @@ public final class DlpInspectionPipelineIT {
   @SuppressWarnings("UnstableApiUsage")
   public void makeOptions() throws IOException {
     Map<String, String> options =
-        Splitter.on(CharMatcher.anyOf("--"))
+        Splitter.on("--")
             .splitToStream(basicArgs)
             .filter(StringUtils::isNotBlank)
             .map(String::trim)

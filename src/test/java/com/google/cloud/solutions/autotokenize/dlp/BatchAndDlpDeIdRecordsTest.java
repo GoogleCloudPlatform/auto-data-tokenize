@@ -42,12 +42,19 @@ import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public class BatchAndDlpDeIdRecordsTest {
 
   @Rule public transient TestPipeline testPipeline = TestPipeline.create();
+
+  private final String testDlpRegion;
+
+  public BatchAndDlpDeIdRecordsTest(String testName, String testDlpRegion) {
+    this.testDlpRegion = testDlpRegion;
+  }
 
   @Test
   public void expand_valid() {
@@ -66,16 +73,25 @@ public class BatchAndDlpDeIdRecordsTest {
             .apply(
                 BatchAndDlpDeIdRecords.withEncryptConfig(NUMBER_TOKENIZE_CONFIG)
                     .withDlpProjectId("dlp-test-project")
+                    .withDlpRegion(testDlpRegion)
                     .withDlpClientFactory(
                         new StubbingDlpClientFactory(
                             new Base64EncodingDlpStub(
                                 PartialBatchAccumulator.RECORD_ID_COLUMN_NAME,
                                 ImmutableList.of("$.contacts.[\"contact\"].number"),
-                                "dlp-test-project"))));
+                                "dlp-test-project",
+                                testDlpRegion))));
 
     PAssert.that(tokenizedRecords)
         .satisfies(new FlatRecordCheckerWithoutRecordIds(expectedBase64EncodedContacts));
     testPipeline.run().waitUntilFinish();
+  }
+
+  @Parameters(name = "{0}")
+  public static ImmutableList<Object[]> testParameters() {
+    return ImmutableList.of(
+        new Object[] {"global endpoint", "global"},
+        new Object[] {"regional endpoint", "us-central1"});
   }
 
   private static final class FlatRecordCheckerWithoutRecordIds

@@ -16,6 +16,7 @@
 
 package com.google.cloud.solutions.autotokenize.dlp;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
@@ -40,14 +41,17 @@ final class DlpBatchInspect implements AutoCloseable {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private final String dlpProjectId;
+  private final String dlpRegion;
   private final ImmutableSet<InfoType> observableTypes;
   private final DlpServiceClient dlpServiceClient;
 
   public DlpBatchInspect(
       String dlpProjectId,
+      String dlpRegion,
       ImmutableSet<InfoType> observableTypes,
       DlpServiceClient dlpServiceClient) {
-    this.dlpProjectId = dlpProjectId;
+    this.dlpProjectId = checkNotNull(dlpProjectId, "dlpProjectId can't be null");
+    this.dlpRegion = checkNotNull(dlpRegion, "dlpRegion can't be null");
     this.observableTypes = observableTypes;
     this.dlpServiceClient = dlpServiceClient;
   }
@@ -72,7 +76,7 @@ final class DlpBatchInspect implements AutoCloseable {
     var inspectContentResponse =
         dlpServiceClient.inspectContent(
             InspectContentRequest.newBuilder()
-                .setParent(String.format("projects/%s", dlpProjectId))
+                .setParent(DlpUtil.makeDlpParent(dlpProjectId, dlpRegion))
                 .setInspectConfig(buildInspectConfig())
                 .setItem(ContentItem.newBuilder().setTable(contentTable).build())
                 .build());

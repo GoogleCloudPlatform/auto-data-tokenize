@@ -78,6 +78,9 @@ public abstract class BatchAndDlpDeIdRecords
   abstract String dlpProjectId();
 
   @Nullable
+  abstract String dlpRegion();
+
+  @Nullable
   abstract DlpClientFactory dlpClientFactory();
 
   @AutoValue.Builder
@@ -85,6 +88,8 @@ public abstract class BatchAndDlpDeIdRecords
     public abstract Builder shardCount(int shardCount);
 
     public abstract Builder dlpProjectId(String dlpProjectId);
+
+    public abstract Builder dlpRegion(String dlpRegion);
 
     public abstract Builder encryptConfig(DlpEncryptConfig encryptConfig);
 
@@ -114,10 +119,15 @@ public abstract class BatchAndDlpDeIdRecords
     return toBuilder().dlpProjectId(dlpProjectId).build();
   }
 
+  public BatchAndDlpDeIdRecords withDlpRegion(String dlpRegion) {
+    return toBuilder().dlpRegion(dlpRegion).build();
+  }
+
   @Override
   public PCollection<FlatRecord> expand(PCollection<FlatRecord> input) {
     checkNotNull(dlpClientFactory(), "Provide Dlp client factory");
     checkArgument(isNotBlank(dlpProjectId()), "DLP ProjectId can't be empty.");
+    checkArgument(isNotBlank(dlpRegion()), "DLP Region can't be null or empty");
 
     var errorTag = new TupleTag<KV<ShardedKey<String>, PartialColumnDlpTable>>();
     var successTag = new TupleTag<Iterable<FlatRecord>>();
@@ -140,6 +150,7 @@ public abstract class BatchAndDlpDeIdRecords
                             .encryptConfig(encryptConfig())
                             .dlpClientFactory(dlpClientFactory())
                             .dlpProjectId(dlpProjectId())
+                            .dlpRegion(dlpRegion())
                             .errorTag(errorTag)
                             .successTag(successTag)
                             .build())
@@ -248,6 +259,8 @@ public abstract class BatchAndDlpDeIdRecords
 
     abstract String dlpProjectId();
 
+    abstract String dlpRegion();
+
     abstract DlpClientFactory dlpClientFactory();
 
     abstract DlpEncryptConfig encryptConfig();
@@ -286,7 +299,7 @@ public abstract class BatchAndDlpDeIdRecords
         DeidentifyContentResponse deidResponse =
             dlpClient.deidentifyContent(
                 DeidentifyContentRequest.newBuilder()
-                    .setParent(String.format("projects/%s", dlpProjectId()))
+                    .setParent(DlpUtil.makeDlpParent(dlpProjectId(), dlpRegion()))
                     .setDeidentifyConfig(batch.getDeidentifyConfig())
                     .setItem(ContentItem.newBuilder().setTable(batchTable).build())
                     .build());
@@ -309,6 +322,8 @@ public abstract class BatchAndDlpDeIdRecords
     @AutoValue.Builder
     public abstract static class Builder {
       public abstract Builder dlpProjectId(String dlpProjectId);
+
+      public abstract Builder dlpRegion(String dlpRegion);
 
       public abstract Builder dlpClientFactory(DlpClientFactory dlpClientFactory);
 

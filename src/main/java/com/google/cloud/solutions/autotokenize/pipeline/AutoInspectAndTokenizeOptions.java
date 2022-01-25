@@ -35,6 +35,11 @@ public interface AutoInspectAndTokenizeOptions extends GcpOptions {
 
   void setInputPattern(String inputPattern);
 
+  @Default.String("global")
+  String getDlpRegion();
+
+  void setDlpRegion(String dlpRegion);
+
   // CsvIO parameters
   List<String> getCsvHeaders();
 
