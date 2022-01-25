@@ -117,7 +117,10 @@ public final class CsvTokenizationAndOrderingPipelineTest {
 
       var dlpStub =
           new Base64EncodingDlpStub(
-              PartialBatchAccumulator.RECORD_ID_COLUMN_NAME, deidColumns, testOptions.getProject());
+              PartialBatchAccumulator.RECORD_ID_COLUMN_NAME,
+              deidColumns,
+              testOptions.getProject(),
+              testOptions.getDlpRegion());
 
       // Build Pipeline
       new CsvTokenizationAndOrderingPipeline(

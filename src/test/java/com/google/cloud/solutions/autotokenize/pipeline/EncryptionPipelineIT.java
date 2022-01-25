@@ -36,7 +36,6 @@ import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
 import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -106,6 +105,7 @@ public final class EncryptionPipelineIT implements Serializable {
 
   @Test
   public void buildPipeline_valid() throws Exception {
+    makeDlpStub();
 
     Truth.assertThat(
             Sets.difference(
@@ -172,6 +172,18 @@ public final class EncryptionPipelineIT implements Serializable {
                   "dlpEncryptConfigFile",
                   "avro_records/nested_repeated/encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO",
+              /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
+              /*expectedRecordsCount=*/ 1
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Use Regional DLP Endpoint",
+              /*configParameters=*/ ImmutableMap.of(
+                  "testFile",
+                  "avro_records/nested_repeated/record.avro",
+                  "dlpEncryptConfigFile",
+                  "avro_records/nested_repeated/encrypt_config.json"),
+              /*baseArgs*/ "--sourceType=AVRO --dlpRegion=us-central1",
               /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
               /*expectedRecordsCount=*/ 1
             })
@@ -284,7 +296,7 @@ public final class EncryptionPipelineIT implements Serializable {
   @SuppressWarnings("UnstableApiUsage")
   public void makeOptions() throws Exception {
     var options =
-        Splitter.on(CharMatcher.anyOf("--"))
+        Splitter.on("--")
             .splitToStream(baseArgs)
             .filter(StringUtils::isNotBlank)
             .map(String::trim)
@@ -319,7 +331,6 @@ public final class EncryptionPipelineIT implements Serializable {
           "dlpEncryptConfigJson",
           TestResourceLoader.classPath()
               .loadAsString(configParameters.get("dlpEncryptConfigFile")));
-      makeDlpStub();
     }
 
     if (configParameters.containsKey("tinkEncryptionKeySetJsonFile")) {
@@ -412,6 +423,10 @@ public final class EncryptionPipelineIT implements Serializable {
   }
 
   public void makeDlpStub() {
+    if (pipelineOptions.getDlpEncryptConfigJson() == null) {
+      return;
+    }
+
     var dlpEncryptConfig =
         TestResourceLoader.classPath()
             .forProto(DlpEncryptConfig.class)
@@ -431,7 +446,10 @@ public final class EncryptionPipelineIT implements Serializable {
     dlpClientFactory =
         new StubbingDlpClientFactory(
             new Base64EncodingDlpStub(
-                PartialBatchAccumulator.RECORD_ID_COLUMN_NAME, encryptColumns, PROJECT_ID));
+                PartialBatchAccumulator.RECORD_ID_COLUMN_NAME,
+                encryptColumns,
+                PROJECT_ID,
+                pipelineOptions.getDlpRegion()));
   }
 
   private static Schema makeExpectedSchema(

@@ -262,7 +262,8 @@ public class EncryptionPipeline {
     private BatchAndDlpDeIdRecords dlpDeidentify() {
       return BatchAndDlpDeIdRecords.withEncryptConfig(dlpEncryptConfig)
           .withDlpClientFactory(dlpClientFactory)
-          .withDlpProjectId(options.getProject());
+          .withDlpProjectId(options.getProject())
+          .withDlpRegion(options.getDlpRegion());
     }
 
     private ValueEncryptionTransform tinkEncryption() throws GeneralSecurityException, IOException {

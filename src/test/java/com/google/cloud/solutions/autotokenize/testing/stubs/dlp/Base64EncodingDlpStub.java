@@ -48,12 +48,17 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
 
   private final String recordIdColumnName;
   private final String projectId;
+  private final String location;
   private final TokenizingColPatternChecker tokenizeHeaderChecker;
 
   public Base64EncodingDlpStub(
-      String recordIdColumnName, Collection<String> tokenizeColumnIds, String projectId) {
+      String recordIdColumnName,
+      Collection<String> tokenizeColumnIds,
+      String projectId,
+      String location) {
     this.recordIdColumnName = recordIdColumnName;
     this.projectId = projectId;
+    this.location = location;
 
     this.tokenizeHeaderChecker = TokenizingColPatternChecker.of(tokenizeColumnIds);
   }
@@ -70,7 +75,12 @@ public class Base64EncodingDlpStub extends DlpServiceStub implements Serializabl
           public DeidentifyContentResponse get() {
 
             assertThat(deidentifyContentRequest.getParent())
-                .isEqualTo(String.format("projects/%s", projectId));
+                .startsWith(String.format("projects/%s", projectId));
+
+            if (!location.equals("global")) {
+              assertThat(deidentifyContentRequest.getParent())
+                  .isEqualTo(String.format("projects/%s/locations/%s", projectId, location));
+            }
 
             List<FieldId> headers = deidentifyContentRequest.getItem().getTable().getHeadersList();
 

@@ -46,11 +46,13 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 public class ItemShapeValidatingDlpStub extends DlpServiceStub implements Serializable {
 
   private final String projectId;
+  private final String location;
   private final ArrayPatternCheckingKeyMap<String, String, InfoType> schemaKeyRegexInfoTypes;
 
   public ItemShapeValidatingDlpStub(
-      String projectId, ImmutableMap<String, String> schemaKeyInfoTypeMap) {
+      String projectId, String location, ImmutableMap<String, String> schemaKeyInfoTypeMap) {
     this.projectId = projectId;
+    this.location = location;
 
     this.schemaKeyRegexInfoTypes =
         ArrayPatternCheckingKeyMap.withValueComputeFunction(
@@ -68,7 +70,7 @@ public class ItemShapeValidatingDlpStub extends DlpServiceStub implements Serial
           @Override
           public InspectContentResponse get() {
 
-            assertProjectIdMatches(inspectContentRequest.getParent());
+            assertDlpParentValid(inspectContentRequest.getParent());
 
             var requestTable = inspectContentRequest.getItem().getTable();
 
@@ -117,8 +119,12 @@ public class ItemShapeValidatingDlpStub extends DlpServiceStub implements Serial
     };
   }
 
-  private void assertProjectIdMatches(String parent) {
-    assertThat(parent).isEqualTo(String.format("projects/%s", projectId));
+  private void assertDlpParentValid(String parent) {
+    if (location.equals("global")) {
+      assertThat(parent).isEqualTo(String.format("projects/%s", projectId));
+    } else {
+      assertThat(parent).isEqualTo(String.format("projects/%s/locations/%s", projectId, location));
+    }
   }
 
   private static Value encodeBase64Value(Value value) {
