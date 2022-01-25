@@ -367,6 +367,7 @@ Pipeline options for Sample, Identify and Tag pipeline (`DlpSamplerPipelineOptio
 | `dataCatalogEntryGroupId` | The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for `sourceType=BIGQUERY_TABLE`) |
 | `dataCatalogInspectionTagTemplateId` | The Datacatalog TempalteId to use for creating the sensitivity tags. |
 | `dataCatalogForcedUpdate` | Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: `false`) |
+| `dlpRegion`               | The DLP [processing location](https://cloud.google.com/dlp/docs/locations#regions) to use. (Default: `global`) |
 
 
 ### Sample & Identify pipeline DAG
