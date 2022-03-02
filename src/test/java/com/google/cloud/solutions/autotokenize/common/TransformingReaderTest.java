@@ -19,6 +19,7 @@ package com.google.cloud.solutions.autotokenize.common;
 import static com.google.cloud.solutions.autotokenize.testing.FlatRecordsCheckerFn.withExpectedRecords;
 import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
 import static com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher.hasRecordCount;
+import static com.google.cloud.solutions.autotokenize.testing.TestDbContainerFactory.makeTestMySQLContainer;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.services.bigquery.model.JobStatistics;
@@ -47,7 +48,6 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import junit.framework.AssertionFailedError;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -91,7 +91,6 @@ import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.model.Statement;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MySQLContainer;
 
 @RunWith(Enclosed.class)
 public final class TransformingReaderTest {
@@ -296,7 +295,7 @@ public final class TransformingReaderTest {
 
         if ((actual == null && expected != null) || (actual != null && expected == null)) {
           return false;
-        } else if (actual == null && expected == null) {
+        } else if (actual == null) {
           return true;
         }
 
@@ -341,12 +340,9 @@ public final class TransformingReaderTest {
 
     private final JdbcDatabaseContainer<?> databaseContainer;
 
-    private final String testConditionName;
-    private final String initScriptFile;
     private final String tableName;
     private final JdbcConfiguration jdbcConfiguration;
     private final ImmutableList<FlatRecord> expectedRecords;
-    private final String testDatabaseName;
     private final ConstantSecretVersionValueManagerServicesStub secretsStub;
 
     public JdbcReaderTest(
@@ -355,21 +351,13 @@ public final class TransformingReaderTest {
         String tableName,
         JdbcConfiguration jdbcConfiguration,
         ImmutableList<FlatRecord> expectedRecords) {
-      this.testConditionName = testConditionName;
-      this.initScriptFile = initScriptFile;
       this.tableName = tableName;
       this.jdbcConfiguration = jdbcConfiguration;
       this.expectedRecords = expectedRecords;
-      this.testDatabaseName = ("test_" + new Random().nextLong()).replaceAll("-", "");
       this.secretsStub =
           ConstantSecretVersionValueManagerServicesStub.of("id/to/secrets/key/version", "");
 
-      databaseContainer =
-          new MySQLContainer<>("mysql:8.0.24")
-              .withDatabaseName(testDatabaseName)
-              .withUsername("root")
-              .withPassword("")
-              .withInitScript(initScriptFile);
+      databaseContainer = makeTestMySQLContainer(initScriptFile);
       databaseContainer.start();
     }
 
@@ -496,6 +484,7 @@ public final class TransformingReaderTest {
     @Before
     public void makeInputFileAccessible() throws IOException {
       var testInputFolder = temporaryFolder.newFolder();
+      //noinspection ResultOfMethodCallIgnored
       testInputFolder.mkdirs();
 
       if (resourceFile != null) {

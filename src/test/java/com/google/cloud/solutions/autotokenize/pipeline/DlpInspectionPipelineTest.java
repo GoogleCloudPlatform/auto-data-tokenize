@@ -19,6 +19,7 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType.AVRO;
 import static com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType.PARQUET;
 import static com.google.cloud.solutions.autotokenize.testing.RandomGenericRecordGenerator.generateGenericRecords;
+import static com.google.cloud.solutions.autotokenize.testing.TestDbContainerFactory.makeTestMySQLContainer;
 import static java.lang.Integer.parseInt;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
@@ -43,7 +44,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -68,10 +68,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MySQLContainer;
 
 @RunWith(Parameterized.class)
-public final class DlpInspectionPipelineIT {
+public final class DlpInspectionPipelineTest {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   private static final String TEST_TIMESTAMP = "2021-06-02T14:32:00Z";
@@ -265,7 +264,7 @@ public final class DlpInspectionPipelineIT {
         .build();
   }
 
-  public DlpInspectionPipelineIT(
+  public DlpInspectionPipelineTest(
       String testName,
       ImmutableMap<String, String> configParameters,
       String basicArgs,
@@ -325,14 +324,7 @@ public final class DlpInspectionPipelineIT {
         options.put("--inputPattern", testParquetFileFolder + "/*");
         break;
       case JDBC_TABLE:
-        var initScript = configParameters.get("initScript");
-        var testDatabaseName = ("test_" + new Random().nextLong()).replaceAll("-", "");
-        databaseContainer =
-            new MySQLContainer<>("mysql:8.0.24")
-                .withDatabaseName(testDatabaseName)
-                .withUsername("root")
-                .withPassword("")
-                .withInitScript(initScript);
+        databaseContainer = makeTestMySQLContainer(configParameters.get("initScript"));
         databaseContainer.start();
         // update connection url:
         options.put(

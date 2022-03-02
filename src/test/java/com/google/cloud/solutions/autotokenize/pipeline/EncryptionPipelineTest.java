@@ -17,6 +17,7 @@
 package com.google.cloud.solutions.autotokenize.pipeline;
 
 import static com.google.cloud.solutions.autotokenize.common.CsvRowFlatRecordConvertors.makeCsvAvroSchema;
+import static com.google.cloud.solutions.autotokenize.testing.TestDbContainerFactory.makeTestMySQLContainer;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -46,7 +47,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -69,10 +69,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MySQLContainer;
 
 @RunWith(Parameterized.class)
-public final class EncryptionPipelineIT implements Serializable {
+public final class EncryptionPipelineTest implements Serializable {
 
   @Rule public transient TestPipeline testPipeline = TestPipeline.create();
 
@@ -82,7 +81,6 @@ public final class EncryptionPipelineIT implements Serializable {
 
   private static final String PROJECT_ID = "test-project";
 
-  private final String testCondition;
   private final ImmutableMap<String, String> configParameters;
   private final SecretsClient secretsClient;
   private final String baseArgs;
@@ -144,13 +142,12 @@ public final class EncryptionPipelineIT implements Serializable {
     readPipeline.run();
   }
 
-  public EncryptionPipelineIT(
+  public EncryptionPipelineTest(
       String testCondition,
       ImmutableMap<String, String> configParameters,
       String baseArgs,
       String inputSchemaJsonFile,
       int expectedRecordsCount) {
-    this.testCondition = testCondition;
     this.configParameters = configParameters;
     this.baseArgs = baseArgs;
     this.secretsClient =
@@ -377,14 +374,7 @@ public final class EncryptionPipelineIT implements Serializable {
         break;
 
       case JDBC_TABLE:
-        var initScript = configParameters.get("initScript");
-        var testDatabaseName = ("test_" + new Random().nextLong()).replaceAll("-", "");
-        databaseContainer =
-            new MySQLContainer<>("mysql:8.0.24")
-                .withDatabaseName(testDatabaseName)
-                .withUsername("root")
-                .withPassword("")
-                .withInitScript(initScript);
+        databaseContainer = makeTestMySQLContainer(configParameters.get("initScript"));
         databaseContainer.start();
         // update connection url:
         options.put("jdbcConnectionUrl", databaseContainer.getJdbcUrl());
@@ -413,11 +403,10 @@ public final class EncryptionPipelineIT implements Serializable {
         PipelineOptionsFactory.fromArgs(completeArgs).as(EncryptionPipelineOptions.class);
   }
 
-  private Function<Entry<String, Object>, Stream<? extends Entry<String, ? extends Object>>>
-      flattenRepeatedValues() {
+  private Function<Entry<String, ?>, Stream<? extends Entry<String, ?>>> flattenRepeatedValues() {
     return entry ->
         (entry.getValue() instanceof List)
-            ? ((List) entry.getValue())
+            ? ((List<?>) entry.getValue())
                 .stream().map(repeatedValue -> Map.entry(entry.getKey(), repeatedValue))
             : Stream.of(entry);
   }
