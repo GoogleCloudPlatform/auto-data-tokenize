@@ -41,7 +41,7 @@ public final class SecretsClient {
     return new SecretsClient(stub);
   }
 
-  public String accessPasswordSecret(String secretVersionResourceId) {
+  public String accessSecret(String secretVersionResourceId) {
     try (var secretManger = buildSecretManagerClient()) {
       logger.atInfo().log("accessing secret version: %s", secretVersionResourceId);
 

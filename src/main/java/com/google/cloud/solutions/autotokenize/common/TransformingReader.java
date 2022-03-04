@@ -266,7 +266,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
 
     abstract JdbcConfiguration jdbcConfiguration();
 
-    abstract SecretsClient secretsClient();
+    abstract @Nullable SecretsClient secretsClient();
 
     abstract String inputPattern();
 
@@ -295,7 +295,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     private String extractPassword() {
       return PasswordsCase.PASSWORD.equals(jdbcConfiguration().getPasswordsCase())
           ? jdbcConfiguration().getPassword()
-          : secretsClient().accessPasswordSecret(jdbcConfiguration().getPasswordSecretsKey());
+          : secretsClient().accessSecret(jdbcConfiguration().getPasswordSecretsKey());
     }
 
     private String makeQuery() {

@@ -148,13 +148,12 @@ public final class EncryptionPipelineTest implements Serializable {
       String testCondition,
       ImmutableMap<String, String> configParameters,
       String baseArgs,
+      SecretsClient testSecretClient,
       String inputSchemaJsonFile,
       int expectedRecordsCount) {
     this.configParameters = configParameters;
     this.baseArgs = baseArgs;
-    this.secretsClient =
-        SecretsClient.withSecretsStub(
-            ConstantSecretVersionValueManagerServicesStub.of("resource/id/of/password/secret", ""));
+    this.secretsClient = testSecretClient;
     this.inputSchemaJsonFile = inputSchemaJsonFile;
     this.expectedRecordsCount = expectedRecordsCount;
   }
@@ -171,6 +170,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   "dlpEncryptConfigFile",
                   "avro_records/nested_repeated/encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
               /*expectedRecordsCount=*/ 1
             })
@@ -183,6 +183,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   "dlpEncryptConfigFile",
                   "avro_records/nested_repeated/encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO --dlpRegion=us-central1",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
               /*expectedRecordsCount=*/ 1
             })
@@ -195,6 +196,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   "dlpEncryptConfigFile",
                   "email_cc_dlp_encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
             })
@@ -208,6 +210,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   "test_encryption_key.json"),
               /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
                   + " --tokenizeColumns=$.kylosample.email",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
             })
@@ -217,6 +220,7 @@ public final class EncryptionPipelineTest implements Serializable {
               /*configParameters=*/ ImmutableMap.of(
                   "tinkEncryptionKeySetJsonFile", "test_encryption_key.json"),
               /*baseArgs*/ "--sourceType=CSV_FILE --tokenizeColumns=$.CsvRecord.col_1",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "five_column_csv_schema.json",
               /*expectedRecordsCount=*/ 100
             })
@@ -236,6 +240,7 @@ public final class EncryptionPipelineTest implements Serializable {
                       "--sourceType=CSV_FILE",
                       "--tokenizeColumns=$.CsvRecord.transcript",
                       "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ null,
               /*expectedRecordsCount=*/ 100
             })
@@ -251,6 +256,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   .join(
                       "--sourceType=CSV_FILE",
                       "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ null,
               /*expectedRecordsCount=*/ 100
             })
@@ -268,6 +274,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   + "--jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1) "
                   + "--jdbcUserName=root "
                   + "--jdbcPassword=",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
               /*expectedRecordsCount=*/ 500
             })
@@ -285,6 +292,9 @@ public final class EncryptionPipelineTest implements Serializable {
                   + "--jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1) "
                   + "--jdbcUserName=root "
                   + "--jdbcPasswordSecretsKey=resource/id/of/password/secret",
+              SecretsClient.withSecretsStub(
+                  ConstantSecretVersionValueManagerServicesStub.of(
+                      "resource/id/of/password/secret", "")),
               /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
               /*expectedRecordsCount=*/ 500
             })
@@ -298,6 +308,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --keyMaterial=Y21oeWFYWnFkVzk0YTJSb2VIQmxaMmR1YUhkelluWmxlR1pvZFhoNmNYRT0="
                   + " --keyMaterialType=GCP_KMS_WRAPPED_KEY"
                   + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
             })
@@ -310,6 +321,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --keyMaterial=cmhyaXZqdW94a2RoeHBlZ2duaHdzYnZleGZodXh6cXE="
                   + " --keyMaterialType=RAW_BASE64_KEY"
                   + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
             })
@@ -322,6 +334,22 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --keyMaterial=rhrivjuoxkdhxpeggnhwsbvexfhuxzqq"
                   + " --keyMaterialType=RAW_UTF8_KEY"
                   + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              /*testSecretClient=*/ null,
+              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
+              /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Custom_Value_Tokenizer_with_GCS_SECRET_KEY",
+              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
+                  + " --tokenizeColumns=$.kylosample.email"
+                  + " --keyMaterial=resource/id/of/the/gcs/secret"
+                  + " --keyMaterialType=GCP_SECRET_KEY"
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              SecretsClient.withSecretsStub(
+                  ConstantSecretVersionValueManagerServicesStub.of(
+                      "resource/id/of/the/gcs/secret", "rhrivjuoxkdhxpeggnhwsbvexfhuxzqq")),
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
             })
