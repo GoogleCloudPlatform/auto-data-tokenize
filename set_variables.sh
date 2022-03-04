@@ -16,14 +16,14 @@
 #
 
 # The Google Cloud project to use for this tutorial
-export PROJECT_ID="[YOUR_PROJECT_ID]"
+export PROJECT_ID="credible-runner-340002"
 
 # The Compute Engine region to use for running Dataflow jobs and create a
 # temporary storage bucket
-export REGION_ID="[YOUR_COMPUTE_ENGINE_REGION]"
+export REGION_ID="us-east1"
 
 # The Cloud Storage bucket to use as a temporary bucket for Dataflow
-export TEMP_GCS_BUCKET="[CLOUD_STORAGE_BUCKET_NAME]"
+export TEMP_GCS_BUCKET="credible-runner-340002-bucket"
 
 # Name of the service account to use (not the email address)
 # (e.g. tokenizing-runner)

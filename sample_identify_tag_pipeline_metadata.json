@@ -1,21 +1,22 @@
 {
   "name": "Inspect and Tag Data sources in Data Catalog",
   "description": "A pipeline that reads the data source, randomly samples the input rows to identify sensitive items using DLP content inspection. The aggregated results are then written to Data Catalog tags. ",
-  "parameters": [{
-    "name": "sampleSize",
-    "label": "Sample Size",
-    "helpText": "The number of samples to extract for each column. (Default: 1000)",
-    "isOptional": true
-  },
+  "parameters": [
+    {
+      "name": "sampleSize",
+      "label": "Sample Size",
+      "helpText": "The number of samples to extract for each column. (Default: 1000)",
+      "isOptional": true
+    },
     {
       "name": "sourceType",
       "label": "Data source type",
-      "helpText": "The data source to analyse/inspect. One of: [AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE]"
+      "helpText": "The data source to analyse/inspect. One of: [AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE, JDBC_QUERY, CSV_FILE]"
     },
     {
       "name": "inputPattern",
       "label": "Date Source",
-      "helpText": "The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input, for BIGQUERY_TABLE: a Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table."
+      "helpText": "The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input, for BIGQUERY_TABLE: a Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table. For JDBC_QUERY, a SELECT query to run on the target."
     },
     {
       "name": "reportLocation",
@@ -33,6 +34,42 @@
       "name": "observableInfoTypes",
       "label": "DLP Observable InfoTypes",
       "helpText": "Provide a list of info-types to inspect the data with. Keeping EMPTY uses all DLP supported info-types.",
+      "isOptional": true
+    },
+    {
+      "name": "dlpRegion",
+      "label": "DLP Region",
+      "helpText": "The DLP region to use, default: global",
+      "isOptional": true
+    },
+    {
+      "name": "csvHeaders",
+      "label": "The Headers to use for CSV file inputs",
+      "helpText": "One of csvHeaders or csvFirstRowHeader is required if sourceType=CSV_FILE",
+      "isOptional": true
+    },
+    {
+      "name": "csvFirstRowHeader",
+      "label": "Use CSV First Row as header",
+      "helpText": "One of csvHeaders or csvFirstRowHeader is required if sourceType=CSV_FILE",
+      "isOptional": true
+    },
+    {
+      "name": "csvCharset",
+      "label": "Charset to use for CSV files",
+      "helpText": "default: UTF-8",
+      "isOptional": true
+    },
+    {
+      "name": "csvColumnDelimiter",
+      "label": "Column delimiter for CSV",
+      "helpText": "default: ','",
+      "isOptional": true
+    },
+    {
+      "name": "csvFormatType",
+      "label": "CSV Format type supported by Apache Commons CSV",
+      "helpText": "CSV Format type supported by Apache Commons CSV default: Default",
       "isOptional": true
     },
     {

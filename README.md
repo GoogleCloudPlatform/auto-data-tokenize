@@ -333,14 +333,15 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 
 The pipeline supports multiple **Source Types**, use the following table to use the right combination of `sourceType` and `inputPattern` arguments.
 
-| Data source                       | sourceType       | inputPattern                                   |
-| --------------------------------- | ---------------- | ---------------------------------------------- |
-| **Avro** file in Cloud Storage    | `AVRO`           | `gs://<location of the file(s)`                |
-| **Parquet** file in Cloud Storage | `PARQUET`        | `gs://<location of the file(s)`                |
-| CSV Files in Cloud Storage        | `CSV_FILE`       | `gs://<location of the files(s)`               |
-| BigQuery table                    | `BIGQUERY_TABLE` | `<project-id>:<dataset>.<table>`               |
-| Query results in BigQuery         | `BIGQUERY_QUERY` | BigQuery SQL statement in StandardSQL dialect. |
-| Relational Databases (using JDBC) | `JDBC_TABLE`     | `[TABLE_NAME]`, use parameters `jdbcConnectionUrl` and `jdbcDriverClass` to specify the JDBC connection details. ([Details](sample_identify_and_tag.md))       |
+| Data source                                          | sourceType       | inputPattern                                                                                                                                              |
+|------------------------------------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Avro** file in Cloud Storage                       | `AVRO`           | `gs://<location of the file(s)`                                                                                                                           |
+| **Parquet** file in Cloud Storage                    | `PARQUET`        | `gs://<location of the file(s)`                                                                                                                           |
+| CSV Files in Cloud Storage                           | `CSV_FILE`       | `gs://<location of the files(s)`                                                                                                                          |
+| BigQuery table                                       | `BIGQUERY_TABLE` | `<project-id>:<dataset>.<table>`                                                                                                                          |
+| Query results in BigQuery                            | `BIGQUERY_QUERY` | BigQuery SQL statement in StandardSQL dialect.                                                                                                            |
+| Relational Databases (using JDBC)                    | `JDBC_TABLE`     | `[TABLE_NAME]`, use parameters `jdbcConnectionUrl` and `jdbcDriverClass` to specify the JDBC connection details. ([Details](sample_identify_and_tag.md))  |
+| Query Results from Relational Databases (using JDBC) | `JDBC_QUERY`     | `SELECT` query, use parameters `jdbcConnectionUrl` and `jdbcDriverClass` to specify the JDBC connection details.                                          |
 
 The pipeline detects all the [standard infotypes](https://cloud.google.com/dlp/docs/infotypes-reference) supported by DLP.
 Use `--observableInfoTypes` to provide additional custom info-types that you need.

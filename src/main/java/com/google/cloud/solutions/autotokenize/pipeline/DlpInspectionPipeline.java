@@ -40,8 +40,6 @@ import com.google.cloud.solutions.autotokenize.dlp.DlpIdentify;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.GoogleLogger;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import com.google.privacy.dlp.v2.InfoType;
 import com.google.privacy.dlp.v2.Table;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -60,7 +58,6 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.util.ShardedKey;
 import org.apache.beam.sdk.values.KV;
@@ -234,6 +231,7 @@ public final class DlpInspectionPipeline {
         "Provide at least one of --reportLocation or --reportBigQueryTable");
 
     switch (options.getSourceType()) {
+      case JDBC_QUERY:
       case JDBC_TABLE:
         checkArgument(
             JdbcConfigurationExtractor.using(options).jdbcConfiguration() != null,
@@ -261,14 +259,6 @@ public final class DlpInspectionPipeline {
       case UNKNOWN_FILE_TYPE:
       default:
         throw new IllegalArgumentException("" + options.getSourceType() + " is unsupported.");
-    }
-  }
-
-  private static class JsonPretty extends SimpleFunction<String, String> {
-
-    @Override
-    public String apply(String json) {
-      return new GsonBuilder().setPrettyPrinting().create().toJson(JsonParser.parseString(json));
     }
   }
 

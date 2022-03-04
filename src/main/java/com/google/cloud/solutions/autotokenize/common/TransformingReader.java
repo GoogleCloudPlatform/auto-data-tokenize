@@ -238,6 +238,10 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
       case JDBC_TABLE:
         return TransformingJdbcIO.create(jdbcConfiguration(), secretsClient(), inputPattern());
 
+      case JDBC_QUERY:
+        return TransformingJdbcIO.create(jdbcConfiguration(), secretsClient(), inputPattern())
+            .withQuerySource();
+
       case CSV_FILE:
         return makeCsvReader();
 
@@ -255,16 +259,23 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
       extends PTransform<PBegin, PCollection<KV<FlatRecord, String>>> {
 
     public static TransformingJdbcIO create(
-        JdbcConfiguration jdbcConfiguration, SecretsClient secretsClient, String tableName) {
+        JdbcConfiguration jdbcConfiguration, SecretsClient secretsClient, String inputPattern) {
       return new AutoValue_TransformingReader_TransformingJdbcIO(
-          jdbcConfiguration, secretsClient, tableName);
+          jdbcConfiguration, secretsClient, inputPattern, false);
     }
 
     abstract JdbcConfiguration jdbcConfiguration();
 
     abstract SecretsClient secretsClient();
 
-    abstract String tableName();
+    abstract String inputPattern();
+
+    abstract boolean querySource();
+
+    TransformingJdbcIO withQuerySource() {
+      return new AutoValue_TransformingReader_TransformingJdbcIO(
+          jdbcConfiguration(), secretsClient(), inputPattern(), true);
+    }
 
     @Override
     public PCollection<KV<FlatRecord, String>> expand(PBegin pBegin) {
@@ -277,7 +288,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
                               jdbcConfiguration().getConnectionUrl())
                           .withUsername(jdbcConfiguration().getUserName())
                           .withPassword(extractPassword()))
-                  .withQuery(makeQuery()))
+                  .withQuery(querySource() ? inputPattern() : makeQuery()))
           .apply(MapElements.via(FlatRecordConvertFn.forBeamRow()));
     }
 
@@ -288,7 +299,7 @@ public abstract class TransformingReader extends PTransform<PBegin, PCollectionT
     }
 
     private String makeQuery() {
-      var queryBuilder = new StringBuilder().append("SELECT * FROM ").append(tableName());
+      var queryBuilder = new StringBuilder().append("SELECT * FROM ").append(inputPattern());
 
       if (isNotBlank(jdbcConfiguration().getFilterClause())) {
         queryBuilder.append(" WHERE ").append(jdbcConfiguration().getFilterClause());

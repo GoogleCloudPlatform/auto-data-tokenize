@@ -74,6 +74,7 @@ import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.json.JSONException;
 import org.junit.After;
 import org.junit.Before;
@@ -106,7 +107,8 @@ public final class TransformingReaderTest {
     public final transient TestRule folderThenPipeline =
         new TestRule() {
           @Override
-          public Statement apply(final Statement base, final Description description) {
+          public @NonNull Statement apply(
+              final @NonNull Statement base, final @NonNull Description description) {
             // We need to set up the temporary folder, and then set up the TestPipeline based on the
             // chosen folder. Unfortunately, since rule evaluation order is unspecified and
             // unrelated
@@ -141,7 +143,6 @@ public final class TransformingReaderTest {
 
     private final TableReference testTableRef;
     private final List<TableRow> testRows;
-    private final TableSchema testTableSchema;
     private final ImmutableList<FlatRecord> expectedRecords;
     private final Table testTable;
 
@@ -153,7 +154,6 @@ public final class TransformingReaderTest {
         ImmutableList<FlatRecord> expectedRecords) {
       this.testTableRef = testTableRef;
       this.testRows = testRows;
-      this.testTableSchema = testTableSchema;
       this.expectedRecords = expectedRecords;
       this.testTable = new Table().setTableReference(testTableRef).setSchema(testTableSchema);
     }
@@ -340,7 +340,8 @@ public final class TransformingReaderTest {
 
     private final JdbcDatabaseContainer<?> databaseContainer;
 
-    private final String tableName;
+    private final String inputPattern;
+    private final SourceType sourceType;
     private final JdbcConfiguration jdbcConfiguration;
     private final ImmutableList<FlatRecord> expectedRecords;
     private final ConstantSecretVersionValueManagerServicesStub secretsStub;
@@ -348,10 +349,12 @@ public final class TransformingReaderTest {
     public JdbcReaderTest(
         String testConditionName,
         String initScriptFile,
-        String tableName,
+        String inputPattern,
+        String sourceType,
         JdbcConfiguration jdbcConfiguration,
         ImmutableList<FlatRecord> expectedRecords) {
-      this.tableName = tableName;
+      this.inputPattern = inputPattern;
+      this.sourceType = SourceType.valueOf(sourceType);
       this.jdbcConfiguration = jdbcConfiguration;
       this.expectedRecords = expectedRecords;
       this.secretsStub =
@@ -376,8 +379,8 @@ public final class TransformingReaderTest {
 
       var recordsAndSchema =
           testPipeline.apply(
-              TransformingReader.forSourceType(SourceType.JDBC_TABLE)
-                  .from(tableName)
+              TransformingReader.forSourceType(sourceType)
+                  .from(inputPattern)
                   .withJdbcConfiguration(
                       jdbcConfiguration.toBuilder()
                           .setConnectionUrl(getCompleteDbConnectionString())
@@ -399,6 +402,7 @@ public final class TransformingReaderTest {
                 "SimpleFlatRecord",
                 "db_init_scripts/simple_flat_records.sql",
                 "SimpleFlatRecords",
+                "JDBC_TABLE",
                 JdbcConfiguration.newBuilder()
                     .setDriverClassName("com.mysql.cj.jdbc.Driver")
                     .setUserName("root")
@@ -415,6 +419,21 @@ public final class TransformingReaderTest {
                 "TableWithTimeFields",
                 "db_init_scripts/table_with_timefields_records.sql",
                 "TableWithTimeFields",
+                "JDBC_TABLE",
+                JdbcConfiguration.newBuilder()
+                    .setDriverClassName("com.mysql.cj.jdbc.Driver")
+                    .setUserName("root")
+                    .setPassword("")
+                    .build(),
+                TestResourceLoader.classPath()
+                    .forProto(FlatRecord.class)
+                    .loadAllTextFiles("jdbc_flatrecords/date_time_fields_flatrecords.textpb")
+              },
+              new Object[] {
+                "sourceType_jdbc_query",
+                "db_init_scripts/table_with_timefields_records.sql",
+                "SELECT * FROM TableWithTimeFields;",
+                "JDBC_QUERY",
                 JdbcConfiguration.newBuilder()
                     .setDriverClassName("com.mysql.cj.jdbc.Driver")
                     .setUserName("root")
@@ -506,10 +525,7 @@ public final class TransformingReaderTest {
           .apply(
               Create.of(generateGenericRecords(expectedRecordsCount))
                   .withCoder(AvroCoder.of(DEFAULT_TEST_SCHEMA)))
-          .apply(
-              FileIO.<GenericRecord>write()
-                  .via(fileTypeSpecificSink(DEFAULT_TEST_SCHEMA))
-                  .to(targetFolder));
+          .apply(FileIO.<GenericRecord>write().via(fileTypeSpecificTestSink()).to(targetFolder));
 
       writePipeline.run().waitUntilFinish();
 
@@ -546,13 +562,13 @@ public final class TransformingReaderTest {
       readPipeline.run().waitUntilFinish();
     }
 
-    private FileIO.Sink<GenericRecord> fileTypeSpecificSink(Schema schema) {
+    private FileIO.Sink<GenericRecord> fileTypeSpecificTestSink() {
       switch (fileSourceType) {
         case AVRO:
-          return AvroIO.sink(schema);
+          return AvroIO.sink(AvroParquetReaderTest.DEFAULT_TEST_SCHEMA);
 
         case PARQUET:
-          return ParquetIO.sink(schema);
+          return ParquetIO.sink(AvroParquetReaderTest.DEFAULT_TEST_SCHEMA);
       }
 
       throw new UnsupportedOperationException("not supported for type: " + fileSourceType.name());
