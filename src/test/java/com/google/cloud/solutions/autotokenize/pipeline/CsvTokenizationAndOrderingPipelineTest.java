@@ -19,6 +19,7 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import static com.google.cloud.solutions.autotokenize.common.JsonConvertor.asJsonString;
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnTransform;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.common.SecretsClient;
@@ -27,6 +28,7 @@ import com.google.cloud.solutions.autotokenize.pipeline.CsvTokenizationAndOrderi
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
+import com.google.cloud.solutions.autotokenize.testing.stubs.kms.Base64DecodingKmsStub;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileReader;
@@ -124,7 +126,12 @@ public final class CsvTokenizationAndOrderingPipelineTest {
 
       // Build Pipeline
       new CsvTokenizationAndOrderingPipeline(
-              testOptions, testPipeline, new StubbingDlpClientFactory(dlpStub), SecretsClient.of())
+              testOptions,
+              testPipeline,
+              new StubbingDlpClientFactory(dlpStub),
+              SecretsClient.of(),
+              KeyManagementServiceClient.create(
+                  new Base64DecodingKmsStub(testOptions.getMainKmsKeyUri())))
           .run()
           .waitUntilFinish();
 

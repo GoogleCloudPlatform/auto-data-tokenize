@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,12 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
+/** Test factory that does not extend ValueEncryptorFactory. */
+public final class WrongValueEncryptorFactory {
 
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
-import java.io.Serializable;
+  public WrongValueEncryptorFactory() {}
 
-/** Factory interface to create new instances of a {@link ValueTokenizer}. */
-public abstract class ValueTokenizerFactory implements Serializable {
-
-  protected final String keyString;
-  protected final KeyMaterialType keyMaterialType;
-
-  public ValueTokenizerFactory(String keyString, KeyMaterialType keyMaterialType) {
-    this.keyString = keyString;
-    this.keyMaterialType = keyMaterialType;
+  public ValueTokenizer makeValueTokenizer() {
+    return null;
   }
-
-  /** Returns a new instance. */
-  public abstract ValueTokenizer makeValueTokenizer();
 }

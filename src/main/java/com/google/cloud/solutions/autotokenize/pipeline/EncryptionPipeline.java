@@ -23,8 +23,10 @@ import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposit
 import static org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.WriteDisposition.WRITE_TRUNCATE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.CsvRowFlatRecordConvertors;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
@@ -37,11 +39,11 @@ import com.google.cloud.solutions.autotokenize.common.TransformingReader;
 import com.google.cloud.solutions.autotokenize.dlp.BatchAndDlpDeIdRecords;
 import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.encryptors.ClearTextKeySetExtractor;
-import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.encryptors.GcpKmsClearTextKeySetExtractor;
+import com.google.cloud.solutions.autotokenize.encryptors.ValueTokenizerFactory;
 import com.google.common.annotations.VisibleForTesting;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
+import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
 import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
@@ -66,6 +68,7 @@ public class EncryptionPipeline {
   protected final Pipeline pipeline;
   private final DlpClientFactory dlpClientFactory;
   private final SecretsClient secretsClient;
+  private final KeyManagementServiceClient kmsClient;
   private final ClearTextKeySetExtractor keySetExtractor;
 
   public static void main(String[] args) throws Exception {
@@ -77,7 +80,8 @@ public class EncryptionPipeline {
             options,
             Pipeline.create(options),
             DlpClientFactory.defaultFactory(),
-            SecretsClient.of())
+            SecretsClient.of(),
+            KeyManagementServiceClient.create())
         .run();
   }
 
@@ -87,11 +91,13 @@ public class EncryptionPipeline {
       Pipeline pipeline,
       DlpClientFactory dlpClientFactory,
       SecretsClient secretsClient,
+      KeyManagementServiceClient kmsClient,
       ClearTextKeySetExtractor keySetExtractor) {
     this.options = options;
     this.pipeline = pipeline;
     this.dlpClientFactory = dlpClientFactory;
     this.secretsClient = secretsClient;
+    this.kmsClient = kmsClient;
     this.keySetExtractor = keySetExtractor;
   }
 
@@ -99,12 +105,14 @@ public class EncryptionPipeline {
       EncryptionPipelineOptions options,
       Pipeline pipeline,
       DlpClientFactory dlpClientFactory,
-      SecretsClient secretsClient) {
+      SecretsClient secretsClient,
+      KeyManagementServiceClient kmsClient) {
     this(
         options,
         pipeline,
         dlpClientFactory,
         secretsClient,
+        kmsClient,
         new GcpKmsClearTextKeySetExtractor(
             options.getTinkEncryptionKeySetJson(), options.getMainKmsKeyUri()));
   }
@@ -141,9 +149,10 @@ public class EncryptionPipeline {
     return pipeline.run();
   }
 
-  protected PCollection<FlatRecord> applyReadAndEncryptionSteps() throws Exception {
+  @VisibleForTesting
+  PCollection<FlatRecord> applyReadAndEncryptionSteps() {
     return new EncryptingPipelineFactory(
-            options, pipeline, dlpClientFactory, secretsClient, keySetExtractor)
+            options, pipeline, dlpClientFactory, secretsClient, kmsClient, keySetExtractor)
         .makeEncryptingSteps();
   }
 
@@ -188,6 +197,7 @@ public class EncryptionPipeline {
     private final DlpEncryptConfig dlpEncryptConfig;
     private final DlpClientFactory dlpClientFactory;
     private final SecretsClient secretsClient;
+    private final KeyManagementServiceClient kmsClient;
     private final ClearTextKeySetExtractor keySetExtractor;
 
     EncryptingPipelineFactory(
@@ -195,6 +205,7 @@ public class EncryptionPipeline {
         Pipeline pipeline,
         DlpClientFactory dlpClientFactory,
         SecretsClient secretsClient,
+        KeyManagementServiceClient kmsClient,
         ClearTextKeySetExtractor keySetExtractor) {
       this.options = checkValid(options);
       this.dlpEncryptConfig =
@@ -205,6 +216,7 @@ public class EncryptionPipeline {
       this.pipeline = pipeline;
       this.dlpClientFactory = dlpClientFactory;
       this.secretsClient = checkNotNull(secretsClient);
+      this.kmsClient = kmsClient;
       this.keySetExtractor = keySetExtractor;
     }
 
@@ -219,8 +231,9 @@ public class EncryptionPipeline {
           "No output defined.%nProvide a GCS or BigQuery output");
 
       boolean isEncryption =
-          isNotBlank(options.getMainKmsKeyUri())
-              && isNotBlank(options.getTinkEncryptionKeySetJson());
+          (isNotBlank(options.getMainKmsKeyUri())
+                  && isNotBlank(options.getTinkEncryptionKeySetJson()))
+              || (isNotBlank(options.getKeyMaterial()));
       boolean isDlpDeid = isNotBlank(options.getDlpEncryptConfigJson());
 
       checkArgument(
@@ -240,9 +253,8 @@ public class EncryptionPipeline {
       return options;
     }
 
-    protected PCollection<FlatRecord> makeEncryptingSteps()
-        throws GeneralSecurityException, IOException {
-      TupleTag<FlatRecord> flatRecordsTag = new TupleTag<>();
+    protected PCollection<FlatRecord> makeEncryptingSteps() {
+      var flatRecordsTag = new TupleTag<FlatRecord>();
 
       return pipeline
           .apply(
@@ -266,11 +278,56 @@ public class EncryptionPipeline {
           .withDlpRegion(options.getDlpRegion());
     }
 
-    private ValueEncryptionTransform tinkEncryption() throws GeneralSecurityException, IOException {
+    private ValueEncryptionTransform tinkEncryption() {
       return ValueEncryptionTransform.builder()
           .encryptColumnNames(options.getTokenizeColumns())
-          .valueTokenizerFactory(new DaeadEncryptingValueTokenizerFactory(keySetExtractor.get()))
+          .valueTokenizerFactory(buildValueTokenizerFactory())
           .build();
+    }
+
+    private ValueTokenizerFactory buildValueTokenizerFactory() {
+      try {
+        var encryptorFactoryClazz = Class.forName(options.getValueTokenizerFactoryFullClassName());
+
+        checkArgument(
+            ValueTokenizerFactory.class.isAssignableFrom(encryptorFactoryClazz),
+            "Class %s does extend ValueTokenizerFactory",
+            options.getValueTokenizerFactoryFullClassName());
+
+        var ctor = encryptorFactoryClazz.getConstructor(String.class, KeyMaterialType.class);
+
+        switch (options.getKeyMaterialType()) {
+          case TINK_GCP_KEYSET_JSON:
+            return (ValueTokenizerFactory)
+                ctor.newInstance(keySetExtractor.get(), options.getKeyMaterialType());
+
+          case RAW_BASE64_KEY:
+          case RAW_UTF8_KEY:
+            return (ValueTokenizerFactory)
+                ctor.newInstance(options.getKeyMaterial(), options.getKeyMaterialType());
+
+          case GCP_KMS_WRAPPED_KEY:
+            var cipherKey =
+                ByteString.copyFrom(BaseEncoding.base64().decode(options.getKeyMaterial()));
+            var cleartextKey =
+                kmsClient
+                    .decrypt(options.getMainKmsKeyUri(), cipherKey)
+                    .getPlaintext()
+                    .toByteArray();
+
+            return (ValueTokenizerFactory)
+                ctor.newInstance(
+                    BaseEncoding.base64().encode(cleartextKey), KeyMaterialType.RAW_BASE64_KEY);
+
+          case UNRECOGNIZED:
+          case UNKNOWN_KEY_MATERIAL_TYPE:
+            throw new IllegalArgumentException("unkknown keymaterial type");
+        }
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Error creating encryptionValueFactory", e);
+      }
+
+      throw new RuntimeException("error in instantiating ValueTokenizerFactory");
     }
   }
 }

@@ -17,6 +17,7 @@
 package com.google.cloud.solutions.autotokenize.pipeline;
 
 
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import java.util.List;
 import org.apache.beam.sdk.options.Default;
 
@@ -55,4 +56,19 @@ public interface EncryptionPipelineOptions extends AutoInspectAndTokenizeOptions
   String getDlpEncryptConfigJson();
 
   void setDlpEncryptConfigJson(String dlpEncryptConfigJson);
+
+  @Default.String(
+      "com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizer$DaeadEncryptingValueTokenizerFactory")
+  String getValueTokenizerFactoryFullClassName();
+
+  void setValueTokenizerFactoryFullClassName(String valueTokenizerFactoryFullClassName);
+
+  String getKeyMaterial();
+
+  void setKeyMaterial(String keyMaterial);
+
+  @Default.InstanceFactory(KeyMaterialTypeFactory.class)
+  KeyMaterialType getKeyMaterialType();
+
+  void setKeyMaterialType(KeyMaterialType keyMaterialType);
 }

@@ -45,6 +45,15 @@ enum SourceType {
   CSV_FILE =  6;
 }
 
+// The Encryption Key material type
+enum KeyMaterialType {
+  UNKNOWN_KEY_MATERIAL_TYPE = 0;
+  TINK_GCP_KEYSET_JSON = 1;
+  RAW_BASE64_KEY = 2;
+  RAW_UTF8_KEY = 3;
+  GCP_KMS_WRAPPED_KEY = 4;
+}
+
 // Source configuration for JDBC Databases/sources
 message JdbcConfiguration {
 

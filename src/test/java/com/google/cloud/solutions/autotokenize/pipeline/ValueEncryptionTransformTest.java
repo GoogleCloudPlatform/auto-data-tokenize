@@ -19,10 +19,11 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
+import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
 import com.google.cloud.solutions.autotokenize.common.FlatRecordConvertFn;
 import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
-import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizerFactory;
+import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizer.DaeadEncryptingValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.testing.FlatRecordsCheckerFn;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.common.collect.ImmutableList;
@@ -145,7 +146,8 @@ public final class ValueEncryptionTransformTest {
                 "test_encrypt_transform",
                 ValueEncryptionTransform.builder()
                     .valueTokenizerFactory(
-                        new DaeadEncryptingValueTokenizerFactory(TEST_ENCRYPTION_KEYSET_JSON))
+                        new DaeadEncryptingValueTokenizerFactory(
+                            TEST_ENCRYPTION_KEYSET_JSON, KeyMaterialType.TINK_GCP_KEYSET_JSON))
                     .encryptColumnNames(encryptColumnNames)
                     .build());
 

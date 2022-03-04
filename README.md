@@ -348,26 +348,26 @@ Use `--observableInfoTypes` to provide additional custom info-types that you nee
 
 Pipeline options for Sample, Identify and Tag pipeline (`DlpSamplerPipelineOptions`):
 
-| Sampling Pipeline Options | Description                                                              |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `sourceType`              | The data source to analyse/inspect. One of: \[AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE\] |
-| `inputPattern`            | The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input.<br>For BIGQUERY_TABLE: Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table. |
-| `sampleSize`              | (Optional) The sample size to send to DLP. (Default:1000)
-| `reportLocation`          | (Optional) The GCS location to write the aggregated inspection results and the datasource's AVRO Schema. Atleast one of `reportLocation` or `reportBigQueryTable` must be specified. |
-| `reportBigQueryTable`     | (Optional) The BigQuery table ({projectId}:{datasetId}.{tableId}) to write the aggregated inspection results, the table must exist. Atleast one of reportLocation or reportBigQueryTable must be specified. |
-| `observableInfoTypes`     | (Optional) Provide a list of DLP InfoTypes to inspect the data with. Keeping EMPTY uses all DLP supported InfoTypes. |
-| `jdbcConnectionUrl`       | The Connection URL used for connecting to a SQL datasource using JDBC. (Required when `sourceType=JDBC_TABLE`) |
-| `jdbcDriverClass`         | The JDBC driver to use for reading from SQL datasource. (Required when `sourceType=JDBC_TABLE`) |
-| `jdbcFilterClause`        | When using JDBC source, it is highly recommended to use a sampling filter to select random records, instead of fetching all the records from a relational database. The provided string is set as the WHERE clause of the query. (Optional when `sourceType=JDBC_TABLE`)|
-| `csvHeaders`              | (Optional) Provide column names when using `CSV_FILE` sourceType. |
-| `csvFirstRowHeaders`      | (Optional) Direct to omit first row of each CSV file and use as header. (Default: `false`) |
-| `csvCharset`              | (Optional) Specify the charset used for the CSV file. (Default: `UTF-8`) |
-| `csvColumnDelimiter`      | (Optional) Specify the character(s) used for delimiting column in a row. (Default: `,`) |
-| `csvFormatType`           | (Optional) Specify the CSV format based on Apache Commons CSV. Choose from one of the [CSVFormat#Predefined](https://github.com/apache/commons-csv/blob/f6cdeac129665cf6f131b00678c9b4e824d758e5/src/main/java/org/apache/commons/csv/CSVFormat.java#L679) types. (Default: `Default`) |
-| `dataCatalogEntryGroupId` | The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for `sourceType=BIGQUERY_TABLE`) |
-| `dataCatalogInspectionTagTemplateId` | The Datacatalog TempalteId to use for creating the sensitivity tags. |
-| `dataCatalogForcedUpdate` | Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: `false`) |
-| `dlpRegion`               | The DLP [processing location](https://cloud.google.com/dlp/docs/locations#regions) to use. (Default: `global`) |
+| Sampling Pipeline Options            | Description                                                                                                                                                                                                                                                                            |
+|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `sourceType`                         | The data source to analyse/inspect. One of: \[AVRO, PARQUET, BIGQUERY_TABLE, BIGQUERY_QUERY, JDBC_TABLE\]                                                                                                                                                                              |
+| `inputPattern`                       | The location of the datasource: for AVRO or PARQUET, the GCS file pattern to use as input.<br>For BIGQUERY_TABLE: Fully Qualified table name as {projectId}:{datasetId}.{tableId} format, for JDBC_TABLE, the name of the table.                                                       |
+| `sampleSize`                         | (Optional) The sample size to send to DLP. (Default:1000)                                                                                                                                                                                                                              |
+| `reportLocation`                     | (Optional) The GCS location to write the aggregated inspection results and the datasource's AVRO Schema. Atleast one of `reportLocation` or `reportBigQueryTable` must be specified.                                                                                                   |
+| `reportBigQueryTable`                | (Optional) The BigQuery table ({projectId}:{datasetId}.{tableId}) to write the aggregated inspection results, the table must exist. Atleast one of reportLocation or reportBigQueryTable must be specified.                                                                            |
+| `observableInfoTypes`                | (Optional) Provide a list of DLP InfoTypes to inspect the data with. Keeping EMPTY uses all DLP supported InfoTypes.                                                                                                                                                                   |
+| `jdbcConnectionUrl`                  | The Connection URL used for connecting to a SQL datasource using JDBC. (Required when `sourceType=JDBC_TABLE`)                                                                                                                                                                         |
+| `jdbcDriverClass`                    | The JDBC driver to use for reading from SQL datasource. (Required when `sourceType=JDBC_TABLE`)                                                                                                                                                                                        |
+| `jdbcFilterClause`                   | When using JDBC source, it is highly recommended to use a sampling filter to select random records, instead of fetching all the records from a relational database. The provided string is set as the WHERE clause of the query. (Optional when `sourceType=JDBC_TABLE`)               |
+| `csvHeaders`                         | (Optional) Provide column names when using `CSV_FILE` sourceType.                                                                                                                                                                                                                      |
+| `csvFirstRowHeaders`                 | (Optional) Direct to omit first row of each CSV file and use as header. (Default: `false`)                                                                                                                                                                                             |
+| `csvCharset`                         | (Optional) Specify the charset used for the CSV file. (Default: `UTF-8`)                                                                                                                                                                                                               |
+| `csvColumnDelimiter`                 | (Optional) Specify the character(s) used for delimiting column in a row. (Default: `,`)                                                                                                                                                                                                |
+| `csvFormatType`                      | (Optional) Specify the CSV format based on Apache Commons CSV. Choose from one of the [CSVFormat#Predefined](https://github.com/apache/commons-csv/blob/f6cdeac129665cf6f131b00678c9b4e824d758e5/src/main/java/org/apache/commons/csv/CSVFormat.java#L679) types. (Default: `Default`) |
+| `dataCatalogEntryGroupId`            | The Entry Group Id (/projects/{projectId}/locations/{locationId}/entryGroups/{entryGroupId}) to create a new Entry for inspected datasource. Provide to enable pipeline to create new entry in DataCatalog with schema. (Not used for `sourceType=BIGQUERY_TABLE`)                     |
+| `dataCatalogInspectionTagTemplateId` | The Datacatalog TempalteId to use for creating the sensitivity tags.                                                                                                                                                                                                                   |
+| `dataCatalogForcedUpdate`            | Force updates to Data Catalog Tags/Entry based on execution of this pipeline. (Default: `false`)                                                                                                                                                                                       |
+| `dlpRegion`                          | The DLP [processing location](https://cloud.google.com/dlp/docs/locations#regions) to use. (Default: `global`)                                                                                                                                                                         |
 
 
 ### Sample & Identify pipeline DAG
@@ -497,6 +497,19 @@ The pipeline executes asynchronously on Dataflow. You can check the progress by 
 ```
 INFO: JobLink: https://console.cloud.google.com/dataflow/jobs/<your-dataflow-jobid>?project=<your-project-id>
 ```
+Additional Pipeline options for Bulk Tokenize pipeline (`EncryptionPipelineOptions`):
+
+
+| Encryption Key parameters  | Description                                                                                                                                                                                          |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `dlpEncryptConfigJson`     | Provide a valid JSON object as per DlpEncryptCongig Proto defining the DLP configuration                                                                                                             |
+| `tinkEncryptionKeySetJson` | When using TINK based encryption, provide the wrapped KeySet generated by `tinkey`                                                                                                                   |
+| `keyMaterial`              | The encryption key to use for custom encryption module as String                                                                                                                                     |
+| `keyMaterialType`          | One of `TINK_GCP_KEYSET_JSON`, `RAW_BASE64_KEY`, `RAW_UTF8_KEY`, `GCP_KMS_WRAPPED_KEY`. Default: `TINK_GCP_KEYSET_JSON`                                                                               |
+| `mainKmsKeyUri`            | The Google Cloud KMS key to use for decrypting the TINK Key or GCP_KMS_WRAPPED_KEY                                                                                                                   |
+| `valueTokenizerFactoryFullClassName` | The value tokenization class to use for non-DLP based tokenization. Default: `com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizer$DaeadEncryptingValueTokenizerFactory` |
+**NOTE:** Provide only one of dlpEncryptConfigJson, tinkEncryptionKeySetJson or keyMaterial
+
 
 The tokenize pipeline's DAG will look like following:
 ![Encrypting Pipeline DAG](encryption_pipeline_dag.png)

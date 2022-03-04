@@ -20,6 +20,7 @@ import static com.google.cloud.solutions.autotokenize.common.CsvRowFlatRecordCon
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.CsvIO;
 import com.google.cloud.solutions.autotokenize.common.CsvIO.CsvRow;
@@ -75,7 +76,8 @@ public final class CsvTokenizationAndOrderingPipeline extends EncryptionPipeline
             options,
             Pipeline.create(options),
             DlpClientFactory.defaultFactory(),
-            SecretsClient.of())
+            SecretsClient.of(),
+            KeyManagementServiceClient.create())
         .run();
   }
 
@@ -86,8 +88,9 @@ public final class CsvTokenizationAndOrderingPipeline extends EncryptionPipeline
       CsvTokenizationAndOrderingPipelineOptions options,
       Pipeline pipeline,
       DlpClientFactory dlpClientFactory,
-      SecretsClient secretsClient) {
-    super(makeCsvOptions(options), pipeline, dlpClientFactory, secretsClient);
+      SecretsClient secretsClient,
+      KeyManagementServiceClient kmsClient) {
+    super(makeCsvOptions(options), pipeline, dlpClientFactory, secretsClient, kmsClient);
     this.options = options;
   }
 
