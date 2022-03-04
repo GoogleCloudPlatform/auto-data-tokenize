@@ -32,15 +32,14 @@ public final class SecretsClientTest {
       ConstantSecretVersionValueManagerServicesStub.of("id/of/my/version", "my-secret-value");
 
   @Test
-  public void accessPasswordSecret_valid() {
-    assertThat(SecretsClient.withSecretsStub(fakeStub).accessPasswordSecret("id/of/my/version"))
+  public void accessSecret_valid() {
+    assertThat(SecretsClient.withSecretsStub(fakeStub).accessSecret("id/of/my/version"))
         .isEqualTo("my-secret-value");
   }
 
   @Test
-  public void accessPasswordSecret_invalidKey_throwsRuntimeException() {
+  public void accessSecret_invalidKey_throwsRuntimeException() {
     var secretsService = SecretsClient.withSecretsStub(fakeStub);
-    assertThrows(
-        RuntimeException.class, () -> secretsService.accessPasswordSecret("unknown/secret/id"));
+    assertThrows(RuntimeException.class, () -> secretsService.accessSecret("unknown/secret/id"));
   }
 }

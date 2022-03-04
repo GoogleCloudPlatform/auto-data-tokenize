@@ -215,7 +215,7 @@ public class EncryptionPipeline {
 
       this.pipeline = pipeline;
       this.dlpClientFactory = dlpClientFactory;
-      this.secretsClient = checkNotNull(secretsClient);
+      this.secretsClient = secretsClient;
       this.kmsClient = kmsClient;
       this.keySetExtractor = keySetExtractor;
     }
@@ -318,6 +318,11 @@ public class EncryptionPipeline {
             return (ValueTokenizerFactory)
                 ctor.newInstance(
                     BaseEncoding.base64().encode(cleartextKey), KeyMaterialType.RAW_BASE64_KEY);
+
+          case GCP_SECRET_KEY:
+            var encryptionKey = secretsClient.accessSecret(options.getKeyMaterial());
+            return (ValueTokenizerFactory)
+                ctor.newInstance(encryptionKey, KeyMaterialType.RAW_UTF8_KEY);
 
           case UNRECOGNIZED:
           case UNKNOWN_KEY_MATERIAL_TYPE:
