@@ -261,6 +261,35 @@ public final class DlpInspectionPipelineTest {
                   "$.topLevelRecord.person_name", "PERSON_NAME",
                   "$.topLevelRecord.contact_number", "PHONE_NUMBER")
             })
+        .add(
+            new Object[] {
+              "JDBC_QUERY type with [passwordSecret]",
+              ImmutableMap.of("initScript", "db_init_scripts/contacts5k.sql"),
+              "--sourceType=JDBC_QUERY"
+                  + " --inputPattern=SELECT * FROM Contacts;"
+                  + " --jdbcDriverClass=com.mysql.cj.jdbc.Driver"
+                  + " --jdbcUserName=root"
+                  + " --jdbcPasswordSecretsKey=id/to/password",
+              TestResourceLoader.classPath().loadAsString("Contacts5kSql_avro_schema.json"),
+              ImmutableList.of(
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.topLevelRecord.person_name")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder()
+                              .setInfoType("PERSON_NAME")
+                              .setCount(1000))
+                      .build(),
+                  ColumnInformation.newBuilder()
+                      .setColumnName("$.topLevelRecord.contact_number")
+                      .addInfoTypes(
+                          InfoTypeInformation.newBuilder()
+                              .setInfoType("PHONE_NUMBER")
+                              .setCount(1000))
+                      .build()),
+              ImmutableMap.of(
+                  "$.topLevelRecord.person_name", "PERSON_NAME",
+                  "$.topLevelRecord.contact_number", "PHONE_NUMBER")
+            })
         .build();
   }
 
@@ -323,6 +352,8 @@ public final class DlpInspectionPipelineTest {
         generateTestRecordsFile(PARQUET, testParquetFileFolder);
         options.put("--inputPattern", testParquetFileFolder + "/*");
         break;
+
+      case JDBC_QUERY:
       case JDBC_TABLE:
         databaseContainer = makeTestMySQLContainer(configParameters.get("initScript"));
         databaseContainer.start();

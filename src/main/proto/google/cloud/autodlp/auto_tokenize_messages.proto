@@ -43,6 +43,7 @@ enum SourceType {
   BIGQUERY_QUERY = 4;
   JDBC_TABLE = 5;
   CSV_FILE =  6;
+  JDBC_QUERY = 7;
 }
 
 // The Encryption Key material type

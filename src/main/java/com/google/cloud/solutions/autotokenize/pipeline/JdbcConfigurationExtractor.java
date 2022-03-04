@@ -40,7 +40,8 @@ public final class JdbcConfigurationExtractor {
   /** Retuns a JdbcConfiguration object by parsing option arguments. */
   @Nullable
   public JdbcConfiguration jdbcConfiguration() {
-    if (options.getSourceType().equals(SourceType.JDBC_TABLE)) {
+    var sourceType = options.getSourceType();
+    if (SourceType.JDBC_TABLE.equals(sourceType) || SourceType.JDBC_QUERY.equals(sourceType)) {
 
       checkArgument(
           isNotBlank(options.getJdbcConnectionUrl()) && isNotBlank(options.getJdbcDriverClass()),
