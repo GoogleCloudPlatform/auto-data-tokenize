@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.google.cloud.solutions.autotokenize.encryptors;
+package com.google.cloud.solutions.autotokenize.pipeline;
 
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
-import java.io.Serializable;
+import org.apache.beam.sdk.options.DefaultValueFactory;
+import org.apache.beam.sdk.options.PipelineOptions;
 
-/** Factory interface to create new instances of a {@link ValueTokenizer}. */
-public abstract class ValueTokenizerFactory implements Serializable {
+/** PipelineOptions default value factory for KeyMaterialType argument. */
+public class KeyMaterialTypeFactory implements DefaultValueFactory<KeyMaterialType> {
 
-  protected final String keyString;
-  protected final KeyMaterialType keyMaterialType;
-
-  public ValueTokenizerFactory(String keyString, KeyMaterialType keyMaterialType) {
-    this.keyString = keyString;
-    this.keyMaterialType = keyMaterialType;
+  @Override
+  public KeyMaterialType create(PipelineOptions options) {
+    return KeyMaterialType.TINK_GCP_KEYSET_JSON;
   }
-
-  /** Returns a new instance. */
-  public abstract ValueTokenizer makeValueTokenizer();
 }

@@ -1,0 +1,15 @@
+{
+  "primaryKeyId": 383725823,
+  "key": [
+    {
+      "keyData": {
+        "typeUrl": "type.googleapis.com/google.crypto.tink.AesEaxKey",
+        "value": "EgIIEBoQSFvMmLaXUcWIGOteDNtY3g==",
+        "keyMaterialType": "SYMMETRIC"
+      },
+      "status": "ENABLED",
+      "keyId": 383725823,
+      "outputPrefixType": "TINK"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
+import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.DlpEncryptConfig;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
@@ -29,13 +30,13 @@ import com.google.cloud.solutions.autotokenize.common.DeidentifyColumns;
 import com.google.cloud.solutions.autotokenize.common.SecretsClient;
 import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;
 import com.google.cloud.solutions.autotokenize.dlp.PartialBatchAccumulator;
-import com.google.cloud.solutions.autotokenize.encryptors.ClearTextKeySetExtractor;
 import com.google.cloud.solutions.autotokenize.encryptors.FixedClearTextKeySetExtractor;
 import com.google.cloud.solutions.autotokenize.testing.RecordsCountMatcher;
 import com.google.cloud.solutions.autotokenize.testing.TestCsvFileGenerator;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.Base64EncodingDlpStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.dlp.StubbingDlpClientFactory;
+import com.google.cloud.solutions.autotokenize.testing.stubs.kms.Base64DecodingKmsStub;
 import com.google.cloud.solutions.autotokenize.testing.stubs.secretmanager.ConstantSecretVersionValueManagerServicesStub;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -92,7 +93,6 @@ public final class EncryptionPipelineTest implements Serializable {
   private transient DlpClientFactory dlpClientFactory;
   private transient Schema inputSchema;
   private transient Schema expectedSchema;
-  private transient ClearTextKeySetExtractor clearTextEncryptionKeySetExtractor;
 
   @After
   public void tearDownTestDB() {
@@ -117,6 +117,8 @@ public final class EncryptionPipelineTest implements Serializable {
             testPipeline,
             dlpClientFactory,
             secretsClient,
+            KeyManagementServiceClient.create(
+                new Base64DecodingKmsStub(pipelineOptions.getMainKmsKeyUri())),
             new FixedClearTextKeySetExtractor(pipelineOptions.getTinkEncryptionKeySetJson()))
         .run()
         .waitUntilFinish();
@@ -286,6 +288,43 @@ public final class EncryptionPipelineTest implements Serializable {
               /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
               /*expectedRecordsCount=*/ 500
             })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Custom_Value_Tokenizer_with_KMS_Key",
+              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
+                  + " --tokenizeColumns=$.kylosample.email"
+                  + " --mainKmsKeyUri=projects/test-projects/global/keysets/test-keyset/keys/test-key1"
+                  + " --keyMaterial=Y21oeWFYWnFkVzk0YTJSb2VIQmxaMmR1YUhkelluWmxlR1pvZFhoNmNYRT0="
+                  + " --keyMaterialType=GCP_KMS_WRAPPED_KEY"
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
+              /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Custom_Value_Tokenizer_with_Raw_Base64_Key",
+              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
+                  + " --tokenizeColumns=$.kylosample.email"
+                  + " --keyMaterial=cmhyaXZqdW94a2RoeHBlZ2duaHdzYnZleGZodXh6cXE="
+                  + " --keyMaterialType=RAW_BASE64_KEY"
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
+              /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "Custom_Value_Tokenizer_with_Raw_UTF8_Key",
+              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
+                  + " --tokenizeColumns=$.kylosample.email"
+                  + " --keyMaterial=rhrivjuoxkdhxpeggnhwsbvexfhuxzqq"
+                  + " --keyMaterialType=RAW_UTF8_KEY"
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
+              /*expectedRecordsCount=*/ 1000
+            })
         .build();
   }
 
@@ -336,7 +375,9 @@ public final class EncryptionPipelineTest implements Serializable {
           TestResourceLoader.classPath()
               .loadAsString(configParameters.get("tinkEncryptionKeySetJsonFile")));
       options.put("mainKmsKeyUri", "project/my-project/locations");
+    }
 
+    if (!configParameters.containsKey("dlpEncryptConfigFile")) {
       var tokenizeColumnsOption = options.get("tokenizeColumns");
       //noinspection unchecked testing class.
       var encryptColumns =
