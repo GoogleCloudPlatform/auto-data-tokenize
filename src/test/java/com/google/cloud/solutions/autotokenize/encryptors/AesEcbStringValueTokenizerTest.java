@@ -19,7 +19,6 @@ package com.google.cloud.solutions.autotokenize.encryptors;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
-import com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer.AesEcbValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.encryptors.ValueTokenizer.ValueTokenizingException;
 import com.google.privacy.dlp.v2.Value;
 import org.junit.Before;

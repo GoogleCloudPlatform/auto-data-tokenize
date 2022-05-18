@@ -17,11 +17,12 @@
 plugins {
     id "java"
     id "java-library"
-    id "com.google.protobuf" version "0.8.14"
+    id "com.google.protobuf" version "0.8.18"
     id "com.diffplug.spotless" version "5.9.0"
     id "idea"
     id "jacoco"
     id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "maven-publish"
 }
 
 repositories {
@@ -32,7 +33,29 @@ repositories {
     }
 }
 
-def protoVersion = "3.19.4"
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.google.cloud.solutions'
+            artifactId = 'auto-data-tokenize'
+            version = '0.1'
+
+            from components.java
+
+            pom {
+                name = "Auto Data Tokenize"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+            }
+        }
+    }
+}
+
+def protoVersion = "3.20.1"
 def beamVersion = "2.36.0"
 def hadoopVersion = "3.3.1"
 def autoValueVersion = "1.8.2"
@@ -144,7 +167,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.14.0"
+        artifact = "com.google.protobuf:protoc:${protoVersion}"
     }
 
     clean {

@@ -16,12 +16,9 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
-import static org.apache.arrow.util.Preconditions.checkArgument;
 
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import com.google.common.io.BaseEncoding;
 import com.google.privacy.dlp.v2.Value;
-import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import javax.crypto.Cipher;
@@ -75,36 +72,5 @@ public class AesEcbStringValueTokenizer implements ValueTokenizer {
     var cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
     cipher.init(opMode, secretKey);
     return cipher;
-  }
-
-  public static class AesEcbValueTokenizerFactory extends ValueTokenizerFactory
-      implements Serializable {
-
-    public AesEcbValueTokenizerFactory(String keyString, KeyMaterialType keyMaterialType) {
-      super(keyString, keyMaterialType);
-    }
-
-    @Override
-    public AesEcbStringValueTokenizer makeValueTokenizer() {
-
-      try {
-
-        checkArgument(
-            KeyMaterialType.RAW_BASE64_KEY.equals(keyMaterialType)
-                || KeyMaterialType.RAW_UTF8_KEY.equals(keyMaterialType),
-            "expected keyMaterialType (RAW_BASE64_KEY or RAW_UTF8_KEY). Found %s",
-            keyMaterialType);
-
-        var keyBytes =
-            (keyMaterialType.equals(KeyMaterialType.RAW_UTF8_KEY))
-                ? keyString.getBytes(StandardCharsets.UTF_8)
-                : BaseEncoding.base64().decode(keyString);
-
-        return new AesEcbStringValueTokenizer(keyBytes);
-      } catch (GeneralSecurityException generalSecurityException) {
-        throw new RuntimeException(
-            "Error initializing the AES ValueTokenizer", generalSecurityException);
-      }
-    }
   }
 }

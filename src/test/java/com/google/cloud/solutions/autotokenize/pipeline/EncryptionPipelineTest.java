@@ -307,7 +307,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --mainKmsKeyUri=projects/test-projects/global/keysets/test-keyset/keys/test-key1"
                   + " --keyMaterial=Y21oeWFYWnFkVzk0YTJSb2VIQmxaMmR1YUhkelluWmxlR1pvZFhoNmNYRT0="
                   + " --keyMaterialType=GCP_KMS_WRAPPED_KEY"
-                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
               /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
@@ -320,7 +320,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --keyMaterial=cmhyaXZqdW94a2RoeHBlZ2duaHdzYnZleGZodXh6cXE="
                   + " --keyMaterialType=RAW_BASE64_KEY"
-                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
               /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
@@ -333,7 +333,7 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --keyMaterial=rhrivjuoxkdhxpeggnhwsbvexfhuxzqq"
                   + " --keyMaterialType=RAW_UTF8_KEY"
-                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
               /*testSecretClient=*/ null,
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
@@ -346,12 +346,34 @@ public final class EncryptionPipelineTest implements Serializable {
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --keyMaterial=resource/id/of/the/gcs/secret"
                   + " --keyMaterialType=GCP_SECRET_KEY"
-                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbStringValueTokenizer$AesEcbValueTokenizerFactory",
+                  + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
               SecretsClient.withSecretsStub(
                   ConstantSecretVersionValueManagerServicesStub.of(
                       "resource/id/of/the/gcs/secret", "rhrivjuoxkdhxpeggnhwsbvexfhuxzqq")),
               /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
               /*expectedRecordsCount=*/ 1000
+            })
+        .add(
+            new Object[] {
+              /*testCondition=*/ "CSV File Custom_Value_Tokenizer_with_CLOUD_SECRET_KEY",
+              /*configParameters=*/ ImmutableMap.of(
+                  "testFile",
+                  "csv/sample-data-chats.csv",
+                  "expectedRecordsAvro",
+                  "csv/aes_encrypted_with_key_rhrivjuoxkdhxpeggnhwsbvexfhuxzqq.avro"),
+              /*baseArgs*/ Joiner.on(' ')
+                  .join(
+                      "--sourceType=CSV_FILE",
+                      "--tokenizeColumns=$.CsvRecord.transcript",
+                      "--keyMaterial=resource/id/of/the/gcs/secret",
+                      "--keyMaterialType=GCP_SECRET_KEY",
+                      "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp",
+                      "--valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory"),
+              SecretsClient.withSecretsStub(
+                  ConstantSecretVersionValueManagerServicesStub.of(
+                      "resource/id/of/the/gcs/secret", "rhrivjuoxkdhxpeggnhwsbvexfhuxzqq")),
+              /*inputSchemaJsonFile=*/ null,
+              /*expectedRecordsCount=*/ 100
             })
         .build();
   }
