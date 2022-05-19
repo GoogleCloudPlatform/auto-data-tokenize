@@ -17,12 +17,9 @@
 package com.google.cloud.solutions.autotokenize.encryptors;
 
 
-import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import com.google.crypto.tink.DeterministicAead;
-import com.google.crypto.tink.daead.DeterministicAeadConfig;
 import com.google.privacy.dlp.v2.Value;
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Base64;
@@ -64,36 +61,6 @@ public class DaeadEncryptingValueTokenizer implements ValueTokenizer {
       return Value.parseFrom(plainBytes);
     } catch (GeneralSecurityException | InvalidProtocolBufferException exception) {
       throw new ValueTokenizingException("Error decrypting value", exception);
-    }
-  }
-
-  /**
-   * Creates a DAEAD encrypting tokenizer for the Cleartext Key derived by unwrapping the key using
-   * Google Cloud KMS.
-   */
-  public static class DaeadEncryptingValueTokenizerFactory
-      extends TinkBaseEncryptingValueTokenizerFactory {
-
-    /**
-     * Instantiates the ValueTokenizerFactory with the clearText Data encryption key.
-     *
-     * @param cleartextKeysetJson the clear-text data encryption key derived by unwrapping the
-     *     provided key using GCP KMS.
-     */
-    public DaeadEncryptingValueTokenizerFactory(
-        String cleartextKeysetJson, KeyMaterialType keyMaterialType) {
-      super(cleartextKeysetJson, keyMaterialType);
-    }
-
-    @Override
-    public DaeadEncryptingValueTokenizer makeValueTokenizer() {
-      try {
-        DeterministicAeadConfig.register();
-        return new DaeadEncryptingValueTokenizer(
-            getKeysetHandle().getPrimitive(DeterministicAead.class));
-      } catch (IOException | GeneralSecurityException exp) {
-        throw new TinkInitException(exp);
-      }
     }
   }
 }
