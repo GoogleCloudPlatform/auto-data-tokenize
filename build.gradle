@@ -21,7 +21,7 @@ plugins {
     id "com.diffplug.spotless" version "5.9.0"
     id "idea"
     id "jacoco"
-    id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
     id "maven-publish"
 }
 
@@ -30,28 +30,6 @@ repositories {
     gradlePluginPortal()
     maven {
         url "https://packages.confluent.io/maven/"
-    }
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId = 'com.google.cloud.solutions'
-            artifactId = 'auto-data-tokenize'
-            version = '0.1'
-
-            from components.java
-
-            pom {
-                name = "Auto Data Tokenize"
-                licenses {
-                    license {
-                        name = "The Apache License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                    }
-                }
-            }
-        }
     }
 }
 
