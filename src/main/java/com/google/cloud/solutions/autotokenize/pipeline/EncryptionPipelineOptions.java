@@ -58,7 +58,7 @@ public interface EncryptionPipelineOptions extends AutoInspectAndTokenizeOptions
   void setDlpEncryptConfigJson(String dlpEncryptConfigJson);
 
   @Default.String(
-      "com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizer$DaeadEncryptingValueTokenizerFactory")
+      "com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizerFactory")
   String getValueTokenizerFactoryFullClassName();
 
   void setValueTokenizerFactoryFullClassName(String valueTokenizerFactoryFullClassName);

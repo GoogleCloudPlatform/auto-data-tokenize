@@ -23,7 +23,7 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialT
 import com.google.cloud.solutions.autotokenize.common.DeIdentifiedRecordSchemaConverter;
 import com.google.cloud.solutions.autotokenize.common.FlatRecordConvertFn;
 import com.google.cloud.solutions.autotokenize.common.RecordFlattener;
-import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizer.DaeadEncryptingValueTokenizerFactory;
+import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.testing.FlatRecordsCheckerFn;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.common.collect.ImmutableList;

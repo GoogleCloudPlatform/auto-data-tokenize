@@ -20,7 +20,6 @@ import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
-import com.google.cloud.solutions.autotokenize.encryptors.DaeadEncryptingValueTokenizer.DaeadEncryptingValueTokenizerFactory;
 import com.google.cloud.solutions.autotokenize.testing.TestResourceLoader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
