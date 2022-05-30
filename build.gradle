@@ -34,7 +34,7 @@ repositories {
 }
 
 def protoVersion = "3.20.1"
-def beamVersion = "2.36.0"
+def beamVersion = "2.38.0"
 def hadoopVersion = "3.3.1"
 def autoValueVersion = "1.8.2"
 def floggerVersion = "0.7.4"
