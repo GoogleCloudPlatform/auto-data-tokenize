@@ -301,6 +301,14 @@ public class EncryptionPipeline {
             return (ValueTokenizerFactory)
                 ctor.newInstance(keySetExtractor.get(), options.getKeyMaterialType());
 
+          case TINK_GCP_KEYSET_JSON_FROM_SECRET_MANAGER:
+            var encryptionKeySetJson = secretsClient.accessSecret(options.getKeyMaterial());
+            ClearTextKeySetExtractor keySetExtractor2 =
+                new GcpKmsClearTextKeySetExtractor(
+                    encryptionKeySetJson, options.getMainKmsKeyUri());
+            return (ValueTokenizerFactory)
+                ctor.newInstance(keySetExtractor2.get(), KeyMaterialType.TINK_GCP_KEYSET_JSON);
+
           case RAW_BASE64_KEY:
           case RAW_UTF8_KEY:
             return (ValueTokenizerFactory)

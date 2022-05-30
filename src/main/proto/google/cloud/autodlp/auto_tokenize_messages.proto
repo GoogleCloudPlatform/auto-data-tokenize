@@ -54,6 +54,7 @@ enum KeyMaterialType {
   RAW_UTF8_KEY = 3;
   GCP_KMS_WRAPPED_KEY = 4;
   GCP_SECRET_KEY = 5;
+  TINK_GCP_KEYSET_JSON_FROM_SECRET_MANAGER = 6;
 }
 
 // Source configuration for JDBC Databases/sources
