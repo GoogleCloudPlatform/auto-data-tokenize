@@ -34,7 +34,7 @@ repositories {
 }
 
 def protoVersion = "3.20.1"
-def beamVersion = "2.38.0"
+def beamVersion = "2.39.0"
 def hadoopVersion = "3.3.1"
 def autoValueVersion = "1.8.2"
 def floggerVersion = "0.7.4"
@@ -66,6 +66,7 @@ dependencies {
     implementation "com.google.cloud:google-cloud-datacatalog:1.6.3"
     implementation "com.google.cloud:google-cloud-kms:2.4.0"
     implementation "com.google.cloud:google-cloud-secretmanager:2.0.7"
+    implementation "com.squareup.okhttp3:okhttp:4.9.3"
 
     // Google Tink for encryption
     implementation "com.google.crypto.tink:tink:1.6.1"
@@ -195,31 +196,6 @@ jacocoTestReport {
 }
 
 spotless {
-    java {
-        target "**/*.java"
-        targetExclude "third_party/**"
-        googleJavaFormat()
-        removeUnusedImports()
-        importOrder()
-        trimTrailingWhitespace()
-        endWithNewline()
-        licenseHeader "/*\n" +
-                " * Copyright \$YEAR Google LLC\n" +
-                " *\n" +
-                " * Licensed under the Apache License, Version 2.0 (the \"License\");\n" +
-                " * you may not use this file except in compliance with the License.\n" +
-                " * You may obtain a copy of the License at\n" +
-                " *\n" +
-                " *     https://www.apache.org/licenses/LICENSE-2.0\n" +
-                " *\n" +
-                " * Unless required by applicable law or agreed to in writing, software\n" +
-                " * distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
-                " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
-                " * See the License for the specific language governing permissions and\n" +
-                " * limitations under the License.\n" +
-                " */\n" +
-                "\n"
-    }
 
     kotlin {
         target "**/*.kt"

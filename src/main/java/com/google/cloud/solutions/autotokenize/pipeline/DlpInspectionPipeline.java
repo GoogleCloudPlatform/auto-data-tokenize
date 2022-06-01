@@ -16,16 +16,21 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
+import static com.google.cloud.solutions.autotokenize.auth.JupyterHubAccessTokenProvider.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static org.apache.beam.sdk.io.FileIO.Write.defaultNaming;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.OAuth2CredentialsWithRefresh;
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
+import com.google.cloud.solutions.autotokenize.auth.JupyterHubAccessTokenProvider;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportFileWriter;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportToTableRow;
 import com.google.cloud.solutions.autotokenize.common.SecretsClient;
@@ -45,6 +50,8 @@ import com.google.privacy.dlp.v2.Table;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import java.time.Clock;
+import java.util.Date;
+
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
@@ -294,7 +301,17 @@ public final class DlpInspectionPipeline {
         PipelineOptionsFactory.fromArgs(args).as(DlpInspectionOptions.class);
 
     logger.atInfo().log("Staging the Dataflow job");
-
+    if (System.getenv().containsKey(AUTH_PROVIDER_URL_KEY)) {
+      logger.atInfo().log("Using credential provider url");
+      options.setGcpCredential(OAuth2CredentialsWithRefresh.newBuilder()
+              .setAccessToken(new AccessToken("", new Date(0L)))
+              .setRefreshHandler(new JupyterHubAccessTokenProvider()).build());
+    } else if (System.getenv().containsKey("GCS_TOKEN")) {
+      logger.atInfo().log("Using credentials from env variable");
+      GoogleCredentials credentials = new GoogleCredentials(new AccessToken(System.getenv().get("GCS_TOKEN"),
+              new Date(System.currentTimeMillis() + 3600 * 1000)));
+      options.setGcpCredential(credentials);
+    }
     new DlpInspectionPipeline(options).makePipeline().run();
   }
 
