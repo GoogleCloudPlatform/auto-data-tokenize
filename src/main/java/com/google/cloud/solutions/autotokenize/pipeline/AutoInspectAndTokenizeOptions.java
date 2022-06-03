@@ -19,12 +19,11 @@ package com.google.cloud.solutions.autotokenize.pipeline;
 
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages;
 import java.util.List;
-import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Validation.Required;
 
 /** Common options for Inspection and Tokenization pipelines. */
-public interface AutoInspectAndTokenizeOptions extends GcpOptions {
+public interface AutoInspectAndTokenizeOptions extends UserEnvironmentOptions {
   @Required
   AutoTokenizeMessages.SourceType getSourceType();
 
@@ -89,4 +88,5 @@ public interface AutoInspectAndTokenizeOptions extends GcpOptions {
   String getJdbcPassword();
 
   void setJdbcPassword(String jdbcPassword);
+
 }

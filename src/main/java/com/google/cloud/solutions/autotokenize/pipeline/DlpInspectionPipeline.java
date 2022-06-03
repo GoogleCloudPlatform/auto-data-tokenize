@@ -16,16 +16,11 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static org.apache.beam.sdk.io.FileIO.Write.defaultNaming;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
+import com.google.cloud.solutions.autotokenize.auth.AccessTokenCredentialsFactory;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportFileWriter;
 import com.google.cloud.solutions.autotokenize.common.InspectionReportToTableRow;
 import com.google.cloud.solutions.autotokenize.common.SecretsClient;
@@ -44,7 +39,6 @@ import com.google.privacy.dlp.v2.InfoType;
 import com.google.privacy.dlp.v2.Table;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import java.time.Clock;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
@@ -64,6 +58,13 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
+
+import java.time.Clock;
+
+import static com.google.common.base.Preconditions.*;
+import static com.google.common.collect.ImmutableSet.*;
+import static org.apache.beam.sdk.io.FileIO.Write.*;
+import static org.apache.commons.lang3.StringUtils.*;
 
 /** Instantiates the sampling Dataflow pipeline based on provided options. */
 public final class DlpInspectionPipeline {
@@ -292,9 +293,9 @@ public final class DlpInspectionPipeline {
     PipelineOptionsFactory.register(DlpInspectionOptions.class);
     DlpInspectionOptions options =
         PipelineOptionsFactory.fromArgs(args).as(DlpInspectionOptions.class);
-
+    options.setCredentialFactoryClass(AccessTokenCredentialsFactory.class);
+    options.setJobName(new UserEnvironmentOptions.JobNameFactory().create(options));
     logger.atInfo().log("Staging the Dataflow job");
-
     new DlpInspectionPipeline(options).makePipeline().run();
   }
 

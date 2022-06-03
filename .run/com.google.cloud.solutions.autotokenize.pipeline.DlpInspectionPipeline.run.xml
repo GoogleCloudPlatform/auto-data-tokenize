@@ -1,0 +1,31 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="DlpInspectionPipeline" type="Application" factoryName="Application" nameIsGenerated="true">
+    <envs>
+      <env name="DATA_CATALOG_ENTRY_GROUP_ID" value="some_dev_entrygroup_id" />
+      <env name="DLP_RUNNER_SERVICE_ACCOUNT_NAME" value="auto-dlp-runner" />
+      <env name="INSPECTION_TAG_TEMPLATE_ID" value="some_dev_inspectiontag" />
+      <env name="KMS_KEY_ID" value="dlptest-key" />
+      <env name="KMS_KEYRING_ID" value="dlptest-keyring" />
+      <env name="PROJECT_ID" value="dev-sirius" />
+      <env name="PROJECT_NUMBER" value="TODO" />
+      <env name="REGION_ID" value="europe-north1" />
+      <env name="SECRET_MANAGER_KEY_NAME" value="autodlp_testkey_tinkey_wrapped" />
+      <env name="TEMP_GCS_BUCKET" value="ssb-test-dapla-auto-dlp" />
+      <env name="VPC_NAME" value="vpc-brunost" />
+      <env name="WRAPPED_KEY_FILE" value="wrapped_dlp_key.json" />
+      <env name="DLP_RUNNER_SERVICE_ACCOUNT_EMAIL" value="auto-dlp-runner@dev-sirius.iam.gserviceaccount.com" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="com.google.cloud.solutions.autotokenize.pipeline.DlpInspectionPipeline" />
+    <module name="auto-data-tokenize.main" />
+    <option name="PROGRAM_PARAMETERS" value="--project=&quot;${PROJECT_ID}&quot; --region=&quot;${REGION_ID}&quot; --runner=&quot;DataflowRunner&quot; --serviceAccount=&quot;${DLP_RUNNER_SERVICE_ACCOUNT_EMAIL}&quot; --gcpTempLocation=&quot;gs://${TEMP_GCS_BUCKET}/temp&quot; --stagingLocation=&quot;gs://${TEMP_GCS_BUCKET}/staging&quot; --tempLocation=&quot;gs://${TEMP_GCS_BUCKET}/bqtemp&quot; --workerMachineType=&quot;n1-standard-1&quot; --subnetwork=&quot;${DATAFLOW_SUBNETWORK}&quot; --sampleSize=600 --sourceType=&quot;PARQUET&quot; --inputPattern=&quot;gs://${TEMP_GCS_BUCKET}/kilde/person_1200.parquet&quot; --reportLocation=&quot;gs://${TEMP_GCS_BUCKET}/dlpreport/01&quot;" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.google.cloud.solutions.autotokenize.pipeline.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

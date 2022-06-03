@@ -18,6 +18,8 @@ package com.google.cloud.solutions.autotokenize.dlp;
 
 
 import com.google.cloud.dlp.v2.DlpServiceClient;
+import com.google.cloud.dlp.v2.DlpServiceSettings;
+
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -34,7 +36,7 @@ public interface DlpClientFactory extends Serializable {
 
     @Override
     public DlpServiceClient newClient() throws IOException {
-      return DlpServiceClient.create();
+      return DlpServiceClient.create(DlpServiceSettings.newBuilder().build());
     }
   }
 }
