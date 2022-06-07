@@ -56,7 +56,7 @@ export WRAPPED_KEY_FILE="[path-to-the-data-encryption-key-file]"
 +export SECRET_MANAGER_KEY_NAME="autodlp_testkey_tinkey_wrapped"
 
 # Name of the VPC to run Dataflow jobs in
-export VPC_NAME="vpc-blah"
+export SUBNETWORK_NAME="vpc-blah"
 
 ######################################
 #      DON'T MODIFY LINES BELOW      #
@@ -70,7 +70,7 @@ export SECRET_MANAGER_KEY_RESOURCE_ID="projects/${PROJECT_NUMBER}/secrets/${SECR
 #export SECRET_MANAGER_KEY_RESOURCE_ID="projects/${PROJECT_ID}/secrets/${SECRET_MANAGER_KEY_NAME}/versions/latest"
 
 # The subnetwork to use when running Dataflow jobs
-export DATAFLOW_SUBNETWORK="https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/regions/${REGION_ID}/subnetworks/${VPC_NAME}"
+export DATAFLOW_SUBNETWORK="https://www.googleapis.com/compute/v1/projects/${PROJECT_ID}/regions/${REGION_ID}/subnetworks/${SUBNETWORK_NAME}"
 
 # The DLP Runner Service account email
 DLP_RUNNER_SERVICE_ACCOUNT_EMAIL="${DLP_RUNNER_SERVICE_ACCOUNT_NAME}@$(echo $PROJECT_ID | awk -F':' '{print $2"."$1}' | sed 's/^\.//').iam.gserviceaccount.com"

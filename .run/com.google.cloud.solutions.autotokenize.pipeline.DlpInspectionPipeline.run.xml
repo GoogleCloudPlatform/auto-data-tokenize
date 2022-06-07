@@ -11,7 +11,7 @@
       <env name="REGION_ID" value="europe-north1" />
       <env name="SECRET_MANAGER_KEY_NAME" value="autodlp_testkey_tinkey_wrapped" />
       <env name="TEMP_GCS_BUCKET" value="ssb-test-dapla-auto-dlp" />
-      <env name="VPC_NAME" value="vpc-brunost" />
+      <env name="SUBNETWORK_NAME" value="vpc-brunost" />
       <env name="WRAPPED_KEY_FILE" value="wrapped_dlp_key.json" />
       <env name="DLP_RUNNER_SERVICE_ACCOUNT_EMAIL" value="auto-dlp-runner@dev-sirius.iam.gserviceaccount.com" />
     </envs>

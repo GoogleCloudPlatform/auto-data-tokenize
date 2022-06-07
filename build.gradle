@@ -167,6 +167,13 @@ shadowJar {
     mergeServiceFiles()
 }
 
+task pythonDist(type: Zip) {
+    archiveFileName = "dapla-dlp.zip"
+    destinationDirectory = file("$buildDir/libs")
+
+    from "src/main/python"
+}
+
 test {
     dependsOn cleanTest
     testLogging.showStandardStreams = true

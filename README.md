@@ -300,7 +300,7 @@ Check the [supported](https://www.testcontainers.org/supported_docker_environmen
 You need to compile all the modules to build executables for deploying the _sample & identify_ and _bulk tokenize_ pipelines.
 
 ```shell script
-./gradlew clean buildNeeded shadowJar
+./gradlew clean buildNeeded shadowJar -x test
 ```
 
 ## Run Sample and Identify pipeline
@@ -328,6 +328,41 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 --inputPattern="gs://${TEMP_GCS_BUCKET}/userdata.avro" \
 --reportLocation="gs://${TEMP_GCS_BUCKET}/dlp_report/"
 ```
+
+### Launch sample & identify pipeline from Python
+
+First, build the Python module:
+
+```shell script
+./gradlew pythonDist -x test
+```
+
+Add the Python module (zip-file) to Python's library path
+
+```Python
+import sys
+sys.path.append('dapla-dlp.zip')
+```
+
+And then execute the sample & identify pipeline through Python
+
+```Python
+import os
+from dapla_dlp import PipelineOptions, start_dlp_inspection_pipeline
+
+options = PipelineOptions(
+    projectId = os.environ['PROJECT_ID'],
+    regionId = os.environ['REGION_ID'],
+    serviceAccount = os.environ['DLP_RUNNER_SERVICE_ACCOUNT_EMAIL'],
+    tempGcsBucket = os.environ['TEMP_GCS_BUCKET'],
+    subnetworkName = os.environ['SUBNETWORK_NAME'],
+    inputPattern = f"gs://{os.environ['TEMP_GCS_BUCKET']}/userdata.avro",
+    reportLocation = f"gs://{os.environ['TEMP_GCS_BUCKET']}/dlp_report/",
+)
+
+start_dlp_inspection_pipeline(options)
+```
+
 
 > **Note:** Use `sampleSize=0` to process all records.
 
