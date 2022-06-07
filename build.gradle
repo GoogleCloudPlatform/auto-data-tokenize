@@ -23,13 +23,14 @@ plugins {
     id "jacoco"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "maven-publish"
+    id "com.google.cloud.artifactregistry.gradle-plugin" version "2.1.1"
 }
 
 repositories {
     mavenCentral()
     gradlePluginPortal()
     maven {
-        url "https://packages.confluent.io/maven/"
+        url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
     }
 }
 
@@ -161,6 +162,25 @@ java.targetCompatibility = JavaVersion.VERSION_11
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
+
+publishing {
+    publications {
+        myPublication(MavenPublication) {
+            groupId 'no.ssb.dataflow'
+            artifactId 'auto-data-tokenize'
+            version '1.0.0'             // Your package version
+            artifact '*./build/libs/auto-data-tokenize.jar*'    //Example: *./target/myJavaClasses.jar*
+        }
+    }
+
+    // Repositories *to* which Gradle can publish artifacts
+    repositories {
+        maven {
+            url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
+        }
+    }
+}
+
 
 shadowJar {
     zip64 = true
