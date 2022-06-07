@@ -90,7 +90,7 @@ final class DlpBatchInspect implements AutoCloseable {
 
   private InspectConfig.Builder buildInspectConfig() {
     InspectConfig.Builder inspectionConfig =
-        InspectConfig.newBuilder().setMinLikelihood(Likelihood.LIKELY);
+        InspectConfig.newBuilder().setMinLikelihood(Likelihood.POSSIBLE);
 
     if (observableTypes != null && !observableTypes.isEmpty()) {
       inspectionConfig.addAllInfoTypes(observableTypes);
