@@ -23,6 +23,7 @@ plugins {
     id "jacoco"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "maven-publish"
+    id "com.google.cloud.artifactregistry.gradle-plugin" version "2.1.1"
 }
 
 repositories {
@@ -30,6 +31,9 @@ repositories {
     gradlePluginPortal()
     maven {
         url "https://packages.confluent.io/maven/"
+    }
+    maven {
+        url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
     }
 }
 
@@ -161,6 +165,16 @@ java.targetCompatibility = JavaVersion.VERSION_11
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
+
+publishing {
+    // Repositories *to* which Gradle can publish artifacts
+    repositories {
+        maven {
+            url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
+        }
+    }
+}
+
 
 shadowJar {
     zip64 = true
