@@ -18,6 +18,7 @@ package com.google.cloud.solutions.autotokenize.common;
 
 
 import com.google.cloud.secretmanager.v1.SecretManagerServiceClient;
+import com.google.cloud.secretmanager.v1.SecretManagerServiceSettings;
 import com.google.cloud.secretmanager.v1.stub.SecretManagerServiceStub;
 import com.google.common.flogger.GoogleLogger;
 import java.io.IOException;
@@ -28,10 +29,25 @@ public final class SecretsClient {
   public static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @Nullable private final SecretManagerServiceStub stub;
+  private final SecretManagerServiceSettings settings;
 
   private SecretsClient(@Nullable SecretManagerServiceStub stub) {
-    this.stub = stub;
+    this(stub, null);
   }
+
+  private SecretsClient(@Nullable SecretManagerServiceStub stub, @Nullable SecretManagerServiceSettings settings) {
+    this.stub = stub;
+    if (settings == null) {
+      try {
+        this.settings = SecretManagerServiceSettings.newBuilder().build();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      this.settings = settings;
+    }
+  }
+
 
   public static SecretsClient of() {
     return new SecretsClient(null);
@@ -39,6 +55,10 @@ public final class SecretsClient {
 
   public static SecretsClient withSecretsStub(SecretManagerServiceStub stub) {
     return new SecretsClient(stub);
+  }
+
+  public static SecretsClient withSettings(SecretManagerServiceSettings settings) {
+    return new SecretsClient(null, settings);
   }
 
   public String accessSecret(String secretVersionResourceId) {
@@ -56,7 +76,7 @@ public final class SecretsClient {
 
   private SecretManagerServiceClient buildSecretManagerClient() throws IOException {
     return (stub == null)
-        ? SecretManagerServiceClient.create()
+        ? SecretManagerServiceClient.create(settings)
         : SecretManagerServiceClient.create(stub);
   }
 }

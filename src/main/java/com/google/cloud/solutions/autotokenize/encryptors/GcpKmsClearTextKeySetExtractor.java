@@ -17,11 +17,13 @@
 package com.google.cloud.solutions.autotokenize.encryptors;
 
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
 import com.google.crypto.tink.JsonKeysetWriter;
 import com.google.crypto.tink.KeysetHandle;
 import com.google.crypto.tink.integration.gcpkms.GcpKmsClient;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -30,10 +32,12 @@ public class GcpKmsClearTextKeySetExtractor implements ClearTextKeySetExtractor 
 
   private final String tinkKeySetJson;
   private final String mainKeyKmsUri;
+  private final GoogleCredentials credential;
 
-  public GcpKmsClearTextKeySetExtractor(String tinkKeySetJson, String mainKeyKmsUri) {
+  public GcpKmsClearTextKeySetExtractor(String tinkKeySetJson, String mainKeyKmsUri, GoogleCredentials credentials) {
     this.tinkKeySetJson = tinkKeySetJson;
     this.mainKeyKmsUri = mainKeyKmsUri;
+    this.credential = credentials;
   }
 
   /**
@@ -46,9 +50,9 @@ public class GcpKmsClearTextKeySetExtractor implements ClearTextKeySetExtractor 
   @Override
   public String get() throws GeneralSecurityException, IOException {
     var tinkKeySet =
-        KeysetHandle.read(
-            JsonKeysetReader.withString(tinkKeySetJson),
-            new GcpKmsClient().withDefaultCredentials().getAead(mainKeyKmsUri));
+            KeysetHandle.read(
+                    JsonKeysetReader.withString(tinkKeySetJson),
+                    new GcpKmsClient().withCredentials(credential).getAead(mainKeyKmsUri));
 
     var baos = new ByteArrayOutputStream();
     CleartextKeysetHandle.write(tinkKeySet, JsonKeysetWriter.withOutputStream(baos));

@@ -28,7 +28,7 @@ public class AccessTokenCredentialsFactory implements CredentialFactory {
         }
     }
 
-    public AccessTokenCredentialsFactory(String quotaProjectId) {
+    private AccessTokenCredentialsFactory(String quotaProjectId) {
         this.quotaProjectId = quotaProjectId;
     }
 
