@@ -23,6 +23,7 @@ plugins {
     id "jacoco"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "maven-publish"
+    id "com.google.cloud.artifactregistry.gradle-plugin" version "2.1.4"
 }
 
 repositories {
@@ -31,7 +32,15 @@ repositories {
     maven {
         url "https://packages.confluent.io/maven/"
     }
+    maven {
+        url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
+    }
+    maven {
+        url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-snapshots"
+    }
 }
+
+version = '1.0.0-SNAPSHOT'
 
 def protoVersion = "3.20.1"
 def beamVersion = "2.39.0"
@@ -162,13 +171,47 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
+tasks.withType(PublishToMavenRepository) {
+    dependsOn(shadowJar)
+}
+publishing {
+
+    publications {
+        javaPublication(MavenPublication) {
+            groupId 'no.ssb.dlpflow'
+            artifactId 'auto-data-tokenize'
+            version project.version      // Your package version
+            artifact './build/libs/auto-data-tokenize-'+project.version+'-all.jar'    //Example: *./target/myJavaClasses.jar*
+        }
+        pythonPublication(MavenPublication) {
+            groupId 'no.ssb.dlpflow.python'
+            artifactId 'auto-data-tokenize'
+            version project.version      // Your package version
+            artifact './build/libs/dapla-dlpflow.zip'    //Example: *./target/myJavaClasses.jar*
+
+        }
+    }
+    // Repositories *to* which Gradle can publish artifacts
+    repositories {
+        maven {
+            if(project.version.endsWith('-SNAPSHOT')) {
+                url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-snapshots"
+            } else {
+                url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
+            }
+        }
+
+    }
+}
+
+
 shadowJar {
     zip64 = true
     mergeServiceFiles()
 }
 
 task pythonDist(type: Zip) {
-    archiveFileName = "dapla-dlp.zip"
+    archiveFileName = "dapla-dlpflow.zip"
     destinationDirectory = file("$buildDir/libs")
 
     from "src/main/python"
@@ -253,4 +296,5 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
+
 }

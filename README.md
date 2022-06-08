@@ -329,6 +329,23 @@ sample_and_identify_pipeline --project="${PROJECT_ID}" \
 --reportLocation="gs://${TEMP_GCS_BUCKET}/dlp_report/"
 ```
 
+### Publish
+
+Gradle build will run a task `spotless.freshmark` to check the README.md file format, if problems are encountered, run the following command to fix:
+
+```shell script
+./gradlew :spotlessApply
+```
+### Publish to local maven repo:
+
+```shell script
+./gradlew publishToMavenLocal
+```
+### Publish to SNAPSHOTS or Releases:
+Go to `build.gradle` file and find the variable `version`,
+give a post fix `-SNAPSHOT` and commit the `build.gradle` file for publish a snapshot version.
+For release version, you can just delete the post fix `-SNAPSHOT`.
+
 ### Launch sample & identify pipeline from Python
 
 First, build the Python module:
@@ -341,7 +358,7 @@ Add the Python module (zip-file) to Python's library path
 
 ```Python
 import sys
-sys.path.append('dapla-dlp.zip')
+sys.path.append('auto-data-tokenize-1.0.0-SNAPSHOT.zip')
 ```
 
 And then execute the sample & identify pipeline through Python
