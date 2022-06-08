@@ -29,18 +29,20 @@ def start_tokenize_pipeline(options):
     --runner=DataflowRunner \
     --serviceAccount={options.serviceAccount} \
     --tempLocation=gs://{options.tempGcsBucket}/bqtemp \
-    --workerMachineType="n1-standard-1" \
-    --schema="{options.schemaLocation}" \
-    --mainKmsKeyUri="{options.mainKmsKeyUri}" \
-    --keyMaterialType="{options.keyMaterialType}" \
-    --keyMaterial="{options.keyMaterial}" \
+    --workerMachineType=n1-standard-1 \
+    --schema={options.schema} \
+    --mainKmsKeyUri=gcp-kms://projects/{options.projectId}/locations/{options.regionId}/keyRings/{options.kmsKeyringId}/cryptoKeys/{options.kmsKeyId} \
+    --keyMaterialType=TINK_GCP_KEYSET_JSON_FROM_SECRET_MANAGER \
+    --keyMaterial=projects/{options.projectNumber}/secrets/{options.secretManagerKeyName}/versions/latest \
     --subnetwork=https://www.googleapis.com/compute/v1/projects/{options.projectId}/regions/{options.regionId}/subnetworks/{options.subnetworkName} \
-    --sourceType="PARQUET" \
+    --sourceType=PARQUET \
     --inputPattern={options.inputPattern} \
     --outputDirectory={options.outputDirectory} \
-    --tokenizeColumns={" ".join(map(lambda col: "--tokenizeColumns " + col, options.tokenize_columns))}'
+    {" ".join(map(lambda col: "--tokenizeColumns=" + col, options.tokenize_columns))}'
 
     _run_pipeline('com.google.cloud.solutions.autotokenize.pipeline.EncryptionPipeline', options_str.split(' '))
+
+
 
 
 def _run_pipeline(pipeline_name, options):
