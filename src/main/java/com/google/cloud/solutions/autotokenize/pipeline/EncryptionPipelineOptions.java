@@ -28,6 +28,10 @@ public interface EncryptionPipelineOptions extends AutoInspectAndTokenizeOptions
 
   void setSchema(String schema);
 
+  String getSchemaLocation();
+
+  void setSchemaLocation(String schema);
+
   List<String> getTokenizeColumns();
 
   void setTokenizeColumns(List<String> fileDlpReportJson);

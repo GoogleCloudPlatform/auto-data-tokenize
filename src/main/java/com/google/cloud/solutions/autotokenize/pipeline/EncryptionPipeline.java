@@ -52,6 +52,8 @@ import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
 import java.security.GeneralSecurityException;
 import java.util.List;
 import org.apache.avro.Schema;
@@ -60,6 +62,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.AvroIO;
+import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.schemas.utils.AvroUtils;
@@ -179,15 +182,27 @@ public class EncryptionPipeline {
   private Schema buildEncryptedSchema() {
     checkArgument(
         isNotBlank(options.getSchema())
+            || isNotBlank(options.getSchemaLocation())
             || (SourceType.CSV_FILE.equals(options.getSourceType())
                 && options.getCsvHeaders() != null
                 && !options.getCsvHeaders().isEmpty()),
         "Provide Source's Avro Schema or headers for CSV_FILE.");
 
-    var inputSchema =
-        (options.getSchema() != null)
-            ? new Schema.Parser().parse(options.getSchema())
-            : CsvRowFlatRecordConvertors.makeCsvAvroSchema(options.getCsvHeaders());
+    Schema inputSchema;
+    try {
+      if (options.getSchemaLocation() != null) {
+        try (InputStream stream = Channels.newInputStream(FileSystems.open(FileSystems.matchNewResource(
+                options.getSchemaLocation(), false)))) {
+          inputSchema = new Schema.Parser().parse(stream);
+        }
+      } else if (options.getSchema() != null) {
+        inputSchema = new Schema.Parser().parse(options.getSchema());
+      } else {
+        inputSchema = CsvRowFlatRecordConvertors.makeCsvAvroSchema(options.getCsvHeaders());
+      }
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Error reading schema URI", e);
+    }
 
     List<String> tokenizeColumnNames =
         (options.getDlpEncryptConfigJson() == null)
