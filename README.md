@@ -365,9 +365,9 @@ And then execute the sample & identify pipeline through Python
 
 ```Python
 import os
-from dapla_dlp import PipelineOptions, start_dlp_inspection_pipeline
+from dapla_dlp import InspectionOptions, start_dlp_inspection_pipeline
 
-options = PipelineOptions(
+options = InspectionOptions(
     projectId = os.environ['PROJECT_ID'],
     regionId = os.environ['REGION_ID'],
     serviceAccount = os.environ['DLP_RUNNER_SERVICE_ACCOUNT_EMAIL'],
