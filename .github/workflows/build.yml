@@ -14,13 +14,17 @@
 # limitations under the License.
 #
 
-name: Build and Test
+name: Build and upload to GCP storage
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
+env:
+  GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+
 jobs:
   build:
     name: Build
@@ -39,12 +43,6 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Build and analyze
-        run: ./gradlew clean build jacocoTestReport --info
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./build/reports/jacoco/test/jacocoTestReport.xml
-          verbose: true
-          env_vars: GHACTION
+      - name: Build
+        run: ./gradlew clean buildNeeded shadowJar -x test
+
