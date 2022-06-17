@@ -35,12 +35,6 @@ repositories {
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots"
     }
-    maven {
-        url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
-    }
-    maven {
-        url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-snapshots"
-    }
 }
 
 version = '1.0.0-SNAPSHOT'
@@ -177,36 +171,6 @@ tasks.withType(JavaCompile) {
 tasks.withType(PublishToMavenRepository) {
     dependsOn(shadowJar)
 }
-publishing {
-
-    publications {
-        javaPublication(MavenPublication) {
-            groupId 'no.ssb.dlpflow'
-            artifactId 'auto-data-tokenize'
-            version project.version      // Your package version
-            artifact './build/libs/auto-data-tokenize-'+project.version+'-all.jar'    //Example: *./target/myJavaClasses.jar*
-        }
-        pythonPublication(MavenPublication) {
-            groupId 'no.ssb.dlpflow.python'
-            artifactId 'auto-data-tokenize'
-            version project.version      // Your package version
-            artifact './build/libs/dapla-dlpflow.zip'    //Example: *./target/myJavaClasses.jar*
-
-        }
-    }
-    // Repositories *to* which Gradle can publish artifacts
-    repositories {
-        maven {
-            if(project.version.endsWith('-SNAPSHOT')) {
-                url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-snapshots"
-            } else {
-                url "artifactregistry://europe-north1-maven.pkg.dev/artifact-registry-14da/maven-releases"
-            }
-        }
-
-    }
-}
-
 
 shadowJar {
     zip64 = true
