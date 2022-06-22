@@ -46,7 +46,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build
-        run: ./gradlew clean buildNeeded shadowJar -x test
+        run: ./gradlew clean buildNeeded shadowJar pythonDist -x test
 
       - name: Setup staging - gcloud / gsutil
         uses: google-github-actions/setup-gcloud@v0
@@ -59,3 +59,6 @@ jobs:
         run: |-
           gsutil cp -r ./build/libs/*-all.jar gs://$GCS_BUCKET_STAGING/artifact-registry/
 
+      - name: Deploy zip to staging
+        run: |-
+          gsutil cp -r ./build/libs/*.zip gs://$GCS_BUCKET_STAGING/artifact-registry/
