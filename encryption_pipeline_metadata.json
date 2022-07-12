@@ -1,6 +1,6 @@
 {
-  "name": "Inspect and Tag Data sources in Data Catalog",
-  "description": "A pipeline that reads the data source, randomly samples the input rows to identify sensitive items using DLP content inspection. The aggregated results are then written to Data Catalog tags. ",
+  "name": "Data encryption pipeline",
+  "description": "Encrypt data from different sources using DLP or Tink.",
   "parameters": [
     {
       "name": "schema",
