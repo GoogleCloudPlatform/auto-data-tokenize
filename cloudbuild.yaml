@@ -1,5 +1,5 @@
 steps:
-  - name: gradle:7.4.2-jdk11
+  - name: gradle:8.4-jdk17
     entrypoint: gradle
     args:
       - clean
