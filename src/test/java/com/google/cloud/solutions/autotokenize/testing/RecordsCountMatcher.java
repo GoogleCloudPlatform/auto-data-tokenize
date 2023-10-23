@@ -18,8 +18,8 @@ package com.google.cloud.solutions.autotokenize.testing;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.Iterables;
 import org.apache.beam.sdk.transforms.SerializableFunction;
-import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Iterables;
 
 /** Utility Matcher for PAssert to check the number of items in a given PCollection. */
 public class RecordsCountMatcher<T> implements SerializableFunction<Iterable<T>, Void> {

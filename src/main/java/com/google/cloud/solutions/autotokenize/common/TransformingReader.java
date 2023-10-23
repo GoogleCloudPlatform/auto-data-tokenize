@@ -28,6 +28,7 @@ import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfigur
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration.PasswordsCase;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.SourceType;
 import com.google.cloud.solutions.autotokenize.common.CsvIO.CsvParse;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +53,6 @@ import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.annotations.VisibleForTesting;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
