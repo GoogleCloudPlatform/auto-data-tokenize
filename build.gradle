@@ -32,7 +32,7 @@ repositories {
     }
 }
 
-def protoVersion = "3.24.4"
+def protoVersion = "3.25.1"
 def beamVersion = "2.51.0"
 def hadoopVersion = "3.3.6"
 def autoValueVersion = "1.10.4"
