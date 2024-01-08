@@ -42,7 +42,7 @@ def floggerVersion = "0.8"
 dependencies {
 
     // Protobuf deps
-    compileOnly "com.google.api.grpc:proto-google-common-protos:2.26.0"
+    compileOnly "com.google.api.grpc:proto-google-common-protos:2.30.0"
 
     implementation "com.google.protobuf:protobuf-java:${protoVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protoVersion}"
