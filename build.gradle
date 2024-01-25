@@ -43,7 +43,7 @@ def protoVersion = "3.25.1"
 dependencies {
 
     // Protobuf deps
-    compileOnly "com.google.api.grpc:proto-google-common-protos:2.31.0"
+    compileOnly "com.google.api.grpc:proto-google-common-protos:2.32.0"
 
     implementation "com.google.protobuf:protobuf-java:${protoVersion}"
     implementation "com.google.protobuf:protobuf-java-util:${protoVersion}"
