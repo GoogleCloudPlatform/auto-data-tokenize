@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing.stubs.dlp;
 
-
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.dlp.v2.stub.DlpServiceStub;
 import com.google.cloud.solutions.autotokenize.dlp.DlpClientFactory;

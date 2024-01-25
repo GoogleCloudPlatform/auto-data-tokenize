@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;

@@ -79,10 +79,10 @@ public abstract class InspectionReportFileWriter
                 Contextful.fn(
                     colName ->
                         defaultNaming(
-                            /*prefix=*/ String.format(
+                            /* prefix= */ String.format(
                                     "col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
                                 .replaceAll("[-]+", "-"),
-                            /*suffix=*/ ".json")))
+                            /* suffix= */ ".json")))
             .to(reportLocation()));
 
     return PDone.in(inspectionReport.getPipeline());

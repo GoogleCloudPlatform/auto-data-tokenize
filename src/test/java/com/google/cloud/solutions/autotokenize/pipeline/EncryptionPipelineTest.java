@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.io.AvroIO;
+import org.apache.beam.sdk.extensions.avro.io.AvroIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
@@ -163,71 +163,71 @@ public final class EncryptionPipelineTest implements Serializable {
     return ImmutableList.<Object[]>builder()
         .add(
             new Object[] {
-              /*testCondition=*/ "Nested Repeated Record: 1 record (DLP)",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "Nested Repeated Record: 1 record (DLP)",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile",
                   "avro_records/nested_repeated/record.avro",
                   "dlpEncryptConfigFile",
                   "avro_records/nested_repeated/encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
-              /*expectedRecordsCount=*/ 1
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/nested_repeated/schema.json",
+              /* expectedRecordsCount= */ 1
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Use Regional DLP Endpoint",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "Use Regional DLP Endpoint",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile",
                   "avro_records/nested_repeated/record.avro",
                   "dlpEncryptConfigFile",
                   "avro_records/nested_repeated/encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO --dlpRegion=us-central1",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/nested_repeated/schema.json",
-              /*expectedRecordsCount=*/ 1
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/nested_repeated/schema.json",
+              /* expectedRecordsCount= */ 1
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Avro input: 1000 records (DLP)",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "Avro input: 1000 records (DLP)",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile",
                   "userdata.avro",
                   "dlpEncryptConfigFile",
                   "email_cc_dlp_encrypt_config.json"),
               /*baseArgs*/ "--sourceType=AVRO",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
-              /*expectedRecordsCount=*/ 1000
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/userdata_records/schema.json",
+              /* expectedRecordsCount= */ 1000
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Avro input: 1000 records (TINK)",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "Avro input: 1000 records (TINK)",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile",
                   "userdata.avro",
                   "tinkEncryptionKeySetJsonFile",
                   "test_encryption_key.json"),
               /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
                   + " --tokenizeColumns=$.kylosample.email",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
-              /*expectedRecordsCount=*/ 1000
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/userdata_records/schema.json",
+              /* expectedRecordsCount= */ 1000
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "CSV input: 1000 records with Provided Avro Schema (TINK)",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "CSV input: 1000 records with Provided Avro Schema (TINK)",
+              /* configParameters= */ ImmutableMap.of(
                   "tinkEncryptionKeySetJsonFile", "test_encryption_key.json"),
               /*baseArgs*/ "--sourceType=CSV_FILE --tokenizeColumns=$.CsvRecord.col_1",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "five_column_csv_schema.json",
-              /*expectedRecordsCount=*/ 100
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "five_column_csv_schema.json",
+              /* expectedRecordsCount= */ 100
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "CSV input: 1000 records with Headers (TINK)",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "CSV input: 1000 records with Headers (TINK)",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile",
                   "csv/sample-data-chats.csv",
                   "expectedRecordsAvro",
@@ -240,14 +240,14 @@ public final class EncryptionPipelineTest implements Serializable {
                       "--sourceType=CSV_FILE",
                       "--tokenizeColumns=$.CsvRecord.transcript",
                       "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ null,
-              /*expectedRecordsCount=*/ 100
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ null,
+              /* expectedRecordsCount= */ 100
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "CSV input: 1000 records with Headers (DLP)",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "CSV input: 1000 records with Headers (DLP)",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile", "csv/sample-data-chats.csv",
                   "expectedRecordsAvro", "csv/base64_encrypted_transcripts.avro",
                   "dlpEncryptConfigFile", "csv/transcript_dlp_encrypt_config.json"),
@@ -256,14 +256,14 @@ public final class EncryptionPipelineTest implements Serializable {
                   .join(
                       "--sourceType=CSV_FILE",
                       "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"),
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ null,
-              /*expectedRecordsCount=*/ 100
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ null,
+              /* expectedRecordsCount= */ 100
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "JDBC input: 500 records [plainPassword]",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "JDBC input: 500 records [plainPassword]",
+              /* configParameters= */ ImmutableMap.of(
                   "initScript",
                   "db_init_scripts/contacts5k.sql",
                   "dlpEncryptConfigFile",
@@ -274,14 +274,14 @@ public final class EncryptionPipelineTest implements Serializable {
                   + "--jdbcFilterClause=ROUND(MOD(row_id, 10)) IN (1) "
                   + "--jdbcUserName=root "
                   + "--jdbcPassword=",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
-              /*expectedRecordsCount=*/ 500
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "Contacts5kSql_avro_schema.json",
+              /* expectedRecordsCount= */ 500
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "JDBC input: 500 records [passwordSecret]",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "JDBC input: 500 records [passwordSecret]",
+              /* configParameters= */ ImmutableMap.of(
                   "initScript",
                   "db_init_scripts/contacts5k.sql",
                   "dlpEncryptConfigFile",
@@ -295,53 +295,53 @@ public final class EncryptionPipelineTest implements Serializable {
               SecretsClient.withSecretsStub(
                   ConstantSecretVersionValueManagerServicesStub.of(
                       "resource/id/of/password/secret", "")),
-              /*inputSchemaJsonFile=*/ "Contacts5kSql_avro_schema.json",
-              /*expectedRecordsCount=*/ 500
+              /* inputSchemaJsonFile= */ "Contacts5kSql_avro_schema.json",
+              /* expectedRecordsCount= */ 500
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Custom_Value_Tokenizer_with_KMS_Key",
-              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /* testCondition= */ "Custom_Value_Tokenizer_with_KMS_Key",
+              /* configParameters= */ ImmutableMap.of("testFile", "userdata.avro"),
               /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --mainKmsKeyUri=projects/test-projects/global/keysets/test-keyset/keys/test-key1"
                   + " --keyMaterial=Y21oeWFYWnFkVzk0YTJSb2VIQmxaMmR1YUhkelluWmxlR1pvZFhoNmNYRT0="
                   + " --keyMaterialType=GCP_KMS_WRAPPED_KEY"
                   + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
-              /*expectedRecordsCount=*/ 1000
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/userdata_records/schema.json",
+              /* expectedRecordsCount= */ 1000
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Custom_Value_Tokenizer_with_Raw_Base64_Key",
-              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /* testCondition= */ "Custom_Value_Tokenizer_with_Raw_Base64_Key",
+              /* configParameters= */ ImmutableMap.of("testFile", "userdata.avro"),
               /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --keyMaterial=cmhyaXZqdW94a2RoeHBlZ2duaHdzYnZleGZodXh6cXE="
                   + " --keyMaterialType=RAW_BASE64_KEY"
                   + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
-              /*expectedRecordsCount=*/ 1000
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/userdata_records/schema.json",
+              /* expectedRecordsCount= */ 1000
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Custom_Value_Tokenizer_with_Raw_UTF8_Key",
-              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /* testCondition= */ "Custom_Value_Tokenizer_with_Raw_UTF8_Key",
+              /* configParameters= */ ImmutableMap.of("testFile", "userdata.avro"),
               /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --keyMaterial=rhrivjuoxkdhxpeggnhwsbvexfhuxzqq"
                   + " --keyMaterialType=RAW_UTF8_KEY"
                   + " --valueTokenizerFactoryFullClassName=com.google.cloud.solutions.autotokenize.encryptors.AesEcbValueTokenizerFactory",
-              /*testSecretClient=*/ null,
-              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
-              /*expectedRecordsCount=*/ 1000
+              /* testSecretClient= */ null,
+              /* inputSchemaJsonFile= */ "avro_records/userdata_records/schema.json",
+              /* expectedRecordsCount= */ 1000
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "Custom_Value_Tokenizer_with_GCS_SECRET_KEY",
-              /*configParameters=*/ ImmutableMap.of("testFile", "userdata.avro"),
+              /* testCondition= */ "Custom_Value_Tokenizer_with_GCS_SECRET_KEY",
+              /* configParameters= */ ImmutableMap.of("testFile", "userdata.avro"),
               /*baseArgs*/ "--sourceType=AVRO --tokenizeColumns=$.kylosample.cc"
                   + " --tokenizeColumns=$.kylosample.email"
                   + " --keyMaterial=resource/id/of/the/gcs/secret"
@@ -350,13 +350,13 @@ public final class EncryptionPipelineTest implements Serializable {
               SecretsClient.withSecretsStub(
                   ConstantSecretVersionValueManagerServicesStub.of(
                       "resource/id/of/the/gcs/secret", "rhrivjuoxkdhxpeggnhwsbvexfhuxzqq")),
-              /*inputSchemaJsonFile=*/ "avro_records/userdata_records/schema.json",
-              /*expectedRecordsCount=*/ 1000
+              /* inputSchemaJsonFile= */ "avro_records/userdata_records/schema.json",
+              /* expectedRecordsCount= */ 1000
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "CSV File Custom_Value_Tokenizer_with_CLOUD_SECRET_KEY",
-              /*configParameters=*/ ImmutableMap.of(
+              /* testCondition= */ "CSV File Custom_Value_Tokenizer_with_CLOUD_SECRET_KEY",
+              /* configParameters= */ ImmutableMap.of(
                   "testFile",
                   "csv/sample-data-chats.csv",
                   "expectedRecordsAvro",
@@ -372,8 +372,8 @@ public final class EncryptionPipelineTest implements Serializable {
               SecretsClient.withSecretsStub(
                   ConstantSecretVersionValueManagerServicesStub.of(
                       "resource/id/of/the/gcs/secret", "rhrivjuoxkdhxpeggnhwsbvexfhuxzqq")),
-              /*inputSchemaJsonFile=*/ null,
-              /*expectedRecordsCount=*/ 100
+              /* inputSchemaJsonFile= */ null,
+              /* expectedRecordsCount= */ 100
             })
         .build();
   }

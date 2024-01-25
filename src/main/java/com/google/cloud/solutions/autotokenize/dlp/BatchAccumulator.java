@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.dlp;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import org.checkerframework.checker.nullness.qual.Nullable;

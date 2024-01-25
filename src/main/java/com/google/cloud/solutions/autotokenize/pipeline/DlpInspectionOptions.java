@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
-
 import java.util.List;
 import org.apache.beam.sdk.options.Default;
 

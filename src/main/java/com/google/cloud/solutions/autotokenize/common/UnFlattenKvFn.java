@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 

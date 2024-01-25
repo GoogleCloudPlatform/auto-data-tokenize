@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 
 /** A Record processor that can tokenize specific or all values of a {@link FlatRecord} */

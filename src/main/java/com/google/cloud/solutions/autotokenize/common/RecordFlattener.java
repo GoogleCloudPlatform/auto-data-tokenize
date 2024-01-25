@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 
 public interface RecordFlattener<T> {

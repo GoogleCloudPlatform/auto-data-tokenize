@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import com.google.api.client.util.Maps;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.common.collect.ImmutableList;
@@ -36,11 +35,11 @@ public class ContactsFlatRecordSampleGenerator {
   }
 
   public static ContactsFlatRecordSampleGenerator create() {
-    return new ContactsFlatRecordSampleGenerator(/*omitId=*/ false);
+    return new ContactsFlatRecordSampleGenerator(/* omitId= */ false);
   }
 
   public static ContactsFlatRecordSampleGenerator withOmitRecordId() {
-    return new ContactsFlatRecordSampleGenerator(/*omitId=*/ true);
+    return new ContactsFlatRecordSampleGenerator(/* omitId= */ true);
   }
 
   public ImmutableList<FlatRecord> buildContactRecords(int count) {

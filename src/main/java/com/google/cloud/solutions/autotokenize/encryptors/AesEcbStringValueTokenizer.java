@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
-
 import com.google.common.io.BaseEncoding;
 import com.google.privacy.dlp.v2.Value;
 import java.nio.charset.StandardCharsets;

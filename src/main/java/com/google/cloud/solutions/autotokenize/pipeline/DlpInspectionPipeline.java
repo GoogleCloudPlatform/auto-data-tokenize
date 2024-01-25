@@ -154,10 +154,10 @@ public final class DlpInspectionPipeline {
                     Contextful.fn(
                         colName ->
                             defaultNaming(
-                                /*prefix=*/ String.format(
+                                /* prefix= */ String.format(
                                         "col-%s", colName.replaceAll("[\\.\\$\\[\\]]+", "-"))
                                     .replaceAll("[-]+", "-"),
-                                /*suffix=*/ ".json")))
+                                /* suffix= */ ".json")))
                 .to(options.getReportLocation() + "/error"));
 
     var inspectionReport =

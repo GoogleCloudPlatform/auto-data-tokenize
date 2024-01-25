@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import com.google.auto.value.AutoValue;
 import com.google.common.io.ByteSource;
 import java.io.IOException;

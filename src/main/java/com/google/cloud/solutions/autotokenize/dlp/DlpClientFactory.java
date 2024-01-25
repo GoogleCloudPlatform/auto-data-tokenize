@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.dlp;
 
-
 import com.google.api.gax.rpc.FixedHeaderProvider;
 import com.google.cloud.dlp.v2.DlpServiceClient;
 import com.google.cloud.dlp.v2.DlpServiceSettings;

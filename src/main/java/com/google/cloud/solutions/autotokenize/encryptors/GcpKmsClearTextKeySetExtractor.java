@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
-
 import com.google.crypto.tink.CleartextKeysetHandle;
 import com.google.crypto.tink.JsonKeysetReader;
 import com.google.crypto.tink.JsonKeysetWriter;

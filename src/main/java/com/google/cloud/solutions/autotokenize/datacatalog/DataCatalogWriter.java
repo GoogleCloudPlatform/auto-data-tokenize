@@ -291,11 +291,11 @@ public abstract class DataCatalogWriter
       private ImmutableMap<String, Tag> getExistingTags() {
         return StreamSupport.stream(
                 catalogClient.listTags(targetEntryId).iteratePages().spliterator(),
-                /*parallel=*/ false)
+                /* parallel= */ false)
             .map(ListTagsPage::getValues)
             .flatMap(
                 tagsIterator ->
-                    StreamSupport.stream(tagsIterator.spliterator(), /*parallel=*/ false))
+                    StreamSupport.stream(tagsIterator.spliterator(), /* parallel= */ false))
             .filter(tag -> inspectionTagTemplateId().equals(tag.getTemplate()))
             .collect(toImmutableMap(Tag::getColumn, identity()));
       }

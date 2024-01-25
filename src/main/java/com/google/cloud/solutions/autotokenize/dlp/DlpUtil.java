@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.dlp;
 
-
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 /** Implements simple DLP API related utility functions. */

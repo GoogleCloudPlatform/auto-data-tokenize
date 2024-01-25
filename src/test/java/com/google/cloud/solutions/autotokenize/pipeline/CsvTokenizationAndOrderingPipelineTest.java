@@ -170,8 +170,8 @@ public final class CsvTokenizationAndOrderingPipelineTest {
                     ImmutableList.of(
                         ColumnTransform.newBuilder().setColumnId("$.CsvRecord.col_2").build()))
                 .build(),
-            /*deidColumns=*/ ImmutableList.of("$.col_2"),
-            /*expectedFileShards=*/ -1,
+            /* deidColumns= */ ImmutableList.of("$.col_2"),
+            /* expectedFileShards= */ -1,
             new String[] {"--orderingColumns=0", "--orderingColumns=3"}
           },
           new Object[] {
@@ -183,8 +183,8 @@ public final class CsvTokenizationAndOrderingPipelineTest {
                     ImmutableList.of(
                         ColumnTransform.newBuilder().setColumnId("$.CsvRecord.col_2").build()))
                 .build(),
-            /*deidColumns=*/ ImmutableList.of("$.col_2"),
-            /*expectedFileShards=*/ 1,
+            /* deidColumns= */ ImmutableList.of("$.col_2"),
+            /* expectedFileShards= */ 1,
             new String[] {"--orderingColumns=0", "--orderingColumns=4", "--csvFileShardCount=1"}
           },
           new Object[] {
@@ -196,8 +196,8 @@ public final class CsvTokenizationAndOrderingPipelineTest {
                     ImmutableList.of(
                         ColumnTransform.newBuilder().setColumnId("$.CsvRecord.transcript").build()))
                 .build(),
-            /*deidColumns=*/ ImmutableList.of("$.transcript"),
-            /*expectedFileShards=*/ -1,
+            /* deidColumns= */ ImmutableList.of("$.transcript"),
+            /* expectedFileShards= */ -1,
             new String[] {
               "--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp",
               "--orderingColumnNames=chatId",
@@ -213,8 +213,8 @@ public final class CsvTokenizationAndOrderingPipelineTest {
                     ImmutableList.of(
                         ColumnTransform.newBuilder().setColumnId("$.CsvRecord.transcript").build()))
                 .build(),
-            /*deidColumns=*/ ImmutableList.of("$.transcript"),
-            /*expectedFileShards=*/ -1,
+            /* deidColumns= */ ImmutableList.of("$.transcript"),
+            /* expectedFileShards= */ -1,
             new String[] {"--csvHeaders=chatId,userType,transcript,segmentId,segmentTimestamp"}
           });
     }

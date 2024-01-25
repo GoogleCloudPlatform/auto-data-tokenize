@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-
 import org.apache.beam.sdk.transforms.SerializableFunction;
 
 /** Identity function: Returns the same value as input. */

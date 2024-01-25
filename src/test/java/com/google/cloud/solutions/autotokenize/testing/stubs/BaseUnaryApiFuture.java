@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing.stubs;
 
-
 import com.google.api.core.ApiFuture;
 import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
