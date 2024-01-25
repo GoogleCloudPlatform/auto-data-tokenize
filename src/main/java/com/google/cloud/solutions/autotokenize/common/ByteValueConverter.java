@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.common;
 
-
 import com.google.privacy.dlp.v2.Value;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

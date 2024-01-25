@@ -103,9 +103,9 @@ public final class RandomColumnarSamplerTest {
     return ImmutableList.<Object[]>builder()
         .add(
             new Object[] {
-              /*testCondition=*/ "ArrayElementsAreMerged",
-              /*sampleSize=*/ 100,
-              /*flatRecords=*/ ImmutableList.of(
+              /* testCondition= */ "ArrayElementsAreMerged",
+              /* sampleSize= */ 100,
+              /* flatRecords= */ ImmutableList.of(
                   FlatRecord.newBuilder()
                       .putFlatKeySchema("$.cc[0]", "$.cc")
                       .putFlatKeySchema("$.cc[1]", "$.cc")
@@ -115,7 +115,7 @@ public final class RandomColumnarSamplerTest {
                       .putValues(
                           "$.cc[2]", Value.newBuilder().setIntegerValue(1212343456567878L).build())
                       .build()),
-              /*expectedSplits=*/ ImmutableMap.<String, ImmutableSet<Value>>builder()
+              /* expectedSplits= */ ImmutableMap.<String, ImmutableSet<Value>>builder()
                   .put(
                       "$.cc",
                       ImmutableSet.of(
@@ -126,9 +126,9 @@ public final class RandomColumnarSamplerTest {
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "EmptyEmailFieldRemoved",
-              /*sampleSize=*/ 100,
-              /*flatRecords=*/ ImmutableList.of(
+              /* testCondition= */ "EmptyEmailFieldRemoved",
+              /* sampleSize= */ 100,
+              /* flatRecords= */ ImmutableList.of(
                   FlatRecord.newBuilder()
                       .putFlatKeySchema("$.cc[0]", "$.cc")
                       .putFlatKeySchema("$.cc[1]", "$.cc")
@@ -137,7 +137,7 @@ public final class RandomColumnarSamplerTest {
                       .putValues("$.cc[1]", Value.newBuilder().setIntegerValue(9876543210L).build())
                       .putValues("$.email", Value.getDefaultInstance())
                       .build()),
-              /*expectedSplits=*/ ImmutableMap.<String, ImmutableSet<Value>>builder()
+              /* expectedSplits= */ ImmutableMap.<String, ImmutableSet<Value>>builder()
                   .put(
                       "$.cc",
                       ImmutableSet.of(
@@ -147,9 +147,9 @@ public final class RandomColumnarSamplerTest {
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "ElementsReduced",
-              /*sampleSize=*/ 5,
-              /*flatRecords=*/ ImmutableList.of(
+              /* testCondition= */ "ElementsReduced",
+              /* sampleSize= */ 5,
+              /* flatRecords= */ ImmutableList.of(
                   FlatRecord.newBuilder()
                       .putFlatKeySchema("$.cc[0]", "$.cc")
                       .putFlatKeySchema("$.cc[1]", "$.cc")
@@ -172,7 +172,7 @@ public final class RandomColumnarSamplerTest {
                       .putValues("$.cc[8]", Value.newBuilder().setIntegerValue(91011).build())
                       .putValues("$.cc[9]", Value.newBuilder().setIntegerValue(111213).build())
                       .build()),
-              /*expectedSplits=*/ ImmutableMap.<String, ImmutableSet<Value>>builder()
+              /* expectedSplits= */ ImmutableMap.<String, ImmutableSet<Value>>builder()
                   .put(
                       "$.cc",
                       ImmutableSet.of(
@@ -190,16 +190,16 @@ public final class RandomColumnarSamplerTest {
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "numItemsLessThanSampleSize",
-              /*sampleSize=*/ 100,
-              /*flatRecords=*/ TestResourceLoader.classPath()
+              /* testCondition= */ "numItemsLessThanSampleSize",
+              /* sampleSize= */ 100,
+              /* flatRecords= */ TestResourceLoader.classPath()
                   .forProto(FlatRecord.class)
                   .loadAllTextFiles(
                       ImmutableList.of(
                           "flat_records/userdata_avro/record-1.textpb",
                           "flat_records/userdata_avro/record-2.textpb",
                           "flat_records/userdata_avro/record-cc-null.textpb")),
-              /*expectedSplits=*/ ImmutableMap.<String, ImmutableSet<Value>>builder()
+              /* expectedSplits= */ ImmutableMap.<String, ImmutableSet<Value>>builder()
                   .put(
                       "$.kylosample.ip_address",
                       ImmutableSet.of(
@@ -281,9 +281,9 @@ public final class RandomColumnarSamplerTest {
             })
         .add(
             new Object[] {
-              /*testCondition=*/ "usesGroupIntoBatches",
-              /*sampleSize=*/ 0,
-              /*flatRecords=*/ ImmutableList.of(
+              /* testCondition= */ "usesGroupIntoBatches",
+              /* sampleSize= */ 0,
+              /* flatRecords= */ ImmutableList.of(
                   FlatRecord.newBuilder()
                       .putFlatKeySchema("$.cc[0]", "$.cc")
                       .putFlatKeySchema("$.cc[1]", "$.cc")
@@ -303,7 +303,7 @@ public final class RandomColumnarSamplerTest {
                           "$.email",
                           Value.newBuilder().setStringValue("email2@domain2.ext2").build())
                       .build()),
-              /*expectedSplits=*/ ImmutableMap.<String, ImmutableSet<Value>>builder()
+              /* expectedSplits= */ ImmutableMap.<String, ImmutableSet<Value>>builder()
                   .put(
                       "$.cc",
                       ImmutableSet.of(

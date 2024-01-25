@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.datacatalog;
 
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.ColumnInformation;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.InspectionReport;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.JdbcConfiguration;
@@ -133,26 +132,26 @@ public final class MakeDataCatalogItemsTest {
           .add(
               new Object[] {
                 "Source:AVRO - Fileset Entry + Tags",
-                /*inputAvroSchemaFile=*/ "catalog_schema_items/nested_repeated_row_avro_schema.json",
-                /*expectedUpdateItemsFile=*/ "catalog_schema_items/avro_updatable_items.json",
-                /*sensitiveColumnInfoFiles=*/ ImmutableList.of(
+                /* inputAvroSchemaFile= */ "catalog_schema_items/nested_repeated_row_avro_schema.json",
+                /* expectedUpdateItemsFile= */ "catalog_schema_items/avro_updatable_items.json",
+                /* sensitiveColumnInfoFiles= */ ImmutableList.of(
                     "catalog_schema_items/nested-contact_number-00000-of-00001.json",
                     "catalog_schema_items/col-topLevelRecord-person_name-00000-of-00001.json"),
-                /*sourceType=*/ SourceType.AVRO,
-                /*inputPattern=*/ "gs://bucket-id/path/to/files/file-prefix-*.avro",
-                /*JdbcConfiguration=*/ null
+                /* sourceType= */ SourceType.AVRO,
+                /* inputPattern= */ "gs://bucket-id/path/to/files/file-prefix-*.avro",
+                /* JdbcConfiguration= */ null
               })
           .add(
               new Object[] {
                 "Source:JDBC_TABLE - Custom Entry + Tags",
-                /*inputAvroSchemaFile=*/ "catalog_schema_items/flat_row_avro_schema.json",
-                /*expectedUpdateItemsFile=*/ "catalog_schema_items/jdbc_updatedable_items.json",
-                /*sensitiveColumnInfoFiles=*/ ImmutableList.of(
+                /* inputAvroSchemaFile= */ "catalog_schema_items/flat_row_avro_schema.json",
+                /* expectedUpdateItemsFile= */ "catalog_schema_items/jdbc_updatedable_items.json",
+                /* sensitiveColumnInfoFiles= */ ImmutableList.of(
                     "catalog_schema_items/col-topLevelRecord-contact_number-00000-of-00001.json",
                     "catalog_schema_items/col-topLevelRecord-person_name-00000-of-00001.json"),
-                /*sourceType=*/ SourceType.JDBC_TABLE,
-                /*inputPattern=*/ "SimpleFlatRecords",
-                /*JdbcConfiguration=*/ JdbcConfiguration.newBuilder()
+                /* sourceType= */ SourceType.JDBC_TABLE,
+                /* inputPattern= */ "SimpleFlatRecords",
+                /* JdbcConfiguration= */ JdbcConfiguration.newBuilder()
                     .setDriverClassName("com.google.databaseType.Driver")
                     .setConnectionUrl(
                         "jdbc:mysql:///dlp_test_database?cloudSqlInstance=auto-dlp%3Aasia-southeast1%3Adlp-test-instance&socketFactory=com.google.cloud.sql.mysql.SocketFactory&user=root&password=root%401234")
@@ -161,26 +160,26 @@ public final class MakeDataCatalogItemsTest {
           .add(
               new Object[] {
                 "Source:BIGQUERY_TABLE - Only Tags, No Entry",
-                /*inputAvroSchemaFile=*/ "catalog_schema_items/nested_repeated_field_avro_schema.json",
-                /*expectedUpdateItemsFile=*/ "catalog_schema_items/bigquery_nested_repeated_field_updatable_items.json",
-                /*sensitiveColumnInfoFiles=*/ ImmutableList.of(
+                /* inputAvroSchemaFile= */ "catalog_schema_items/nested_repeated_field_avro_schema.json",
+                /* expectedUpdateItemsFile= */ "catalog_schema_items/bigquery_nested_repeated_field_updatable_items.json",
+                /* sensitiveColumnInfoFiles= */ ImmutableList.of(
                     "catalog_schema_items/nested_repeated_field_col-__root__-contact-__s_0-name-00000-of-00001.json",
                     "catalog_schema_items/nested_repeated_field_col-__root__-contact-__s_0-nums-__s_1-number-00000-of-00001.json"),
-                /*sourceType=*/ SourceType.BIGQUERY_TABLE,
-                /*inputPattern=*/ "gcpProject:dataset.BigQueryContactsTable",
-                /*JdbcConfiguration=*/ null
+                /* sourceType= */ SourceType.BIGQUERY_TABLE,
+                /* inputPattern= */ "gcpProject:dataset.BigQueryContactsTable",
+                /* JdbcConfiguration= */ null
               })
           .add(
               new Object[] {
                 "Source:BIGQUERY_QUERY - No updatable items",
-                /*inputAvroSchemaFile=*/ "catalog_schema_items/nested_repeated_row_avro_schema.json",
-                /*expectedUpdateItemsFile=*/ null,
-                /*sensitiveColumnInfoFiles=*/ ImmutableList.of(
+                /* inputAvroSchemaFile= */ "catalog_schema_items/nested_repeated_row_avro_schema.json",
+                /* expectedUpdateItemsFile= */ null,
+                /* sensitiveColumnInfoFiles= */ ImmutableList.of(
                     "catalog_schema_items/nested-contact_number-00000-of-00001.json",
                     "catalog_schema_items/col-topLevelRecord-person_name-00000-of-00001.json"),
-                /*sourceType=*/ SourceType.BIGQUERY_QUERY,
-                /*inputPattern=*/ "SELECT * FROM `dataset.BigquerySimpleFlatRecords`;",
-                /*JdbcConfiguration=*/ null
+                /* sourceType= */ SourceType.BIGQUERY_QUERY,
+                /* inputPattern= */ "SELECT * FROM `dataset.BigquerySimpleFlatRecords`;",
+                /* JdbcConfiguration= */ null
               })
           .build();
     }

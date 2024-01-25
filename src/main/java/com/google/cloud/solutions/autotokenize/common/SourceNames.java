@@ -34,7 +34,7 @@ public final class SourceNames {
   }
 
   public String asCamelCase() {
-    return CaseUtils.toCamelCase(sourceType.name(), /*capitalizeFirstLetter=*/ true, '_');
+    return CaseUtils.toCamelCase(sourceType.name(), /* capitalizeFirstLetter= */ true, '_');
   }
 
   @Override

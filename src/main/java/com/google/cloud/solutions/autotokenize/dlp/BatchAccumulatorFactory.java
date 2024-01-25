@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.dlp;
 
-
 import java.io.Serializable;
 
 public interface BatchAccumulatorFactory<InputT, OutputT> extends Serializable {

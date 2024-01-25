@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing.stubs;
 
-
 import com.google.api.gax.core.BackgroundResource;
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;

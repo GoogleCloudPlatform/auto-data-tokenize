@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
-
 import com.google.auto.value.AutoValue;
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.FlatRecord;
 import com.google.cloud.solutions.autotokenize.encryptors.EncryptingFlatRecordTokenizer;

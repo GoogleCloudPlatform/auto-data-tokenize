@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import com.google.common.truth.extensions.proto.ProtoTruth;
 import com.google.protobuf.Message;
 import org.apache.beam.sdk.transforms.SerializableFunction;

@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
-
 import com.google.privacy.dlp.v2.Value;
 
 /**

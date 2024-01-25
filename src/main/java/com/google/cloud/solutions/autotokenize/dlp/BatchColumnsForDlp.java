@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.dlp;
 
-
 import com.google.common.flogger.GoogleLogger;
 import com.google.privacy.dlp.v2.FieldId;
 import com.google.privacy.dlp.v2.Table;

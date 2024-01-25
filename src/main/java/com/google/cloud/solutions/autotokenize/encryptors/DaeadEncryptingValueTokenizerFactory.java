@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.encryptors;
 
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import com.google.crypto.tink.DeterministicAead;
 import com.google.crypto.tink.daead.DeterministicAeadConfig;

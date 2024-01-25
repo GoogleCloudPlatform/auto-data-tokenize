@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import com.google.common.collect.ImmutableList;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;

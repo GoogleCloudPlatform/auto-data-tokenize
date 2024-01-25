@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import java.util.Random;
 import org.testcontainers.containers.MySQLContainer;
 

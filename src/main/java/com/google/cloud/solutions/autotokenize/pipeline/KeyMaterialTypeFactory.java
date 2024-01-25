@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.pipeline;
 
-
 import com.google.cloud.solutions.autotokenize.AutoTokenizeMessages.KeyMaterialType;
 import org.apache.beam.sdk.options.DefaultValueFactory;
 import org.apache.beam.sdk.options.PipelineOptions;

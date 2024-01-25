@@ -16,7 +16,6 @@
 
 package com.google.cloud.solutions.autotokenize.testing;
 
-
 import com.google.common.base.Splitter;
 import java.io.Serializable;
 import java.util.regex.Pattern;
