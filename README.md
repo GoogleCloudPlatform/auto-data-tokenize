@@ -267,7 +267,7 @@ it.
 Create a Cloud Storage bucket for storing test data and Dataflow staging location.
 
 ```shell script
-gsutil mb -p ${PROJECT_ID} -l ${REGION_ID} "gs://${TEMP_GCS_BUCKET}"
+gcloud storage buckets create "gs://${TEMP_GCS_BUCKET}" --project=${PROJECT_ID} --location=${REGION_ID}
 ```
 
 ### Copy test data to Cloud Storage
@@ -275,7 +275,7 @@ gsutil mb -p ${PROJECT_ID} -l ${REGION_ID} "gs://${TEMP_GCS_BUCKET}"
 You can use your own file datasets or copy the included demo dataset (`userdata.avro` or `userdata.parquet`).
 
 ```shell script
-gsutil cp userdata.avro gs://${TEMP_GCS_BUCKET}
+gcloud storage cp userdata.avro gs://${TEMP_GCS_BUCKET}
 ```
 
 ## Compile modules
@@ -381,7 +381,7 @@ The sample & identify pipeline outputs the Avro schema (or converted for Parquet
 
 ```shell script
 mkdir -p dlp_report/ && rm dlp_report/*.json
-gsutil -m cp "gs://${TEMP_GCS_BUCKET}/dlp_report/*.json" dlp_report/
+gcloud storage cp "gs://${TEMP_GCS_BUCKET}/dlp_report/*.json" dlp_report/
 ```
 
 List all the column names that have been identified.
