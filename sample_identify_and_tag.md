@@ -161,7 +161,7 @@ page in the Cloud Console.
 
 Create a Cloud Storage bucket for storing test data and Dataflow staging location:
 
-    gsutil mb -p ${PROJECT_ID} -l ${REGION_ID} "gs://${TEMP_GCS_BUCKET}"
+    gcloud storage buckets create "gs://${TEMP_GCS_BUCKET}" --project="${PROJECT_ID}" --location="${REGION_ID}"
 
 ### Create Inspection Tag tempalte
 
@@ -195,7 +195,7 @@ You can use your own file datasets or copy the included demonstration dataset (`
 
 1.  Copy the sample dataset to Cloud Storage for staging into Cloud SQL:
 
-        gsutil cp contacts5k.sql.gz gs://${TEMP_GCS_BUCKET}
+        gcloud storage cp contacts5k.sql.gz gs://${TEMP_GCS_BUCKET}
 
 1.  Create a new Database in the Cloud SQL instance:
 
@@ -208,7 +208,7 @@ You can use your own file datasets or copy the included demonstration dataset (`
 
         export SQL_SERVICE_ACCOUNT=$(gcloud sql instances describe "${SQL_INSTANCE}" --project="${PROJECT_ID}" | grep serviceAccountEmailAddress: | sed "s/serviceAccountEmailAddress: //g")
 
-        gsutil iam ch "serviceAccount:${SQL_SERVICE_ACCOUNT}:objectAdmin" gs://${TEMP_GCS_BUCKET}
+        gcloud storage buckets add-iam-policy-binding gs://${TEMP_GCS_BUCKET} --member="serviceAccount:${SQL_SERVICE_ACCOUNT}" --role="roles/storage.objectAdmin"
 
     Learn more about [Importing data into Cloud SQL](https://cloud.google.com/sql/docs/mysql/import-export/importing#mysqldump).
 
@@ -368,7 +368,7 @@ sensitive information.
 1.  Retrieve the report to your local machine:
 
         mkdir -p auto_dlp_report/ && rm auto_dlp_report/*.json
-        gsutil -m cp "gs://${TEMP_GCS_BUCKET}/auto_dlp_report/*.json" auto_dlp_report/
+        gcloud storage cp "gs://${TEMP_GCS_BUCKET}/auto_dlp_report/*.json" auto_dlp_report/
 
 1.  List all the column names that have been identified:
 
